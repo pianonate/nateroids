@@ -5,24 +5,27 @@ use bevy::prelude::KeyCode::{
     Space,
 };
 
-use crate::collision_detection::Collider;
-use crate::schedule::InGameSet;
 use crate::{
     asset_loader::SceneAssets,
+    collision_detection::{Collider, CollisionDamage},
+    health::Health,
     movement::{Acceleration, MoverType, MovingObjectBundle, Velocity},
+    schedule::InGameSet,
 };
 
-const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, -20.0);
-const SPACESHIP_SPEED: f32 = 35.0;
-const SPACESHIP_ROTATION_SPEED: f32 = 2.5;
-const SPACESHIP_ROLL_SPEED: f32 = 2.5;
-const SPACESHIP_RADIUS: f32 = 5.0;
-
-const MISSILE_SPEED: f32 = 45.0;
+const MISSILE_COLLISION_DAMAGE: f32 = 10.0;
 const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 7.5;
-const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 15.0;
-
+const MISSILE_HEALTH: f32 = 1.0;
 const MISSILE_RADIUS: f32 = 1.0;
+const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 15.0;
+const MISSILE_SPEED: f32 = 45.0;
+const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
+const SPACESHIP_HEALTH: f32 = 100.0;
+const SPACESHIP_RADIUS: f32 = 5.0;
+const SPACESHIP_ROLL_SPEED: f32 = 2.5;
+const SPACESHIP_ROTATION_SPEED: f32 = 2.5;
+const SPACESHIP_SPEED: f32 = 35.0;
+const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, -20.0);
 
 #[derive(Component, Debug)]
 pub struct Spaceship;
@@ -74,6 +77,8 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             },
         },
         Spaceship,
+        Health::new(SPACESHIP_HEALTH),
+        CollisionDamage::new(SPACESHIP_COLLISION_DAMAGE),
     ));
 }
 
@@ -135,7 +140,6 @@ fn spaceship_weapon_controls(
     mut spawn_timer: ResMut<MissileSpawnTimer>,
     time: Res<Time>,
 ) {
-
     let Ok(transform) = query.get_single() else {
         return;
     };
@@ -162,6 +166,8 @@ fn spaceship_weapon_controls(
                 },
             },
             SpaceshipMissile, // tag it for later
+            Health::new(MISSILE_HEALTH),
+            CollisionDamage::new(MISSILE_COLLISION_DAMAGE),
         ));
     }
 }

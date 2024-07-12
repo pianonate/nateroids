@@ -1,24 +1,25 @@
-use std::ops::Range;
-
-use crate::{
-    asset_loader::SceneAssets,
-    collision_detection::Collider,
-    movement::{Acceleration, MoverType, MovingObjectBundle, Velocity},
-};
-
-use crate::schedule::InGameSet;
 use bevy::prelude::*;
 use rand::prelude::*;
+use std::ops::Range;
+use crate::{
+    asset_loader::SceneAssets,
+    collision_detection::CollisionDamage,
+    collision_detection::Collider,
+    health::Health,
+    movement::{Acceleration, MoverType, MovingObjectBundle, Velocity},
+    schedule::InGameSet
+};
 
-const VELOCITY_SCALAR: f32 = 5.0;
 const ACCELERATION_SCALAR: f32 = 1.0;
+const COLLISION_DAMAGE: f32 = 35.0;
+const HEALTH: f32 = 80.0;
 const RADIUS: f32 = 2.5;
 const ROTATE_SPEED: f32 = 3.5;
 const ROTATION_RANDOMIZATION_RANGE: Range<f32> = -3.0..3.0;
-
 const SPAWN_RANGE_X: Range<f32> = -25.0..25.0;
 const SPAWN_RANGE_Z: Range<f32> = 0.0..25.0;
 const SPAWN_TIMER_SECONDS: f32 = 1.0;
+const VELOCITY_SCALAR: f32 = 5.0;
 
 #[derive(Component, Debug)]
 pub struct Asteroid;
@@ -86,6 +87,8 @@ fn spawn_asteroid(
             },
         },
         Asteroid,
+        Health::new(HEALTH),
+        CollisionDamage::new(COLLISION_DAMAGE),
     ));
 }
 

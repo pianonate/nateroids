@@ -1,5 +1,7 @@
 use bevy::{prelude::*, utils::HashMap};
 
+use crate::health::Health;
+use crate::spaceship::Spaceship;
 use crate::{asteroids::Asteroid, schedule::InGameSet, spaceship::SpaceshipMissile};
 
 #[derive(Component, Debug)]
@@ -17,6 +19,32 @@ impl Collider {
     }
 }
 
+#[derive(Component, Debug)]
+pub struct CollisionDamage {
+    pub amount: f32,
+}
+
+impl CollisionDamage {
+    pub fn new(amount: f32) -> Self {
+        Self { amount }
+    }
+}
+
+#[derive(Event, Debug)]
+pub struct CollisionEvent {
+    pub entity: Entity,
+    pub collided_entity: Entity,
+}
+
+impl CollisionEvent {
+    pub fn new(entity: Entity, collided_entity: Entity) -> Self {
+        Self {
+            entity,
+            collided_entity,
+        }
+    }
+}
+
 pub struct CollisionDetectionPlugin;
 
 impl Plugin for CollisionDetectionPlugin {
@@ -28,12 +56,19 @@ impl Plugin for CollisionDetectionPlugin {
         .add_systems(
             Update,
             (
-                handle_collisions::<Asteroid>,
-               //  handle_collisions::<Spaceship>,
-                handle_collisions::<SpaceshipMissile>,
+                (
+                    handle_collisions::<Asteroid>,
+                    handle_collisions::<Spaceship>,
+                    // because asteroids now take damage, we want
+                    // missiles to be destroyed on contact so they
+                    // don't continue dealing damage every frame to an asteroid
+                    handle_collisions::<SpaceshipMissile>,
+                ),
+                apply_collision_damage,
             )
+                .chain()
                 .in_set(InGameSet::DespawnEntities),
-        );
+        ).add_event::<CollisionEvent>();
     }
 }
 
@@ -74,7 +109,7 @@ fn collision_detection(mut query: Query<(Entity, &GlobalTransform, &mut Collider
 // that it has queued up multiple collisions despawn
 // it's a no-op if it tries so don't worry about it
 fn handle_collisions<T: Component>(
-    mut commands: Commands,
+    mut collision_event_writer: EventWriter<CollisionEvent>,
     query: Query<(Entity, &Collider), With<T>>,
 ) {
     for (entity, collider) in query.iter() {
@@ -83,9 +118,31 @@ fn handle_collisions<T: Component>(
             if query.get(collided_entity).is_ok() {
                 continue;
             }
-            // Despawn the entity.
+            // send a collision event
             println!("collision {:?}", entity);
-            commands.entity(entity).despawn_recursive();
+            collision_event_writer.send(CollisionEvent::new(entity, collided_entity));
         }
+    }
+}
+
+pub fn apply_collision_damage(
+    mut collision_event_reader: EventReader<CollisionEvent>,
+    mut health_query: Query<&mut Health>,
+    collision_damage_query: Query<&CollisionDamage>,
+) {
+    for &CollisionEvent {
+        entity,
+        collided_entity,
+    } in collision_event_reader.read()
+    {
+        let Ok(mut health) = health_query.get_mut(entity) else {
+            continue;
+        };
+
+        let Ok(collision_damage) = collision_damage_query.get(collided_entity) else {
+            continue;
+        };
+
+        health.value -= collision_damage.amount;
     }
 }
