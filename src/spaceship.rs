@@ -5,6 +5,7 @@ use bevy::prelude::KeyCode::{
     Space,
 };
 
+use crate::state::GameState;
 use crate::{
     asset_loader::SceneAssets,
     collision_detection::{Collider, CollisionDamage},
@@ -50,6 +51,8 @@ impl Plugin for SpaceshipPlugin {
             timer: Timer::from_seconds(MISSILE_SPAWN_TIMER_SECONDS, TimerMode::Repeating),
         })
         .add_systems(PostStartup, spawn_spaceship)
+        // spawn a new Spaceship if we're in GameOver state
+        .add_systems(OnEnter(GameState::GameOver), spawn_spaceship)
         .add_systems(
             Update,
             (
@@ -59,7 +62,9 @@ impl Plugin for SpaceshipPlugin {
             )
                 .chain()
                 .in_set(InGameSet::UserInput),
-        );
+        )
+        // check if spaceship is destroyed...this will change the GameState
+        .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
     }
 }
 
@@ -183,5 +188,16 @@ fn spaceship_shield_controls(
 
     if keyboard_input.pressed(KeyCode::Tab) {
         commands.entity(spaceship).insert(SpaceshipShield);
+    }
+}
+
+// check if spaceship exists or not - query
+// if get single (there should only be one - returns an error then the spaceship doesn't exist
+fn spaceship_destroyed(
+    mut next_state: ResMut<NextState<GameState>>,
+    query: Query<(), With<Spaceship>>,
+) {
+    if query.get_single().is_err() {
+        next_state.set(GameState::GameOver);
     }
 }
