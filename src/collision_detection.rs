@@ -68,7 +68,8 @@ impl Plugin for CollisionDetectionPlugin {
             )
                 .chain()
                 .in_set(InGameSet::DespawnEntities),
-        ).add_event::<CollisionEvent>();
+        )
+        .add_event::<CollisionEvent>();
     }
 }
 
@@ -111,13 +112,31 @@ fn collision_detection(mut query: Query<(Entity, &GlobalTransform, &mut Collider
 fn handle_collisions<T: Component>(
     mut collision_event_writer: EventWriter<CollisionEvent>,
     query: Query<(Entity, &Collider), With<T>>,
+    spaceship_query: Query<(), With<Spaceship>>,
+    missile_query: Query<(), With<SpaceshipMissile>>,
 ) {
     for (entity, collider) in query.iter() {
         for &collided_entity in collider.colliding_entities.iter() {
             // Entity collided with another entity of the same type.
+            // i.e., query.get essentially asks for the components that
+            // the current query returns - in this case if it matches the same T
+            // that means we've collided with something of the same type as the handle_collisions
+            // query is specifying - so we can ignore it
             if query.get(collided_entity).is_ok() {
                 continue;
             }
+
+            // Specific immunity check: skip if a spaceship collides with a missile
+            // remember .get does a type check against the query so if we have either the situation
+            // of a spaceship having a collision with a missile, or a missile having a collision with a spaceship
+            // we can safely ignore that
+            if (spaceship_query.get(entity).is_ok() && missile_query.get(collided_entity).is_ok())
+                || (missile_query.get(entity).is_ok()
+                    && spaceship_query.get(collided_entity).is_ok())
+            {
+                continue;
+            }
+
             // send a collision event
             collision_event_writer.send(CollisionEvent::new(entity, collided_entity));
         }

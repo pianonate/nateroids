@@ -5,21 +5,23 @@ use bevy::prelude::KeyCode::{
     Space,
 };
 
-use crate::state::GameState;
+use crate::despawn::Mortal;
 use crate::{
     asset_loader::SceneAssets,
     collision_detection::{Collider, CollisionDamage},
     health::Health,
-    movement::{Acceleration, MoverType, MovingObjectBundle, Velocity},
+    movement::{Acceleration, MoverType, MovingObjectBundle, Velocity, Wrappable},
     schedule::InGameSet,
+    state::GameState,
 };
 
-const MISSILE_COLLISION_DAMAGE: f32 = 10.0;
+const MISSILE_COLLISION_DAMAGE: f32 = 20.0;
 const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 7.5;
 const MISSILE_HEALTH: f32 = 1.0;
 const MISSILE_RADIUS: f32 = 1.0;
-const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 15.0;
+const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
 const MISSILE_SPEED: f32 = 45.0;
+
 const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
 const SPACESHIP_HEALTH: f32 = 100.0;
 const SPACESHIP_RADIUS: f32 = 5.0;
@@ -85,6 +87,7 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
         Name::new("Spaceship"),
         Health::new(SPACESHIP_HEALTH),
         CollisionDamage::new(SPACESHIP_COLLISION_DAMAGE),
+        Wrappable,
     ));
 }
 
@@ -157,8 +160,8 @@ fn spaceship_weapon_controls(
     }
 
     if keyboard_input.pressed(Space) {
-        commands.spawn((
-            MovingObjectBundle {
+        commands
+            .spawn(MovingObjectBundle {
                 mover_type: MoverType::Missile,
                 velocity: Velocity::new(-transform.forward() * MISSILE_SPEED),
                 acceleration: Acceleration::new(Vec3::ZERO),
@@ -170,12 +173,13 @@ fn spaceship_weapon_controls(
                     ),
                     ..default()
                 },
-            },
-            Name::new("SpaceshipMissile"),
-            SpaceshipMissile, // tag it for later
-            Health::new(MISSILE_HEALTH),
-            CollisionDamage::new(MISSILE_COLLISION_DAMAGE),
-        ));
+            })
+            .insert(CollisionDamage::new(MISSILE_COLLISION_DAMAGE))
+            .insert(Health::new(MISSILE_HEALTH))
+            .insert(Mortal::new(0))
+            .insert(Name::new("SpaceshipMissile"))
+            .insert(SpaceshipMissile)
+            .insert(Wrappable);
     }
 }
 

@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::state::GameState;
+use bevy::prelude::*;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum InGameSet {
@@ -17,7 +17,6 @@ impl Plugin for SchedulePlugin {
             Update,
             (
                 InGameSet::DespawnEntities,
-
                 // Flush commands (i.e. `apply_deferred` runs)
                 InGameSet::UserInput,
                 // a bug that if entity updates happen before collision detection
@@ -36,11 +35,8 @@ impl Plugin for SchedulePlugin {
                 // which i suppose might make sense anyway...
                 InGameSet::CollisionDetection,
                 InGameSet::EntityUpdates,
-
-
             )
                 .chain()
-
                 // the following is pretty cool - because we added an InGameSet system set to
                 // all the systems that are "in game" - in order to ensure proper ordering
                 // the following comes along for the ride - i.e., they will only run _if_
@@ -57,7 +53,9 @@ impl Plugin for SchedulePlugin {
             // in this case, after a despawn - before moving on to the next SystemSet
             // this way there isn't any chance that UserInput systems will use despawned entities
             // for performance reasons this is pretty cool
-            apply_deferred.after(InGameSet::DespawnEntities).before(InGameSet::UserInput),
+            apply_deferred
+                .after(InGameSet::DespawnEntities)
+                .before(InGameSet::UserInput),
         );
     }
 }

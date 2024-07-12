@@ -9,9 +9,15 @@ impl Plugin for CameraPlugin {
     }
 }
 
+#[derive(Component, Debug)]
+pub(crate) struct PrimaryCamera;
+
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, CAMERA_DISTANCE, 0.0).looking_at(Vec3::ZERO, Vec3::Z),
-        ..default()
-    });
+    commands
+        .spawn(Camera3dBundle {
+            transform: Transform::from_xyz(0.0, CAMERA_DISTANCE, 0.0)
+                .looking_at(Vec3::ZERO, Vec3::Z),
+            ..default()
+        })
+        .insert(PrimaryCamera);
 }

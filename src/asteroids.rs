@@ -1,14 +1,14 @@
+use crate::{
+    asset_loader::SceneAssets,
+    collision_detection::Collider,
+    collision_detection::CollisionDamage,
+    health::Health,
+    movement::{Acceleration, MoverType, MovingObjectBundle, Velocity, Wrappable},
+    schedule::InGameSet,
+};
 use bevy::prelude::*;
 use rand::prelude::*;
 use std::ops::Range;
-use crate::{
-    asset_loader::SceneAssets,
-    collision_detection::CollisionDamage,
-    collision_detection::Collider,
-    health::Health,
-    movement::{Acceleration, MoverType, MovingObjectBundle, Velocity},
-    schedule::InGameSet
-};
 
 const ACCELERATION_SCALAR: f32 = 1.0;
 const COLLISION_DAMAGE: f32 = 35.0;
@@ -90,6 +90,7 @@ fn spawn_asteroid(
         Asteroid,
         Health::new(HEALTH),
         CollisionDamage::new(COLLISION_DAMAGE),
+        Wrappable,
     ));
 }
 
