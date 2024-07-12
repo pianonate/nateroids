@@ -82,6 +82,7 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             },
         },
         Spaceship,
+        Name::new("Spaceship"),
         Health::new(SPACESHIP_HEALTH),
         CollisionDamage::new(SPACESHIP_COLLISION_DAMAGE),
     ));
@@ -170,6 +171,7 @@ fn spaceship_weapon_controls(
                     ..default()
                 },
             },
+            Name::new("SpaceshipMissile"),
             SpaceshipMissile, // tag it for later
             Health::new(MISSILE_HEALTH),
             CollisionDamage::new(MISSILE_COLLISION_DAMAGE),

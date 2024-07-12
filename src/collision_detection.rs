@@ -119,7 +119,6 @@ fn handle_collisions<T: Component>(
                 continue;
             }
             // send a collision event
-            println!("collision {:?}", entity);
             collision_event_writer.send(CollisionEvent::new(entity, collided_entity));
         }
     }

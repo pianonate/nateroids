@@ -2,7 +2,8 @@ use bevy::prelude::*;
 
 use crate::state::GameState;
 use crate::{
-    asteroids::Asteroid, health::Health, schedule::InGameSet, spaceship::SpaceshipMissile,
+    asteroids::Asteroid, health::Health, schedule::InGameSet, spaceship::Spaceship,
+    spaceship::SpaceshipMissile,
 };
 
 const DESPAWN_DISTANCE: f32 = 100.0;
@@ -21,14 +22,17 @@ impl Plugin for DespawnPlugin {
 
 fn despawn_far_away_entities(
     mut commands: Commands,
-    query: Query<(Entity, &GlobalTransform), Or<(With<Asteroid>, With<SpaceshipMissile>)>>,
+    query: Query<
+        (Entity, &GlobalTransform),
+        Or<(With<Asteroid>, With<SpaceshipMissile>, With<Spaceship>)>,
+    >,
 ) {
     // println!("entities: {:?}", query.iter().len());
     for (entity, transform) in query.iter() {
         // how far away is the entity from the origin
         let distance = transform.translation().distance(Vec3::ZERO);
         if distance > DESPAWN_DISTANCE {
-            println!("distance {:?}", entity);
+            println!("dead from distance");
             despawn(&mut commands, entity);
         }
     }
@@ -41,6 +45,7 @@ fn despawn(commands: &mut Commands, entity: Entity) {
 fn despawn_dead_entities(mut commands: Commands, query: Query<(Entity, &Health)>) {
     for (entity, health) in query.iter() {
         if health.value <= 0.0 {
+            println!("dead from collision");
             despawn(&mut commands, entity);
         }
     }
@@ -48,6 +53,7 @@ fn despawn_dead_entities(mut commands: Commands, query: Query<(Entity, &Health)>
 
 fn despawn_all_entities(mut commands: Commands, query: Query<Entity, With<Health>>) {
     for entity in query.iter() {
+        println!("dead from GameOver");
         despawn(&mut commands, entity);
     }
 }

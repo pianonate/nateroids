@@ -86,6 +86,7 @@ fn spawn_asteroid(
                 ..default()
             },
         },
+        Name::new("Asteroid"),
         Asteroid,
         Health::new(HEALTH),
         CollisionDamage::new(COLLISION_DAMAGE),
