@@ -16,7 +16,7 @@ use crate::{
 };
 
 const MISSILE_COLLISION_DAMAGE: f32 = 20.0;
-const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 7.5;
+const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.5;
 const MISSILE_HEALTH: f32 = 1.0;
 const MISSILE_RADIUS: f32 = 1.0;
 const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
@@ -27,6 +27,7 @@ const SPACESHIP_HEALTH: f32 = 100.0;
 const SPACESHIP_RADIUS: f32 = 5.0;
 const SPACESHIP_ROLL_SPEED: f32 = 2.5;
 const SPACESHIP_ROTATION_SPEED: f32 = 2.5;
+const SPACESHIP_SCALE: Vec3 = Vec3::new(0.5, 0.5, 0.5);
 const SPACESHIP_SPEED: f32 = 35.0;
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, -20.0);
 
@@ -79,7 +80,12 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             collider: Collider::new(SPACESHIP_RADIUS),
             model: SceneBundle {
                 scene: scene_assets.spaceship.clone(),
-                transform: Transform::from_translation(STARTING_TRANSLATION),
+               // transform: Transform::from_translation(STARTING_TRANSLATION),
+                transform: Transform {
+                    translation: STARTING_TRANSLATION,
+                    scale: SPACESHIP_SCALE,
+                    ..Default::default()
+                },
                 ..default()
             },
         },
