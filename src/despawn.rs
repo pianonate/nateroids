@@ -33,7 +33,7 @@ fn despawn_aged_entities(mut commands: Commands, mut query: Query<(Entity, &mut 
         mortal.age += 1;
 
         if mortal.age > OLD_AGE {
-           // println!("dead from age");
+            // println!("dead from age");
             despawn(&mut commands, entity);
         }
     }
@@ -54,7 +54,7 @@ fn despawn_dead_entities(mut commands: Commands, query: Query<(Entity, &Health)>
 
 fn despawn_all_entities(mut commands: Commands, query: Query<Entity, With<Health>>) {
     for entity in query.iter() {
-       // println!("dead from GameOver");
+        // println!("dead from GameOver");
         despawn(&mut commands, entity);
     }
 }
