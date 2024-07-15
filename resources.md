@@ -1,6 +1,6 @@
 ## Useful Links
 
-- [Bevy Windows Inside Baseball](https://taintedcoders.com/bevy/windows/) has a lot of inside baseball about Bevy.
+- [Bevy Windows Inside Baseball](https://taintedcoders.com/) has a lot of inside baseball about Bevy.
 - [Bevy Cheatbook Overview](https://bevy-cheatbook.github.io/overview.html) also this.
 
 ## Building WASM Target

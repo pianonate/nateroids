@@ -1,4 +1,4 @@
-use crate::{camera::PrimaryCamera, collision_detection::Collider, schedule::InGameSet};
+use crate::{camera::PrimaryCamera, collision_detection::OldCollider, schedule::InGameSet};
 use bevy::prelude::*;
 
 pub struct MovementPlugin;
@@ -48,7 +48,7 @@ pub enum MoverType {
 #[derive(Bundle)]
 pub struct MovingObjectBundle {
     pub acceleration: Acceleration,
-    pub collider: Collider,
+    pub collider: OldCollider,
     pub model: SceneBundle,
     pub velocity: Velocity,
     pub mover_type: MoverType,

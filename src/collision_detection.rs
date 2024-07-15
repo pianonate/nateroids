@@ -1,16 +1,19 @@
 use bevy::{prelude::*, utils::HashMap};
+use bevy_rapier3d::prelude::CollisionEvent;
 
-use crate::health::Health;
-use crate::spaceship::Spaceship;
-use crate::{asteroids::Asteroid, schedule::InGameSet, spaceship::SpaceshipMissile};
+use crate::{
+    health::Health,
+    schedule::InGameSet,
+    spaceship::{Spaceship, SpaceshipMissile},
+};
 
 #[derive(Component, Debug)]
-pub struct Collider {
+pub struct OldCollider {
     pub radius: f32,
     pub colliding_entities: Vec<Entity>,
 }
 
-impl Collider {
+impl OldCollider {
     pub fn new(radius: f32) -> Self {
         Self {
             radius,
@@ -31,12 +34,12 @@ impl CollisionDamage {
 }
 
 #[derive(Event, Debug)]
-pub struct CollisionEvent {
+pub struct OldCollisionEvent {
     pub entity: Entity,
     pub collided_entity: Entity,
 }
 
-impl CollisionEvent {
+impl OldCollisionEvent {
     pub fn new(entity: Entity, collided_entity: Entity) -> Self {
         Self {
             entity,
@@ -51,13 +54,13 @@ impl Plugin for CollisionDetectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            collision_detection.in_set(InGameSet::CollisionDetection),
+            (collision_detection, rapier_collision_damage)
+                .in_set(InGameSet::CollisionDetection),
         )
         .add_systems(
             Update,
             (
                 (
-                    handle_collisions::<Asteroid>,
                     handle_collisions::<Spaceship>,
                     // because asteroids now take damage, we want
                     // missiles to be destroyed on contact so they
@@ -69,11 +72,11 @@ impl Plugin for CollisionDetectionPlugin {
                 .chain()
                 .in_set(InGameSet::DespawnEntities),
         )
-        .add_event::<CollisionEvent>();
+        .add_event::<OldCollisionEvent>();
     }
 }
 
-fn collision_detection(mut query: Query<(Entity, &GlobalTransform, &mut Collider)>) {
+fn collision_detection(mut query: Query<(Entity, &GlobalTransform, &mut OldCollider)>) {
     let mut colliding_entities: HashMap<Entity, Vec<Entity>> = HashMap::new();
 
     // First phase: Detect collisions.
@@ -110,8 +113,8 @@ fn collision_detection(mut query: Query<(Entity, &GlobalTransform, &mut Collider
 // that it has queued up multiple collisions despawn
 // it's a no-op if it tries so don't worry about it
 fn handle_collisions<T: Component>(
-    mut collision_event_writer: EventWriter<CollisionEvent>,
-    query: Query<(Entity, &Collider), With<T>>,
+    mut collision_event_writer: EventWriter<OldCollisionEvent>,
+    query: Query<(Entity, &OldCollider), With<T>>,
     spaceship_query: Query<(), With<Spaceship>>,
     missile_query: Query<(), With<SpaceshipMissile>>,
 ) {
@@ -138,17 +141,17 @@ fn handle_collisions<T: Component>(
             }
 
             // send a collision event
-            collision_event_writer.send(CollisionEvent::new(entity, collided_entity));
+            collision_event_writer.send(OldCollisionEvent::new(entity, collided_entity));
         }
     }
 }
 
 pub fn apply_collision_damage(
-    mut collision_event_reader: EventReader<CollisionEvent>,
+    mut collision_event_reader: EventReader<OldCollisionEvent>,
     mut health_query: Query<&mut Health>,
     collision_damage_query: Query<&CollisionDamage>,
 ) {
-    for &CollisionEvent {
+    for &OldCollisionEvent {
         entity,
         collided_entity,
     } in collision_event_reader.read()
@@ -163,4 +166,46 @@ pub fn apply_collision_damage(
 
         health.value -= collision_damage.amount;
     }
+}
+
+fn rapier_collision_damage(
+    mut collision_events: EventReader<CollisionEvent>,
+    mut health_query: Query<&mut Health>,
+    collision_damage_query: Query<&CollisionDamage>,
+) {
+    for &collision_event in collision_events.read() {
+        match collision_event {
+            CollisionEvent::Started(entity1, entity2, ..) => {
+                if apply_rapier_damage(&mut health_query, &collision_damage_query, entity1) {
+                    continue;
+                }
+                if apply_rapier_damage(&mut health_query, &collision_damage_query, entity2) {
+                    continue;
+                }
+            }
+            _ => (),
+        }
+    }
+}
+
+fn apply_rapier_damage(
+    health_query: &mut Query<&mut Health>,
+    collision_damage_query: &Query<&CollisionDamage>,
+    entity: Entity,
+) -> bool {
+    let Ok(mut health) = health_query.get_mut(entity) else {
+        return true;
+    };
+
+    let Ok(collision_damage) = collision_damage_query.get(entity) else {
+        return true;
+    };
+
+    health.value -= collision_damage.amount;
+
+    println!(
+        "applied damage {:?} remaining health: {:?}",
+        collision_damage.amount, health.value
+    );
+    false
 }

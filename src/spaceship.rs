@@ -8,7 +8,7 @@ use bevy::prelude::KeyCode::{
 use crate::despawn::Mortal;
 use crate::{
     asset_loader::SceneAssets,
-    collision_detection::{Collider, CollisionDamage},
+    collision_detection::{OldCollider, CollisionDamage},
     health::Health,
     movement::{Acceleration, MoverType, MovingObjectBundle, Velocity, Wrappable},
     schedule::InGameSet,
@@ -77,7 +77,7 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             mover_type: MoverType::Spaceship,
             velocity: Velocity::new(Vec3::ZERO),
             acceleration: Acceleration::new(Vec3::ZERO),
-            collider: Collider::new(SPACESHIP_RADIUS),
+            collider: OldCollider::new(SPACESHIP_RADIUS),
             model: SceneBundle {
                 scene: scene_assets.spaceship.clone(),
                // transform: Transform::from_translation(STARTING_TRANSLATION),
@@ -171,7 +171,7 @@ fn spaceship_weapon_controls(
                 mover_type: MoverType::Missile,
                 velocity: Velocity::new(-transform.forward() * MISSILE_SPEED),
                 acceleration: Acceleration::new(Vec3::ZERO),
-                collider: Collider::new(MISSILE_RADIUS),
+                collider: OldCollider::new(MISSILE_RADIUS),
                 model: SceneBundle {
                     scene: scene_assets.missiles.clone(),
                     transform: Transform::from_translation(
