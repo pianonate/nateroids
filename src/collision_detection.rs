@@ -171,6 +171,7 @@ pub fn apply_collision_damage(
 fn rapier_collision_damage(
     mut collision_events: EventReader<CollisionEvent>,
     mut health_query: Query<&mut Health>,
+    name_query: Query<&Name>,
     collision_damage_query: Query<&CollisionDamage>,
 ) {
     for &collision_event in collision_events.read() {
@@ -181,6 +182,12 @@ fn rapier_collision_damage(
                 }
                 if apply_rapier_damage(&mut health_query, &collision_damage_query, entity2) {
                     continue;
+                }
+                if let Ok(name) = name_query.get(entity1) {
+                    println!("{:?}", name);
+                }
+                if let Ok(name) = name_query.get(entity2) {
+                    println!("{:?}", name);
                 }
             }
             _ => (),

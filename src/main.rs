@@ -13,7 +13,7 @@ mod collision_detection;
 mod despawn;
 mod health;
 mod movement;
-mod rasteroid;
+mod asteroid;
 mod schedule;
 mod spaceship;
 mod state;
@@ -21,7 +21,7 @@ mod state;
 use crate::{
     asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin,
-    movement::MovementPlugin, rasteroid::RasteroidPlugin, schedule::SchedulePlugin,
+    movement::MovementPlugin, asteroid::AsteroidPlugin, schedule::SchedulePlugin,
     spaceship::SpaceshipPlugin, state::StatePlugin,
 };
 
@@ -42,7 +42,7 @@ fn main() {
         .add_plugins(CollisionDetectionPlugin)
         .add_plugins(DespawnPlugin)
         .add_plugins(MovementPlugin)
-        .add_plugins(RasteroidPlugin)
+        .add_plugins(AsteroidPlugin)
         .add_plugins(SchedulePlugin)
         .add_plugins(SpaceshipPlugin)
         .add_plugins(StatePlugin);

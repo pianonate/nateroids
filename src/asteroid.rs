@@ -13,10 +13,10 @@ use crate::health::Health;
 use crate::movement::Wrappable;
 use crate::schedule::InGameSet;
 
-pub struct RasteroidPlugin;
+pub struct AsteroidPlugin;
 
 #[derive(Resource, Debug)]
-pub struct RasteroidSpawnTimer {
+pub struct AsteroidSpawnTimer {
     pub timer: Timer,
 }
 
@@ -31,11 +31,11 @@ const SPAWN_TIMER_SECONDS: f32 = 0.5;
 const VELOCITY_RANGE: Range<f32> = -20.0..20.0;
 
 #[derive(Component, Debug)]
-pub struct Rasteroid;
+pub struct Asteroid;
 
-impl Plugin for RasteroidPlugin {
+impl Plugin for AsteroidPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(RasteroidSpawnTimer {
+        app.insert_resource(AsteroidSpawnTimer {
             timer: Timer::from_seconds(SPAWN_TIMER_SECONDS, TimerMode::Repeating),
         })
         .add_systems(Update, spawn_asteroid.in_set(InGameSet::EntityUpdates));
@@ -44,7 +44,7 @@ impl Plugin for RasteroidPlugin {
 
 fn spawn_asteroid(
     mut commands: Commands,
-    mut spawn_timer: ResMut<RasteroidSpawnTimer>,
+    mut spawn_timer: ResMut<AsteroidSpawnTimer>,
     time: Res<Time>,
     scene_assets: Res<SceneAssets>,
 ) {
@@ -71,8 +71,9 @@ fn spawn_asteroid(
     transform.rotate_local_y(rng.gen_range(ROTATION_RANGE));
     transform.rotate_local_z(rng.gen_range(ROTATION_RANGE));
 
-    commands
+    let entity = commands
         .spawn(RigidBody::Dynamic)
+        // Rapier components
         .insert(Collider::ball(RADIUS))
         .insert(Velocity {
             linvel: random_velocity,
@@ -85,16 +86,20 @@ fn spawn_asteroid(
         })
         .insert(LockedAxes::TRANSLATION_LOCKED_Y)
         .insert(ActiveEvents::COLLISION_EVENTS)
+        // all other components
+        .insert(Asteroid)
+        .insert(CollisionDamage::new(COLLISION_DAMAGE))
+        .insert(Health::new(HEALTH))
+        .insert(Name::new("Asteroid"))
         .insert(SceneBundle {
             scene: scene_assets.asteroid.clone(),
             transform,
             ..default()
         })
-        .insert(Name::new("Asteroid"))
-        .insert(Rasteroid)
-        .insert(Health::new(HEALTH))
-        .insert(CollisionDamage::new(COLLISION_DAMAGE))
-        .insert(Wrappable);
+        .insert(Wrappable)
+        .id();
+
+        commands.entity(entity).insert(Name::new(format!("Asteroid {}", entity)));
 }
 
 fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {
