@@ -8,9 +8,9 @@ use bevy::prelude::KeyCode::{
 use crate::despawn::Mortal;
 use crate::{
     asset_loader::SceneAssets,
-    collision_detection::{OldCollider, CollisionDamage},
+    collision_detection::{CollisionDamage, OldCollider},
     health::Health,
-    movement::{Acceleration, MoverType, MovingObjectBundle, Velocity, Wrappable},
+    movement::{Acceleration, MovingObjectBundle, Velocity, Wrappable},
     schedule::InGameSet,
     state::GameState,
 };
@@ -74,13 +74,12 @@ impl Plugin for SpaceshipPlugin {
 fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
     commands.spawn((
         MovingObjectBundle {
-            mover_type: MoverType::Spaceship,
             velocity: Velocity::new(Vec3::ZERO),
             acceleration: Acceleration::new(Vec3::ZERO),
             collider: OldCollider::new(SPACESHIP_RADIUS),
             model: SceneBundle {
                 scene: scene_assets.spaceship.clone(),
-               // transform: Transform::from_translation(STARTING_TRANSLATION),
+                // transform: Transform::from_translation(STARTING_TRANSLATION),
                 transform: Transform {
                     translation: STARTING_TRANSLATION,
                     scale: SPACESHIP_SCALE,
@@ -168,7 +167,6 @@ fn spaceship_weapon_controls(
     if keyboard_input.pressed(Space) {
         commands
             .spawn(MovingObjectBundle {
-                mover_type: MoverType::Missile,
                 velocity: Velocity::new(-transform.forward() * MISSILE_SPEED),
                 acceleration: Acceleration::new(Vec3::ZERO),
                 collider: OldCollider::new(MISSILE_RADIUS),

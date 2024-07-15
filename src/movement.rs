@@ -38,20 +38,12 @@ impl Acceleration {
 #[derive(Component, Debug)]
 pub struct Wrappable;
 
-#[derive(Component, Debug)]
-pub enum MoverType {
-    Asteroid,
-    Missile,
-    Spaceship,
-}
-
 #[derive(Bundle)]
 pub struct MovingObjectBundle {
     pub acceleration: Acceleration,
     pub collider: OldCollider,
     pub model: SceneBundle,
     pub velocity: Velocity,
-    pub mover_type: MoverType,
 }
 
 fn update_velocity(mut query: Query<(&Acceleration, &mut Velocity)>, time: Res<Time>) {
