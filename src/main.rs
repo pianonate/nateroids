@@ -15,6 +15,7 @@ mod movement;
 mod schedule;
 mod spaceship;
 mod state;
+mod utils;
 
 use crate::{
     asset_loader::AssetLoaderPlugin, asteroid::AsteroidPlugin, camera::CameraPlugin,

@@ -1,4 +1,3 @@
-use bevy::input::common_conditions::input_toggle_active;
 use bevy::prelude::KeyCode::Escape;
 use bevy::prelude::*;
 use bevy_rapier3d::plugin::RapierConfiguration;

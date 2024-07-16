@@ -5,14 +5,15 @@ use bevy::prelude::KeyCode::{
     Space,
 };
 
-use crate::despawn::Mortal;
 use crate::{
     asset_loader::SceneAssets,
     collision_detection::{CollisionDamage, OldCollider},
+    despawn::Mortal,
     health::Health,
     movement::{Acceleration, MovingObjectBundle, Velocity, Wrappable},
     schedule::InGameSet,
     state::GameState,
+    utils::name_entity,
 };
 
 const MISSILE_COLLISION_DAMAGE: f32 = 20.0;
@@ -72,8 +73,8 @@ impl Plugin for SpaceshipPlugin {
 }
 
 fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
-    commands.spawn((
-        MovingObjectBundle {
+    let entity = commands
+        .spawn(MovingObjectBundle {
             velocity: Velocity::new(Vec3::ZERO),
             acceleration: Acceleration::new(Vec3::ZERO),
             collider: OldCollider::new(SPACESHIP_RADIUS),
@@ -87,13 +88,15 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
                 },
                 ..default()
             },
-        },
-        Spaceship,
-        Name::new("Spaceship"),
-        Health::new(SPACESHIP_HEALTH),
-        CollisionDamage::new(SPACESHIP_COLLISION_DAMAGE),
-        Wrappable,
-    ));
+        })
+        .insert(Spaceship)
+        .insert(Name::new("Spaceship"))
+        .insert(Health::new(SPACESHIP_HEALTH))
+        .insert(CollisionDamage::new(SPACESHIP_COLLISION_DAMAGE))
+        .insert(Wrappable)
+        .id();
+
+    name_entity(&mut commands, entity, "Spaceship");
 }
 
 fn spaceship_movement_controls(
@@ -165,7 +168,7 @@ fn spaceship_weapon_controls(
     }
 
     if keyboard_input.pressed(Space) {
-        commands
+        let entity = commands
             .spawn(MovingObjectBundle {
                 velocity: Velocity::new(-transform.forward() * MISSILE_SPEED),
                 acceleration: Acceleration::new(Vec3::ZERO),
@@ -183,7 +186,10 @@ fn spaceship_weapon_controls(
             .insert(Mortal::new(0))
             .insert(Name::new("SpaceshipMissile"))
             .insert(SpaceshipMissile)
-            .insert(Wrappable);
+            .insert(Wrappable)
+            .id(); // to ensure we store the entity id for subsequent use
+
+        name_entity(&mut commands, entity, "Missile");
     }
 }
 

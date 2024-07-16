@@ -7,11 +7,10 @@ use rand::Rng;
 use std::f32::consts::PI;
 use std::ops::Range;
 
-use crate::asset_loader::SceneAssets;
-use crate::collision_detection::CollisionDamage;
-use crate::health::Health;
-use crate::movement::Wrappable;
-use crate::schedule::InGameSet;
+use crate::{
+    asset_loader::SceneAssets, collision_detection::CollisionDamage, health::Health,
+    movement::Wrappable, schedule::InGameSet, utils::name_entity,
+};
 
 pub struct AsteroidPlugin;
 
@@ -99,7 +98,7 @@ fn spawn_asteroid(
         .insert(Wrappable)
         .id();
 
-        commands.entity(entity).insert(Name::new(format!("Asteroid {}", entity)));
+    name_entity(&mut commands, entity, "Asteroid");
 }
 
 fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {
