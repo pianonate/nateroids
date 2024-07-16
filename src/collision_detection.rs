@@ -54,8 +54,7 @@ impl Plugin for CollisionDetectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (collision_detection, rapier_collision_damage)
-                .in_set(InGameSet::CollisionDetection),
+            (collision_detection, rapier_collision_damage).in_set(InGameSet::CollisionDetection),
         )
         .add_systems(
             Update,
@@ -177,6 +176,7 @@ fn rapier_collision_damage(
     for &collision_event in collision_events.read() {
         match collision_event {
             CollisionEvent::Started(entity1, entity2, ..) => {
+                // #rust-question: is this the most idiomatic way to do this in rust?
                 if apply_rapier_damage(&mut health_query, &collision_damage_query, entity1) {
                     continue;
                 }

@@ -3,25 +3,23 @@ use bevy_rapier3d::prelude::*;
 
 // exclude when targeting wasm - this breaks in the browser right now
 #[cfg(not(target_arch = "wasm32"))]
-mod diagnostic;
-#[cfg(not(target_arch = "wasm32"))]
-use crate::diagnostic::DiagnosticPlugin;
-
 mod asset_loader;
+mod asteroid;
 mod camera;
 mod collision_detection;
 mod despawn;
+#[cfg(not(target_arch = "wasm32"))]
+mod diagnostic;
 mod health;
 mod movement;
-mod asteroid;
 mod schedule;
 mod spaceship;
 mod state;
 
 use crate::{
-    asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
+    asset_loader::AssetLoaderPlugin, asteroid::AsteroidPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin,
-    movement::MovementPlugin, asteroid::AsteroidPlugin, schedule::SchedulePlugin,
+    diagnostic::DiagnosticPlugin, movement::MovementPlugin, schedule::SchedulePlugin,
     spaceship::SpaceshipPlugin, state::StatePlugin,
 };
 

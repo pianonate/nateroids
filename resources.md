@@ -1,7 +1,10 @@
 ## Useful Links
 
+- [Bevy](https://bevyengine.org/learn/)
 - [Bevy Windows Inside Baseball](https://taintedcoders.com/) has a lot of inside baseball about Bevy.
 - [Bevy Cheatbook Overview](https://bevy-cheatbook.github.io/overview.html) also this.
+- [Blender docs](https://docs.blender.org/manual/en/latest/)
+- [Rapier docs](https://rapier.rs/docs/user_guides/bevy_plugin/getting_started_bevy)
 
 ## Building WASM Target
 
