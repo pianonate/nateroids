@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
-use crate::state::GameState;
-use crate::{health::Health, schedule::InGameSet};
+use crate::{health::Health, schedule::InGameSet, state::GameState};
 
 const OLD_AGE: u32 = 120;
 
@@ -43,10 +42,12 @@ fn despawn(commands: &mut Commands, entity: Entity) {
     commands.entity(entity).despawn_recursive();
 }
 
-fn despawn_dead_entities(mut commands: Commands, query: Query<(Entity, &Health)>) {
-    for (entity, health) in query.iter() {
+fn despawn_dead_entities(mut commands: Commands, query: Query<(Entity, &Health, &Name)>) {
+    for (entity, health, name) in query.iter() {
         if health.value <= 0.0 {
-            // println!("dead from collision");
+            if !name.contains("Missile") {
+                println!("{:?} died from poor health: {:?}\n", name, health);
+            }
             despawn(&mut commands, entity);
         }
     }

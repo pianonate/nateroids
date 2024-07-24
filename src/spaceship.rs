@@ -1,20 +1,28 @@
-use bevy::math::NormedVectorSpace;
-use bevy::prelude::{
-    KeyCode::{
-        ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ControlLeft, KeyA, KeyD, KeyS, KeyW, ShiftLeft,
-        Space,
-    },
-    *,
-};
-
-use crate::movement::MovingObjectBundle;
 use crate::{
-    asset_loader::SceneAssets, collision_detection::CollisionDamage, despawn::AgedEntity,
-    health::Health, schedule::InGameSet, state::GameState, utils::name_entity,
+    asset_loader::SceneAssets,
+    collision_detection::CollisionDamage,
+    despawn::AgedEntity,
+    health::Health,
+    movement::MovingObjectBundle,
+    schedule::InGameSet,
+    state::GameState,
+    utils::{name_entity, GROUP_ASTEROID, GROUP_MISSILE, GROUP_SPACESHIP},
 };
 
-use crate::utils::{GROUP_ASTEROID, GROUP_MISSILE, GROUP_SPACESHIP};
-use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGroups, Velocity};
+use bevy::{
+    math::NormedVectorSpace,
+    prelude::{
+        KeyCode::{
+            ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ControlLeft, KeyA, KeyD, KeyS, KeyW,
+            ShiftLeft, Space,
+        },
+        *,
+    },
+};
+
+use bevy_rapier3d::prelude::{
+    Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
+};
 
 const MISSILE_COLLISION_DAMAGE: f32 = 20.0;
 const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.5;
@@ -78,12 +86,15 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
     let spaceship = commands
         .spawn(Spaceship)
         .insert(MovingObjectBundle {
-            // todo: #rustquestion - it seems awkward to override default with just a different constant value - is there a way to make this more slick?
+            // todo: #rustquestion - it seems awkward to override default with just a different constant value - is there a way to make this more idiomatic?
             collider: Collider::ball(SPACESHIP_RADIUS),
             collision_damage: CollisionDamage::new(SPACESHIP_COLLISION_DAMAGE),
             health: Health::new(SPACESHIP_HEALTH),
             collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
-            mass: Mass(2.0),
+            locked_axes: LockedAxes::TRANSLATION_LOCKED_Y
+                | LockedAxes::ROTATION_LOCKED_X
+                | LockedAxes::ROTATION_LOCKED_Z,
+            mass: Mass(3.0),
             model: SceneBundle {
                 scene: scene_assets.spaceship.clone(),
                 transform: Transform {
@@ -95,6 +106,11 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             },
             ..default()
         })
+        .insert(
+            LockedAxes::TRANSLATION_LOCKED_Y
+               /* | LockedAxes::ROTATION_LOCKED_Y*/
+                | LockedAxes::ROTATION_LOCKED_X | LockedAxes::ROTATION_LOCKED_Z,
+        )
         .id();
 
     name_entity(&mut commands, spaceship, "Spaceship");
@@ -112,21 +128,19 @@ fn spaceship_movement_controls(
     };
 
     let mut rotation = 0.0;
-    let mut roll = 0.0;
-
-    if keyboard_input.pressed(ShiftLeft) {
-        roll = -SPACESHIP_ROLL_SPEED * time.delta_seconds();
-    } else if keyboard_input.pressed(ControlLeft) {
-        roll = SPACESHIP_ROLL_SPEED * time.delta_seconds();
-    }
 
     if keyboard_input.any_pressed([KeyD, ArrowRight]) {
         // right
+        velocity.angvel.y = 0.0;
         rotation = -SPACESHIP_ROTATION_SPEED * time.delta_seconds();
     } else if keyboard_input.any_pressed([KeyA, ArrowLeft]) {
         // left
+        velocity.angvel.y = 0.0;
         rotation = SPACESHIP_ROTATION_SPEED * time.delta_seconds();
     }
+
+    // rotate around the y-axis
+    transform.rotate_y(rotation);
 
     // we don't need to multiply time time.delta_seconds() because we already do this in Movement
     if keyboard_input.any_pressed([KeyS, ArrowDown]) {
@@ -149,12 +163,17 @@ fn spaceship_movement_controls(
         velocity.linvel.y = 0.0;
     }
 
-    // rotate around the y-axis
-    transform.rotate_y(rotation);
+    /* let mut roll = 0.0;
+
+       if keyboard_input.pressed(ShiftLeft) {
+        roll = -SPACESHIP_ROLL_SPEED * time.delta_seconds();
+    } else if keyboard_input.pressed(ControlLeft) {
+        roll = SPACESHIP_ROLL_SPEED * time.delta_seconds();
+    }*/
 
     // rotate around the local z-axis
     // the rotation is relative to the current rotation
-    transform.rotate_local_z(roll);
+    // transform.rotate_local_z(roll);
 }
 
 fn spaceship_weapon_controls(
