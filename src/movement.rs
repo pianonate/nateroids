@@ -13,6 +13,7 @@ use bevy_rapier3d::{
     },
 };
 
+
 const DEFAULT_COLLISION_DAMAGE: f32 = 100.0;
 const DEFAULT_GRAVITY: f32 = 0.0;
 const DEFAULT_HEALTH: f32 = 100.0;
