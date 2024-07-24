@@ -20,12 +20,12 @@ impl Plugin for CollisionDetectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            rapier_collision_damage.in_set(InGameSet::CollisionDetection),
+            handle_collision_events.in_set(InGameSet::CollisionDetection),
         );
     }
 }
 
-fn rapier_collision_damage(
+fn handle_collision_events(
     mut collision_events: EventReader<CollisionEvent>,
     mut health_query: Query<&mut Health>,
     name_query: Query<&Name>,
@@ -36,7 +36,7 @@ fn rapier_collision_damage(
             CollisionEvent::Started(entity1, entity2, ..) => {
                 if let Ok(name1) = name_query.get(entity1) {
                     if let Ok(name2) = name_query.get(entity2) {
-                        apply_rapier_damage(
+                        apply_collision_damage(
                             &mut health_query,
                             &collision_damage_query,
                             entity1,
@@ -44,7 +44,7 @@ fn rapier_collision_damage(
                             entity2,
                             name2,
                         );
-                        apply_rapier_damage(
+                        apply_collision_damage(
                             &mut health_query,
                             &collision_damage_query,
                             entity2,
@@ -60,7 +60,7 @@ fn rapier_collision_damage(
     }
 }
 
-fn apply_rapier_damage(
+fn apply_collision_damage(
     health_query: &mut Query<&mut Health>,
     collision_damage_query: &Query<&CollisionDamage>,
     applying_entity: Entity,
@@ -72,7 +72,7 @@ fn apply_rapier_damage(
         if let Ok(collision_damage) = collision_damage_query.get(applying_entity) {
             health.value -= collision_damage.amount;
             println!(
-                "{:?} applied {:?} damage to {:?} leaving it with remaining health: {:?}",
+                "{:?} applied {:?} damage to {:?} now it has health:{:?}",
                 applying_entity_name, collision_damage.amount, receiving_entity_name, health.value
             );
         }

@@ -12,10 +12,7 @@ use crate::{
 use bevy::{
     math::NormedVectorSpace,
     prelude::{
-        KeyCode::{
-            ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ControlLeft, KeyA, KeyD, KeyS, KeyW,
-            ShiftLeft, Space,
-        },
+        KeyCode::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp, KeyA, KeyD, KeyS, KeyW, Space},
         *,
     },
 };
@@ -37,7 +34,7 @@ const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
 const SPACESHIP_HEALTH: f32 = 100.0;
 const SPACESHIP_MAX_SPEED: f32 = 40.0;
 const SPACESHIP_RADIUS: f32 = 5.0;
-const SPACESHIP_ROLL_SPEED: f32 = 2.5;
+//const SPACESHIP_ROLL_SPEED: f32 = 2.5;
 const SPACESHIP_ROTATION_SPEED: f32 = 2.5;
 const SPACESHIP_SCALE: Vec3 = Vec3::new(0.5, 0.5, 0.5);
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, -20.0);
