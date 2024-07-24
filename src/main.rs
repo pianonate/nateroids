@@ -21,13 +21,13 @@ mod utils;
 use crate::{
     asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin,
-    environment::EnvironmentPlugin, movement::MovementPlugin,
-    nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin, spaceship::SpaceshipPlugin, state::StatePlugin,
+    environment::EnvironmentPlugin, movement::MovementPlugin, nateroid::Nateroid,
+    physics::PhysicsPlugin, schedule::SchedulePlugin, spaceship::SpaceshipPlugin,
+    state::StatePlugin,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::diagnostic::DiagnosticPlugin;
-
 
 fn main() {
     let mut app = App::new();
