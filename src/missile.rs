@@ -13,9 +13,7 @@ use bevy::prelude::{KeyCode::Space, *};
 use crate::camera::PrimaryCamera;
 use crate::spaceship::Spaceship;
 use crate::utils::{calculate_viewable_dimensions, ViewableDimensions};
-use bevy_rapier3d::prelude::{
-    Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
-};
+use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGroups, Velocity};
 
 const MISSILE_COLLISION_DAMAGE: f32 = 20.0;
 const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.5;
@@ -51,8 +49,8 @@ fn fire_missile(
     query: Query<&Transform, With<Spaceship>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     scene_assets: Res<SceneAssets>,
-    mut spawn_timer: ResMut<MissileSpawnTimer>,
-    time: Res<Time>,
+    // mut spawn_timer: ResMut<MissileSpawnTimer>,
+    // time: Res<Time>,
 ) {
     let Ok(transform) = query.get_single() else {
         return;
@@ -71,8 +69,6 @@ fn fire_missile(
         velocity.y = 0.0;
 
         let origin = transform.translation + -transform.forward() * MISSILE_FORWARD_SPAWN_SCALAR;
-        let direction = transform.forward();
-        let distance_traveled = 0.0;
 
         let missile = commands
             .spawn(Missile)
