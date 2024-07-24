@@ -2,9 +2,10 @@ use bevy::prelude::*;
 
 use crate::{
     camera::PrimaryCamera, collision_detection::CollisionDamage, health::Health,
-    schedule::InGameSet,
+    schedule::InGameSet, utils::calculate_viewable_dimensions,
 };
 
+use crate::utils::ViewableDimensions;
 use bevy_rapier3d::{
     dynamics::{GravityScale, LockedAxes},
     geometry::ActiveEvents,
@@ -75,55 +76,34 @@ impl Default for MovingObjectBundle {
     }
 }
 
-// needs to move from world to screen
-// remember this game is currently operating int he x-z plane and the a camera is above it
-// on the y axis
 fn wrap_position(
     windows: Query<&Window>,
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
     mut wrappable_entities: Query<&mut Transform, With<Wrappable>>,
 ) {
-    if let Ok(window) = windows.get_single() {
-        if let Ok((projection, global_transform)) = camera_query.get_single() {
-            if let Projection::Perspective(perspective_projection) = projection {
-                let screen_width = window.width() as f32;
-                let screen_height = window.height() as f32;
+    if let Some(dimensions) = calculate_viewable_dimensions(&windows, &camera_query) {
+        let ViewableDimensions { width, height } = dimensions;
 
-                // Calculate the aspect ratio
-                let aspect_ratio = screen_width / screen_height;
+        for mut transform in wrappable_entities.iter_mut() {
+            let x = transform.translation.x;
+            let z = transform.translation.z;
 
-                // Calculate the viewable width and height at the plane level
-                let camera_distance = global_transform.translation().y;
-                let viewable_height =
-                    2.0 * (perspective_projection.fov / 2.0).tan() * camera_distance;
-                let viewable_width = viewable_height * aspect_ratio;
+            let screen_right = width / 2.0;
+            let screen_left = -screen_right;
+            let screen_top = height / 2.0;
+            let screen_bottom = -screen_top;
 
-                for mut transform in wrappable_entities.iter_mut() {
-                    let x = transform.translation.x;
-                    let z = transform.translation.z;
-
-                    let screen_right = viewable_width / 2.0;
-                    let screen_left = -screen_right;
-                    let screen_top = viewable_height / 2.0;
-                    let screen_bottom = -screen_top;
-
-                    if x > screen_right {
-                        transform.translation.x = screen_left;
-                    } else if x < screen_left {
-                        transform.translation.x = screen_right;
-                    }
-
-                    if z > screen_top {
-                        transform.translation.z = screen_bottom;
-                    } else if z < screen_bottom {
-                        transform.translation.z = screen_top;
-                    }
-                }
-            } else {
-                println!("Projection is not PerspectiveProjection");
+            if x > screen_right {
+                transform.translation.x = screen_left;
+            } else if x < screen_left {
+                transform.translation.x = screen_right;
             }
-        } else {
-            println!("Failed to get camera components");
+
+            if z > screen_top {
+                transform.translation.z = screen_bottom;
+            } else if z < screen_bottom {
+                transform.translation.z = screen_top;
+            }
         }
     }
 }

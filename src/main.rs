@@ -9,6 +9,7 @@ mod despawn;
 mod diagnostic;
 mod environment;
 mod health;
+mod missile;
 mod movement;
 mod nateroid;
 mod physics;
@@ -20,9 +21,9 @@ mod utils;
 use crate::{
     asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin,
-    environment::EnvironmentPlugin, movement::MovementPlugin, nateroid::Nateroid,
-    physics::PhysicsPlugin, schedule::SchedulePlugin, spaceship::SpaceshipPlugin,
-    state::StatePlugin,
+    environment::EnvironmentPlugin, missile::MissilePlugin, movement::MovementPlugin,
+    nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
+    spaceship::SpaceshipPlugin, state::StatePlugin,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -38,6 +39,7 @@ fn main() {
         .add_plugins(DespawnPlugin)
         .add_plugins(EnvironmentPlugin)
         .add_plugins(MovementPlugin)
+        .add_plugins(MissilePlugin)
         .add_plugins(Nateroid)
         .add_plugins(PhysicsPlugin)
         .add_plugins(SchedulePlugin)
@@ -46,6 +48,5 @@ fn main() {
 
     #[cfg(not(target_arch = "wasm32"))]
     app.add_plugins(DiagnosticPlugin);
-
     app.run();
 }

@@ -1,18 +1,17 @@
 use crate::{
     asset_loader::SceneAssets,
     collision_detection::CollisionDamage,
-    despawn::AgedEntity,
     health::Health,
     movement::MovingObjectBundle,
     schedule::InGameSet,
     state::GameState,
-    utils::{name_entity, GROUP_ASTEROID, GROUP_MISSILE, GROUP_SPACESHIP},
+    utils::{name_entity, GROUP_ASTEROID, GROUP_SPACESHIP},
 };
 
 use bevy::{
     math::NormedVectorSpace,
     prelude::{
-        KeyCode::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp, KeyA, KeyD, KeyS, KeyW, Space},
+        KeyCode::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp, KeyA, KeyD, KeyS, KeyW},
         *,
     },
 };
@@ -20,14 +19,6 @@ use bevy::{
 use bevy_rapier3d::prelude::{
     Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
 };
-
-const MISSILE_COLLISION_DAMAGE: f32 = 20.0;
-const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.5;
-const MISSILE_HEALTH: f32 = 1.0;
-const MISSILE_MASS: f32 = 0.001;
-const MISSILE_RADIUS: f32 = 0.4;
-const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
-const MISSILE_SPEED: f32 = 75.0;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
 const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
@@ -46,11 +37,10 @@ pub struct Spaceship;
 pub struct SpaceshipShield;
 
 #[derive(Component, Debug)]
-pub struct SpaceshipMissile;
-
-#[derive(Resource, Debug)]
-pub struct MissileSpawnTimer {
-    pub timer: Timer,
+pub struct SpaceshipMissile {
+    direction: Dir3,
+    origin: Vec3,
+    distance_traveled: f32,
 }
 
 pub struct SpaceshipPlugin;
@@ -58,24 +48,17 @@ pub struct SpaceshipPlugin;
 impl Plugin for SpaceshipPlugin {
     // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
-        app.insert_resource(MissileSpawnTimer {
-            timer: Timer::from_seconds(MISSILE_SPAWN_TIMER_SECONDS, TimerMode::Repeating),
-        })
-        .add_systems(PostStartup, spawn_spaceship)
-        // spawn a new Spaceship if we're in GameOver state
-        .add_systems(OnEnter(GameState::GameOver), spawn_spaceship)
-        .add_systems(
-            Update,
-            (
-                spaceship_movement_controls,
-                spaceship_weapon_controls,
-                spaceship_shield_controls,
+        app.add_systems(PostStartup, spawn_spaceship)
+            // spawn a new Spaceship if we're in GameOver state
+            .add_systems(OnEnter(GameState::GameOver), spawn_spaceship)
+            .add_systems(
+                Update,
+                (spaceship_movement_controls, spaceship_shield_controls)
+                    .chain()
+                    .in_set(InGameSet::UserInput),
             )
-                .chain()
-                .in_set(InGameSet::UserInput),
-        )
-        // check if spaceship is destroyed...this will change the GameState
-        .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
+            // check if spaceship is destroyed...this will change the GameState
+            .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
     }
 }
 
@@ -171,56 +154,6 @@ fn spaceship_movement_controls(
     // rotate around the local z-axis
     // the rotation is relative to the current rotation
     // transform.rotate_local_z(roll);
-}
-
-fn spaceship_weapon_controls(
-    mut commands: Commands,
-    query: Query<&Transform, With<Spaceship>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    scene_assets: Res<SceneAssets>,
-    mut spawn_timer: ResMut<MissileSpawnTimer>,
-    time: Res<Time>,
-) {
-    let Ok(transform) = query.get_single() else {
-        return;
-    };
-
-    spawn_timer.timer.tick(time.delta());
-
-    if !spawn_timer.timer.just_finished() {
-        return;
-    }
-
-    if keyboard_input.pressed(Space) {
-        let mut velocity = -transform.forward() * MISSILE_SPEED;
-        velocity.y = 0.0;
-
-        let missile = commands
-            .spawn(SpaceshipMissile)
-            .insert(AgedEntity::new(0))
-            .insert(MovingObjectBundle {
-                collider: Collider::ball(MISSILE_RADIUS),
-                collision_damage: CollisionDamage::new(MISSILE_COLLISION_DAMAGE),
-                collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
-                health: Health::new(MISSILE_HEALTH),
-                mass: Mass(MISSILE_MASS),
-                model: SceneBundle {
-                    scene: scene_assets.missiles.clone(),
-                    transform: Transform::from_translation(
-                        transform.translation + -transform.forward() * MISSILE_FORWARD_SPAWN_SCALAR,
-                    ),
-                    ..default()
-                },
-                velocity: Velocity {
-                    linvel: velocity,
-                    angvel: Default::default(),
-                },
-                ..default()
-            })
-            .id(); // to ensure we store the entity id for subsequent use
-
-        name_entity(&mut commands, missile, "SpaceshipMissile");
-    }
 }
 
 fn spaceship_shield_controls(
