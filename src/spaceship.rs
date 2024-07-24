@@ -150,19 +150,11 @@ fn spaceship_movement_controls(
     }
 
     // rotate around the y-axis
-    // ignores the z-axis rotation applied below
     transform.rotate_y(rotation);
 
     // rotate around the local z-axis
     // the rotation is relative to the current rotation
     transform.rotate_local_z(roll);
-
-    // update the spaceship's velocity based on new direction
-    // the model has a different orientation than bevy uses (typically the ones that come from bevy)
-    // velocity.value = -transform.forward() * movement;
-    // velocity.linvel = -transform.forward() * movement;
-    /*    let forward = transform.forward();
-    velocity.linvel = Vec3::new(-forward.x, 0.0, -forward.z) * movement;*/
 }
 
 fn spaceship_weapon_controls(
@@ -184,6 +176,9 @@ fn spaceship_weapon_controls(
     }
 
     if keyboard_input.pressed(Space) {
+        let mut velocity = -transform.forward() * MISSILE_SPEED;
+        velocity.y = 0.0;
+
         let missile = commands
             .spawn(SpaceshipMissile)
             .insert(AgedEntity::new(0))
@@ -201,7 +196,7 @@ fn spaceship_weapon_controls(
                     ..default()
                 },
                 velocity: Velocity {
-                    linvel: -transform.forward() * MISSILE_SPEED,
+                    linvel: velocity,
                     angvel: Default::default(),
                 },
                 ..default()

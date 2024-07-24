@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
 
 // exclude when targeting wasm - this breaks in the browser right now
 mod asset_loader;
