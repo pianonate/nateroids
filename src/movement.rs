@@ -1,8 +1,9 @@
+use bevy::prelude::*;
+
 use crate::{
     camera::PrimaryCamera, collision_detection::CollisionDamage, health::Health,
     schedule::InGameSet,
 };
-use bevy::prelude::*;
 
 use bevy_rapier3d::{
     dynamics::{GravityScale, LockedAxes},
@@ -23,9 +24,7 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (/*update_velocity, update_position,*/wrap_position) // these should happen in order
-                .chain()
-                .in_set(InGameSet::EntityUpdates), // use system sets to put this into an enum that controls ordering
+            wrap_position.in_set(InGameSet::EntityUpdates), // use system sets to put this into an enum that controls ordering
         );
     }
 }
