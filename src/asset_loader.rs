@@ -3,9 +3,9 @@ use bevy::prelude::*;
 
 #[derive(Resource, Debug, Default)]
 pub struct SceneAssets {
-    pub asteroid: Handle<Scene>,
-    pub spaceship: Handle<Scene>,
     pub missiles: Handle<Scene>,
+    pub nateroid: Handle<Scene>,
+    pub spaceship: Handle<Scene>,
 }
 
 pub struct AssetLoaderPlugin;
@@ -19,8 +19,8 @@ impl Plugin for AssetLoaderPlugin {
 
 fn load_assets(mut scene_assets: ResMut<SceneAssets>, asset_server: Res<AssetServer>) {
     *scene_assets = SceneAssets {
-        asteroid: asset_server.load("Planet.glb#Scene0"),
-        spaceship: asset_server.load("Spaceship.glb#Scene0"),
         missiles: asset_server.load("Bullets Pickup.glb#Scene0"),
+        nateroid: asset_server.load("Planet.glb#Scene0"),
+        spaceship: asset_server.load("Spaceship.glb#Scene0"),
     }
 }

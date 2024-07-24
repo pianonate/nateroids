@@ -1,5 +1,5 @@
 [package]
-name = "spaceship_game"
+name = "nateroids"
 version = "0.1.0"
 edition = "2021"
 

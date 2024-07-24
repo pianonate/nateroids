@@ -16,7 +16,7 @@ impl Plugin for CameraPlugin {
 }
 
 #[derive(Component, Debug)]
-pub(crate) struct PrimaryCamera;
+pub struct PrimaryCamera;
 
 fn spawn_camera(mut commands: Commands) {
     commands

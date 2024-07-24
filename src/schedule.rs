@@ -20,15 +20,15 @@ impl Plugin for SchedulePlugin {
                 // Flush commands (i.e. `apply_deferred` runs)
                 InGameSet::UserInput,
                 // a bug that if entity updates happen before collision detection
-                // then the next despawn entites round gets rid of
-                // new asteroids if the ship is also firing - weird
+                // then the next despawn entities round gets rid of
+                // new nateroid if the ship is also firing - weird
                 // probably in the future i'll just use Rapier so i don't have
                 // to concern myself with this
                 //
                 // it's got something to do with the missiles being fired
                 // in any direction as that seems to cause a collision to be registered
                 // with collision detection so that subsequently the newly created
-                // asteroid is despawned
+                // nateroid is despawned
                 //
                 // for now putting collision detection before entity updates
                 // so that newly spawned things don't get included in detection

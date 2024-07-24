@@ -1,37 +1,32 @@
-use crate::{camera::PrimaryCamera, collision_detection::OldCollider, schedule::InGameSet};
+use crate::{
+    camera::PrimaryCamera, collision_detection::CollisionDamage, health::Health,
+    schedule::InGameSet,
+};
 use bevy::prelude::*;
+
+use bevy_rapier3d::{
+    dynamics::{GravityScale, LockedAxes},
+    geometry::ActiveEvents,
+    prelude::{
+        CoefficientCombineRule, Collider, ColliderMassProperties, ColliderMassProperties::Mass,
+        CollisionGroups, Restitution, RigidBody, Velocity,
+    },
+};
+
+const DEFAULT_COLLISION_DAMAGE: f32 = 100.0;
+const DEFAULT_GRAVITY: f32 = 0.0;
+const DEFAULT_HEALTH: f32 = 100.0;
+const DEFAULT_MASS: f32 = 1.0;
 
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (update_velocity, update_position, wrap_position) // these should happen in order
+            (/*update_velocity, update_position,*/wrap_position) // these should happen in order
                 .chain()
                 .in_set(InGameSet::EntityUpdates), // use system sets to put this into an enum that controls ordering
         );
-    }
-}
-
-#[derive(Component, Debug)]
-pub struct Velocity {
-    pub value: Vec3,
-}
-
-impl Velocity {
-    pub fn new(value: Vec3) -> Self {
-        Self { value }
-    }
-}
-
-#[derive(Component, Debug)]
-pub struct Acceleration {
-    pub value: Vec3,
-}
-
-impl Acceleration {
-    pub fn new(value: Vec3) -> Self {
-        Self { value }
     }
 }
 
@@ -40,21 +35,44 @@ pub struct Wrappable;
 
 #[derive(Bundle)]
 pub struct MovingObjectBundle {
-    pub acceleration: Acceleration,
-    pub collider: OldCollider,
+    pub active_events: ActiveEvents,
+    pub collider: Collider,
+    pub collision_damage: CollisionDamage,
+    pub collision_groups: CollisionGroups,
+    pub gravity_scale: GravityScale,
+    pub health: Health,
+    pub locked_axes: LockedAxes,
+    pub mass: ColliderMassProperties,
     pub model: SceneBundle,
+    pub restitution: Restitution,
+    pub rigidity: RigidBody,
     pub velocity: Velocity,
+    pub wrappable: Wrappable,
 }
 
-fn update_velocity(mut query: Query<(&Acceleration, &mut Velocity)>, time: Res<Time>) {
-    for (acceleration, mut velocity) in query.iter_mut() {
-        velocity.value += acceleration.value * time.delta_seconds();
-    }
-}
-
-fn update_position(mut query: Query<(&Velocity, &mut Transform)>, time: Res<Time>) {
-    for (velocity, mut transform) in query.iter_mut() {
-        transform.translation += velocity.value * time.delta_seconds();
+impl Default for MovingObjectBundle {
+    fn default() -> Self {
+        Self {
+            active_events: ActiveEvents::COLLISION_EVENTS,
+            collider: Collider::default(),
+            collision_damage: CollisionDamage::new(DEFAULT_COLLISION_DAMAGE),
+            collision_groups: CollisionGroups::default(),
+            gravity_scale: GravityScale(DEFAULT_GRAVITY),
+            health: Health::new(DEFAULT_HEALTH),
+            locked_axes: LockedAxes::TRANSLATION_LOCKED_Y,
+            mass: Mass(DEFAULT_MASS),
+            model: SceneBundle::default(),
+            restitution: Restitution {
+                coefficient: 1.0,
+                combine_rule: CoefficientCombineRule::Max,
+            },
+            rigidity: RigidBody::Dynamic,
+            velocity: Velocity {
+                linvel: Vec3::ZERO,
+                angvel: Default::default(),
+            },
+            wrappable: Wrappable,
+        }
     }
 }
 

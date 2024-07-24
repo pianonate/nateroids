@@ -10,5 +10,5 @@
 
 ```sh
 cargo build --release --target wasm32-unknown-unknown
-wasm-bindgen --out-name spaceship-game --out-dir target/wasm32 --target web target/wasm32-unknown-unknown/release/spaceship_game.wasm
+wasm-bindgen --out-name spaceship-game --out-dir target/wasm32 --target web target/wasm32-unknown-unknown/release/nateroids.wasm
 http-server -c-1 -o ./

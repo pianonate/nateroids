@@ -6,11 +6,11 @@ use crate::{health::Health, schedule::InGameSet};
 const OLD_AGE: u32 = 120;
 
 #[derive(Component, Debug)]
-pub struct Mortal {
+pub struct AgedEntity {
     age: u32,
 }
 
-impl Mortal {
+impl AgedEntity {
     pub fn new(age: u32) -> Self {
         Self { age }
     }
@@ -28,7 +28,7 @@ impl Plugin for DespawnPlugin {
     }
 }
 
-fn despawn_aged_entities(mut commands: Commands, mut query: Query<(Entity, &mut Mortal)>) {
+fn despawn_aged_entities(mut commands: Commands, mut query: Query<(Entity, &mut AgedEntity)>) {
     for (entity, mut mortal) in query.iter_mut() {
         mortal.age += 1;
 
@@ -53,8 +53,8 @@ fn despawn_dead_entities(mut commands: Commands, query: Query<(Entity, &Health)>
 }
 
 fn despawn_all_entities(mut commands: Commands, query: Query<Entity, With<Health>>) {
+    println!("GameOver");
     for entity in query.iter() {
-        // println!("dead from GameOver");
         despawn(&mut commands, entity);
     }
 }

@@ -1,35 +1,37 @@
-use bevy::prelude::*;
-
-use bevy::prelude::KeyCode::{
-    ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ControlLeft, KeyA, KeyD, KeyS, KeyW, ShiftLeft,
-    Space,
+use bevy::math::NormedVectorSpace;
+use bevy::prelude::{
+    KeyCode::{
+        ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ControlLeft, KeyA, KeyD, KeyS, KeyW, ShiftLeft,
+        Space,
+    },
+    *,
 };
 
+use crate::movement::MovingObjectBundle;
 use crate::{
-    asset_loader::SceneAssets,
-    collision_detection::{CollisionDamage, OldCollider},
-    despawn::Mortal,
-    health::Health,
-    movement::{Acceleration, MovingObjectBundle, Velocity, Wrappable},
-    schedule::InGameSet,
-    state::GameState,
-    utils::name_entity,
+    asset_loader::SceneAssets, collision_detection::CollisionDamage, despawn::AgedEntity,
+    health::Health, schedule::InGameSet, state::GameState, utils::name_entity,
 };
+
+use crate::utils::{GROUP_ASTEROID, GROUP_MISSILE, GROUP_SPACESHIP};
+use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGroups, Velocity};
 
 const MISSILE_COLLISION_DAMAGE: f32 = 20.0;
 const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.5;
 const MISSILE_HEALTH: f32 = 1.0;
-const MISSILE_RADIUS: f32 = 1.0;
+const MISSILE_MASS: f32 = 0.001;
+const MISSILE_RADIUS: f32 = 0.4;
 const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
-const MISSILE_SPEED: f32 = 45.0;
+const MISSILE_SPEED: f32 = 75.0;
 
+const SPACESHIP_ACCELERATION: f32 = 20.0;
 const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
 const SPACESHIP_HEALTH: f32 = 100.0;
+const SPACESHIP_MAX_SPEED: f32 = 40.0;
 const SPACESHIP_RADIUS: f32 = 5.0;
 const SPACESHIP_ROLL_SPEED: f32 = 2.5;
 const SPACESHIP_ROTATION_SPEED: f32 = 2.5;
 const SPACESHIP_SCALE: Vec3 = Vec3::new(0.5, 0.5, 0.5);
-const SPACESHIP_SPEED: f32 = 35.0;
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, -20.0);
 
 #[derive(Component, Debug)]
@@ -73,33 +75,33 @@ impl Plugin for SpaceshipPlugin {
 }
 
 fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
-    let entity = commands
-        .spawn(MovingObjectBundle {
-            velocity: Velocity::new(Vec3::ZERO),
-            acceleration: Acceleration::new(Vec3::ZERO),
-            collider: OldCollider::new(SPACESHIP_RADIUS),
+    let spaceship = commands
+        .spawn(Spaceship)
+        .insert(MovingObjectBundle {
+            // todo: #rustquestion - it seems awkward to override default with just a different constant value - is there a way to make this more slick?
+            collider: Collider::ball(SPACESHIP_RADIUS),
+            collision_damage: CollisionDamage::new(SPACESHIP_COLLISION_DAMAGE),
+            health: Health::new(SPACESHIP_HEALTH),
+            collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
+            mass: Mass(2.0),
             model: SceneBundle {
                 scene: scene_assets.spaceship.clone(),
-                // transform: Transform::from_translation(STARTING_TRANSLATION),
                 transform: Transform {
                     translation: STARTING_TRANSLATION,
                     scale: SPACESHIP_SCALE,
-                    ..Default::default()
+                    ..default()
                 },
                 ..default()
             },
+            ..default()
         })
-        .insert(Spaceship)
-        .insert(Name::new("Spaceship"))
-        .insert(Health::new(SPACESHIP_HEALTH))
-        .insert(CollisionDamage::new(SPACESHIP_COLLISION_DAMAGE))
-        .insert(Wrappable)
         .id();
 
-    name_entity(&mut commands, entity, "Spaceship");
+    name_entity(&mut commands, spaceship, "Spaceship");
 }
 
 fn spaceship_movement_controls(
+    //mut query: Query<&mut Transform, With<Spaceship>>,
     mut query: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
@@ -111,7 +113,12 @@ fn spaceship_movement_controls(
 
     let mut rotation = 0.0;
     let mut roll = 0.0;
-    let mut movement = 0.0;
+
+    if keyboard_input.pressed(ShiftLeft) {
+        roll = -SPACESHIP_ROLL_SPEED * time.delta_seconds();
+    } else if keyboard_input.pressed(ControlLeft) {
+        roll = SPACESHIP_ROLL_SPEED * time.delta_seconds();
+    }
 
     if keyboard_input.any_pressed([KeyD, ArrowRight]) {
         // right
@@ -124,16 +131,22 @@ fn spaceship_movement_controls(
     // we don't need to multiply time time.delta_seconds() because we already do this in Movement
     if keyboard_input.any_pressed([KeyS, ArrowDown]) {
         // down
-        movement = -SPACESHIP_SPEED;
+        // here you could add code that apply force in the opposite direction
     } else if keyboard_input.any_pressed([KeyW, ArrowUp]) {
         // up
-        movement = SPACESHIP_SPEED;
-    }
+        let proposed_velocity =
+            velocity.linvel - transform.forward() * (SPACESHIP_ACCELERATION * time.delta_seconds());
+        let proposed_speed = proposed_velocity.norm();
 
-    if keyboard_input.pressed(ShiftLeft) {
-        roll = -SPACESHIP_ROLL_SPEED * time.delta_seconds();
-    } else if keyboard_input.pressed(ControlLeft) {
-        roll = SPACESHIP_ROLL_SPEED * time.delta_seconds();
+        // Ensure we're not exceeding max velocity
+        if proposed_speed > SPACESHIP_MAX_SPEED {
+            velocity.linvel = proposed_velocity.normalize() * SPACESHIP_MAX_SPEED;
+        } else {
+            velocity.linvel = proposed_velocity;
+        }
+
+        // Force the `y` value of velocity.linvel to be 0
+        velocity.linvel.y = 0.0;
     }
 
     // rotate around the y-axis
@@ -146,7 +159,10 @@ fn spaceship_movement_controls(
 
     // update the spaceship's velocity based on new direction
     // the model has a different orientation than bevy uses (typically the ones that come from bevy)
-    velocity.value = -transform.forward() * movement;
+    // velocity.value = -transform.forward() * movement;
+    // velocity.linvel = -transform.forward() * movement;
+    /*    let forward = transform.forward();
+    velocity.linvel = Vec3::new(-forward.x, 0.0, -forward.z) * movement;*/
 }
 
 fn spaceship_weapon_controls(
@@ -168,11 +184,15 @@ fn spaceship_weapon_controls(
     }
 
     if keyboard_input.pressed(Space) {
-        let entity = commands
-            .spawn(MovingObjectBundle {
-                velocity: Velocity::new(-transform.forward() * MISSILE_SPEED),
-                acceleration: Acceleration::new(Vec3::ZERO),
-                collider: OldCollider::new(MISSILE_RADIUS),
+        let missile = commands
+            .spawn(SpaceshipMissile)
+            .insert(AgedEntity::new(0))
+            .insert(MovingObjectBundle {
+                collider: Collider::ball(MISSILE_RADIUS),
+                collision_damage: CollisionDamage::new(MISSILE_COLLISION_DAMAGE),
+                collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
+                health: Health::new(MISSILE_HEALTH),
+                mass: Mass(MISSILE_MASS),
                 model: SceneBundle {
                     scene: scene_assets.missiles.clone(),
                     transform: Transform::from_translation(
@@ -180,16 +200,15 @@ fn spaceship_weapon_controls(
                     ),
                     ..default()
                 },
+                velocity: Velocity {
+                    linvel: -transform.forward() * MISSILE_SPEED,
+                    angvel: Default::default(),
+                },
+                ..default()
             })
-            .insert(CollisionDamage::new(MISSILE_COLLISION_DAMAGE))
-            .insert(Health::new(MISSILE_HEALTH))
-            .insert(Mortal::new(0))
-            .insert(Name::new("SpaceshipMissile"))
-            .insert(SpaceshipMissile)
-            .insert(Wrappable)
             .id(); // to ensure we store the entity id for subsequent use
 
-        name_entity(&mut commands, entity, "Missile");
+        name_entity(&mut commands, missile, "SpaceshipMissile");
     }
 }
 
