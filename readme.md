@@ -3,8 +3,8 @@
 created to teach [natepiano](https://youtube.com/natepiano) how to code games, visualizations and
 simulations in bevy using the awesome programming language, rust. i started
 with [this tutorial](https://www.youtube.com/@ZymartuGames),
-added [rapier3d](https://www.rapier.rs/docs/user_guides/bevy_plugin/getting_started_bevy) for
-physics and am continuing to enhance it
+added [bevy_rapier3d](https://www.rapier.rs/docs/user_guides/bevy_plugin/getting_started_bevy) for physics as well as a
+few other dependencies you can find in cargo.toml. the goal is to make this interesting, playable, beautiful and fun.
 
 install rust (from https://www.rust-lang.org/tools/install)
 
@@ -40,5 +40,4 @@ http-server -c-1 -o ./
 - [Bevy CheatBook Overview](https://bevy-cheatbook.github.io/overview.html) also this.
 - [Blender docs](https://docs.blender.org/manual/en/latest/)
 - [Rapier physics docs](https://rapier.rs/docs/user_guides/bevy_plugin/getting_started_bevy)
-- [Tainted Coders](https://taintedcoders.com/) has a lot of inside info about Bevy game developmentg
-- 
+- [Tainted Coders](https://taintedcoders.com/) has a lot of inside info about Bevy game development

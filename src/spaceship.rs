@@ -18,6 +18,7 @@ use crate::{
     state::GameState,
     utils::name_entity,
 };
+use leafwing_input_manager::prelude::*;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
 const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
@@ -40,11 +41,11 @@ pub struct SpaceshipShield;
 pub struct ContinuousFire;
 
 pub struct SpaceshipPlugin;
-
 impl Plugin for SpaceshipPlugin {
     // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
-        app.add_systems(PostStartup, spawn_spaceship)
+        app.add_plugins(InputManagerPlugin::<Action>::default())
+            .add_systems(PostStartup, spawn_spaceship)
             // spawn a new Spaceship if we're in GameOver state
             .add_systems(OnEnter(GameState::GameOver), spawn_spaceship)
             .add_systems(
@@ -59,6 +60,38 @@ impl Plugin for SpaceshipPlugin {
             )
             // check if spaceship is destroyed...this will change the GameState
             .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
+    }
+}
+
+// This is the list of "things in the game I want to be able to do based on input"
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+enum Action {
+    Accelerate,
+    Decelerate,
+    Fire,
+    TurnLeft,
+    TurnRight,
+}
+
+impl Action {
+    fn default_input_map() -> InputMap<Self> {
+        let mut input_map = InputMap::default();
+
+        input_map.insert(Self::Accelerate, KeyW);
+        input_map.insert(Self::Accelerate, ArrowUp);
+
+        input_map.insert(Self::Decelerate, KeyS);
+        input_map.insert(Self::Decelerate, ArrowDown);
+
+        input_map.insert(Self::Fire, KeyCode::Space);
+
+        input_map.insert(Self::TurnLeft, KeyA);
+        input_map.insert(Self::TurnLeft, ArrowLeft);
+
+        input_map.insert(Self::TurnRight, KeyD);
+        input_map.insert(Self::TurnRight, ArrowRight);
+
+        input_map
     }
 }
 
@@ -101,7 +134,8 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             },
             ..default()
         })
-        // only rotate in x and z plane - i.e., - around the y axis
+        .insert(InputManagerBundle::with_map(Action::default_input_map()))
+        // only rotate in x and z plane - i.e., - around the y-axis
         .insert(
             LockedAxes::TRANSLATION_LOCKED_Y
                 | LockedAxes::ROTATION_LOCKED_X
@@ -113,63 +147,62 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
 }
 
 fn spaceship_movement_controls(
-    //mut query: Query<&mut Transform, With<Spaceship>>,
     mut query: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
+    input_map: Query<&ActionState<Action>>,
     time: Res<Time>,
 ) {
     // we can use this because there is only exactly one spaceship - so we're not looping over the query
-    let Ok((mut transform, mut velocity)) = query.get_single_mut() else {
-        return;
-    };
+    if let Ok((mut transform, mut velocity)) = query.get_single_mut() {
+        let action_state = input_map.single();
 
-    let mut rotation = 0.0;
-    let delta_seconds = time.delta_seconds();
+        let mut rotation = 0.0;
+        let delta_seconds = time.delta_seconds();
 
-    if keyboard_input.any_pressed([KeyD, ArrowRight]) {
-        // right
-        velocity.angvel.y = 0.0;
-        rotation = -SPACESHIP_ROTATION_SPEED * delta_seconds;
-    } else if keyboard_input.any_pressed([KeyA, ArrowLeft]) {
-        // left
-        velocity.angvel.y = 0.0;
-        rotation = SPACESHIP_ROTATION_SPEED * delta_seconds;
+        if action_state.pressed(&Action::TurnRight) {
+            // right
+            velocity.angvel.y = 0.0;
+            rotation = -SPACESHIP_ROTATION_SPEED * delta_seconds;
+        } else if action_state.pressed(&Action::TurnLeft) {
+            // left
+            velocity.angvel.y = 0.0;
+            rotation = SPACESHIP_ROTATION_SPEED * delta_seconds;
+        }
+
+        // rotate around the y-axis
+        transform.rotate_y(rotation);
+
+        if action_state.pressed(&Action::Accelerate) {
+            // down
+            apply_acceleration(
+                &mut velocity,
+                -transform.forward().as_vec3(),
+                -SPACESHIP_ACCELERATION,
+                SPACESHIP_MAX_SPEED,
+                delta_seconds,
+            );
+        } else if action_state.pressed(&Action::Decelerate) {
+            // up
+            apply_acceleration(
+                &mut velocity,
+                -transform.forward().as_vec3(),
+                SPACESHIP_ACCELERATION,
+                SPACESHIP_MAX_SPEED,
+                delta_seconds,
+            );
+        }
+
+        /* let mut roll = 0.0;
+
+           if keyboard_input.pressed(ShiftLeft) {
+            roll = -SPACESHIP_ROLL_SPEED * time.delta_seconds();
+        } else if keyboard_input.pressed(ControlLeft) {
+            roll = SPACESHIP_ROLL_SPEED * time.delta_seconds();
+        }*/
+
+        // rotate around the local z-axis
+        // the rotation is relative to the current rotation
+        // transform.rotate_local_z(roll);
     }
-
-    // rotate around the y-axis
-    transform.rotate_y(rotation);
-
-    if keyboard_input.any_pressed([KeyS, ArrowDown]) {
-        // down
-        apply_acceleration(
-            &mut velocity,
-            -transform.forward().as_vec3(),
-            -SPACESHIP_ACCELERATION,
-            SPACESHIP_MAX_SPEED,
-            delta_seconds,
-        );
-    } else if keyboard_input.any_pressed([KeyW, ArrowUp]) {
-        // up
-        apply_acceleration(
-            &mut velocity,
-            -transform.forward().as_vec3(),
-            SPACESHIP_ACCELERATION,
-            SPACESHIP_MAX_SPEED,
-            delta_seconds,
-        );
-    }
-
-    /* let mut roll = 0.0;
-
-       if keyboard_input.pressed(ShiftLeft) {
-        roll = -SPACESHIP_ROLL_SPEED * time.delta_seconds();
-    } else if keyboard_input.pressed(ControlLeft) {
-        roll = SPACESHIP_ROLL_SPEED * time.delta_seconds();
-    }*/
-
-    // rotate around the local z-axis
-    // the rotation is relative to the current rotation
-    // transform.rotate_local_z(roll);
 }
 
 fn apply_acceleration(
@@ -208,7 +241,7 @@ fn spaceship_shield_controls(
 }
 
 // check if spaceship exists or not - query
-// if get single (there should only be one - returns an error then the spaceship doesn't exist
+// if get_single() (there should only be one - returns an error then the spaceship doesn't exist
 fn spaceship_destroyed(
     mut next_state: ResMut<NextState<GameState>>,
     query: Query<(), With<Spaceship>>,

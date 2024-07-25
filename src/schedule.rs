@@ -41,7 +41,7 @@ impl Plugin for SchedulePlugin {
                 // the following is pretty cool - because we added an InGameSet system set to
                 // all the systems that are "in game" - in order to ensure proper ordering
                 // the following comes along for the ride - i.e., they will only run _if_
-                // if in_state evaluates to true - i.e., we are in_game
+                // in_state evaluates to true - i.e., we are in_game
                 // and we have a system that runs on state to watch for keyboard control
                 // that takes us in or out of InGame - i.e., pausing
                 // 1 line of code right here allows for pausing and starting the game
