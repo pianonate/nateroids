@@ -37,30 +37,27 @@ fn handle_collision_events(
     collision_damage_query: Query<&CollisionDamage>,
 ) {
     for &collision_event in collision_events.read() {
-        match collision_event {
-            CollisionEvent::Started(entity1, entity2, ..) => {
-                if let Ok(name1) = name_query.get(entity1) {
-                    if let Ok(name2) = name_query.get(entity2) {
-                        apply_collision_damage(
-                            &mut health_query,
-                            &collision_damage_query,
-                            entity1,
-                            name1,
-                            entity2,
-                            name2,
-                        );
-                        apply_collision_damage(
-                            &mut health_query,
-                            &collision_damage_query,
-                            entity2,
-                            name2,
-                            entity1,
-                            name1,
-                        );
-                    }
+        if let CollisionEvent::Started(entity1, entity2, ..) = collision_event {
+            if let Ok(name1) = name_query.get(entity1) {
+                if let Ok(name2) = name_query.get(entity2) {
+                    apply_collision_damage(
+                        &mut health_query,
+                        &collision_damage_query,
+                        entity1,
+                        name1,
+                        entity2,
+                        name2,
+                    );
+                    apply_collision_damage(
+                        &mut health_query,
+                        &collision_damage_query,
+                        entity2,
+                        name2,
+                        entity1,
+                        name1,
+                    );
                 }
             }
-            _ => (),
         }
     }
 }

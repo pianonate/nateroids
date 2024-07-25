@@ -1,7 +1,6 @@
-use bevy::prelude::{KeyCode::Space, *};
+use bevy::prelude::{*, KeyCode::Space};
 use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGroups, Velocity};
 
-use crate::spaceship::ContinuousFire;
 use crate::{
     asset_loader::SceneAssets,
     camera::PrimaryCamera,
@@ -9,7 +8,7 @@ use crate::{
     health::Health,
     movement::{LimitedDistanceMover, MovingObjectBundle},
     schedule::InGameSet,
-    spaceship::Spaceship,
+    spaceship::{ContinuousFire, Spaceship},
     utils::name_entity,
 };
 
@@ -17,6 +16,7 @@ const MISSILE_COLLISION_DAMAGE: f32 = 50.0;
 const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.5;
 const MISSILE_HEALTH: f32 = 1.0;
 const MISSILE_MASS: f32 = 0.001;
+const MISSILE_NAME: &str = "Missile";
 const MISSILE_RADIUS: f32 = 0.4;
 const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
 const MISSILE_SPEED: f32 = 75.0;
@@ -41,6 +41,8 @@ impl Plugin for MissilePlugin {
     }
 }
 
+// todo: #bevyquestion - how could i reduce the number of arguments here?
+#[allow(clippy::too_many_arguments)]
 fn fire_missile(
     mut commands: Commands,
     q_camera: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
@@ -51,7 +53,7 @@ fn fire_missile(
     mut spawn_timer: ResMut<MissileSpawnTimer>,
     time: Res<Time>,
 ) {
-    // #todo #rustquestion - idiomatic?
+    // #todo #rustquestion - is this short circuit idiomatic rust?
     let Ok((transform, continuous_fire)) = q_spaceship.get_single() else {
         return;
     };
@@ -103,6 +105,6 @@ fn fire_missile(
             .insert(limited_distance_mover)
             .id(); // to ensure we store the entity id for subsequent use
 
-        name_entity(&mut commands, missile, "SpaceshipMissile");
+        name_entity(&mut commands, missile, MISSILE_NAME);
     }
 }

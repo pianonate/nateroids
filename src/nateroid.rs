@@ -1,15 +1,15 @@
-use bevy::prelude::*;
-use bevy_rapier3d::prelude::{Collider, Velocity};
-use rand::Rng;
 use std::f32::consts::PI;
 use std::ops::Range;
 
-use crate::movement::MovingObjectBundle;
+use bevy::prelude::*;
+use bevy_rapier3d::prelude::{Collider, Velocity};
+use rand::Rng;
 
 use crate::{
     asset_loader::SceneAssets, collision_detection::CollisionDamage, health::Health,
     schedule::InGameSet, utils::name_entity,
 };
+use crate::movement::MovingObjectBundle;
 
 #[derive(Resource, Debug)]
 pub struct NateroidSpawnTimer {
@@ -19,6 +19,7 @@ pub struct NateroidSpawnTimer {
 const ANGULAR_VELOCITY_RANGE: Range<f32> = -4.0..4.0;
 const NATEROID_COLLISION_DAMAGE: f32 = 10.0;
 const NATEROID_HEALTH: f32 = 50.0;
+const NATEROID_NAME: &str = "Nateroid";
 const NATEROID_RADIUS: f32 = 1.8;
 const ROTATION_RANGE: Range<f32> = 0.0..2.0 * PI;
 const SPAWN_RANGE_X: Range<f32> = -25.0..25.0;
@@ -86,7 +87,7 @@ fn spawn_nateroid(
         })
         .id();
 
-    name_entity(&mut commands, nateroid, "Nateroid");
+    name_entity(&mut commands, nateroid, NATEROID_NAME);
 }
 
 fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {

@@ -1,8 +1,8 @@
 use bevy::{
     input::common_conditions::input_just_pressed,
     prelude::{
-        KeyCode::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp, KeyA, KeyD, KeyS, KeyW, F9},
         *,
+        KeyCode::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp, F9, KeyA, KeyD, KeyS, KeyW},
     },
 };
 use bevy_rapier3d::prelude::{
@@ -23,6 +23,7 @@ const SPACESHIP_ACCELERATION: f32 = 20.0;
 const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
 const SPACESHIP_HEALTH: f32 = 100.0;
 const SPACESHIP_MAX_SPEED: f32 = 40.0;
+const SPACESHIP_NAME: &str = "Spaceship";
 const SPACESHIP_RADIUS: f32 = 5.0;
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
 const SPACESHIP_ROTATION_SPEED: f32 = 5.0;
@@ -108,7 +109,7 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
         )
         .id();
 
-    name_entity(&mut commands, spaceship, "Spaceship");
+    name_entity(&mut commands, spaceship, SPACESHIP_NAME);
 }
 
 fn spaceship_movement_controls(

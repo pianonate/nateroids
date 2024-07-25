@@ -95,7 +95,7 @@ impl Plugin for MovementPlugin {
             (
                 teleport_system,
                 update_distance_traveled_system,
-                draw_limited_distance_movers_system.run_if(resource_exists::<MissileParty>),
+                missile_party_system.run_if(resource_exists::<MissileParty>),
             )
                 .chain()
                 .in_set(InGameSet::EntityUpdates),
@@ -193,7 +193,7 @@ fn update_distance_traveled_system(
     }
 }
 
-fn draw_limited_distance_movers_system(
+fn missile_party_system(
     windows: Query<&Window>,
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
     direction_query: Query<&LimitedDistanceMover>,
@@ -323,8 +323,8 @@ fn find_edge_point(origin: Vec3, direction: Vec3, dimensions: ViewableDimensions
 
     let mut t_min = f32::MAX;
 
-    /// learning rust - this for syntax destructures the two provided tuples into the variables
-    /// so we get a pas through this loop for both x and z - i like rust
+    // learning rust - this for syntax destructures the two provided tuples into the variables
+    // so we get a pas through this loop for both x and z - i like rust
     for (start, dir, pos_bound, neg_bound) in [
         (origin.x, direction.x, half_width, -half_width),
         (origin.z, direction.z, half_height, -half_height),
