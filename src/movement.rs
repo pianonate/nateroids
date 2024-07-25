@@ -301,59 +301,49 @@ fn calculate_perpendicular_points(origin: Vec3, direction: Vec3, distance: f32) 
     (point1, point2)
 }
 
+/// Finds the intersection point of a ray (defined by an origin and direction) with the edges of a viewable area.
+///
+/// # Parameters
+/// - `origin`: The starting point of the ray.
+/// - `direction`: The direction vector of the ray.
+/// - `dimensions`: The dimensions of the viewable area.
+///
+/// # Returns
+/// An `Option<Vec3>` containing the intersection point if found, or `None` if no valid intersection exists.
+///
+/// # Method
+/// - The function calculates the intersection points of the ray with the positive and negative boundaries of the viewable area along both the x and z axes.
+/// - It iterates over these axes, updating the minimum intersection distance (`t_min`) if a valid intersection is found.
+/// - Finally, it returns the intersection point corresponding to the minimum distance, or `None` if no valid intersection is found.
 fn find_edge_point(origin: Vec3, direction: Vec3, dimensions: ViewableDimensions) -> Option<Vec3> {
     let ViewableDimensions { width, height } = dimensions;
 
     let half_width = width / 2.0;
     let half_height = height / 2.0;
 
-    let x_intersection = calculate_intersection(origin.x, direction.x, half_width, -half_width);
-    let z_intersection = calculate_intersection(origin.z, direction.z, half_height, -half_height);
-
     let mut t_min = f32::MAX;
-    if let Some(t) = x_intersection {
-        t_min = t_min.min(t);
-    }
-    if let Some(t) = z_intersection {
-        t_min = t_min.min(t);
+
+    /// learning rust - this for syntax destructures the two provided tuples into the variables
+    /// so we get a pas through this loop for both x and z - i like rust
+    for (start, dir, pos_bound, neg_bound) in [
+        (origin.x, direction.x, half_width, -half_width),
+        (origin.z, direction.z, half_height, -half_height),
+    ] {
+        if dir != 0.0 {
+            let t_positive = (pos_bound - start) / dir;
+            if t_positive > 0.0 && t_positive < t_min {
+                t_min = t_positive;
+            }
+            let t_negative = (neg_bound - start) / dir;
+            if t_negative > 0.0 && t_negative < t_min {
+                t_min = t_negative;
+            }
+        }
     }
 
     if t_min != f32::MAX {
-        return Some(origin + direction * t_min);
-    }
-    None
-}
-
-/// used to find the nearest point on the window from the start point
-///
-///	1.	Initialization of closest_intersection: By starting with f32::MAX, the code ensures that any valid intersection calculated will be smaller than this initial value. This acts as a way to guarantee that the first valid intersection found will update closest_intersection.
-///	2.	Boundary checks: The code checks two potential intersection points (t_positive and t_negative). It calculates where the ray (or line) starting at start and moving in direction intersects with the positive_boundary and negative_boundary.
-///	3.	Valid intersection conditions:
-///	•	t_positive > 0.0 && t_positive < closest_intersection: This checks if the intersection with the positive boundary is in the correct direction (i.e., not behind the start point) and closer than any previously found intersection.
-///	•	t_negative > 0.0 && t_negative < closest_intersection: Similarly, this checks the intersection with the negative boundary under the same conditions.
-///	4.	Final check: After checking both boundaries, if no valid intersection was found (i.e., closest_intersection remains f32::MAX), the function returns None. Otherwise, it returns the closest valid intersection.
-///
-fn calculate_intersection(
-    start: f32,
-    direction: f32,
-    positive_boundary: f32,
-    negative_boundary: f32,
-) -> Option<f32> {
-    // start at infinity
-    let mut closest_intersection = f32::MAX;
-    if direction != 0.0 {
-        let t_positive = (positive_boundary - start) / direction;
-        if t_positive > 0.0 && t_positive < closest_intersection {
-            closest_intersection = t_positive;
-        }
-        let t_negative = (negative_boundary - start) / direction;
-        if t_negative > 0.0 && t_negative < closest_intersection {
-            closest_intersection = t_negative;
-        }
-    }
-    if closest_intersection == f32::MAX {
-        None
+        Some(origin + direction * t_min)
     } else {
-        Some(closest_intersection)
+        None
     }
 }
