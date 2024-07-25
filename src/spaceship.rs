@@ -50,13 +50,13 @@ impl Plugin for SpaceshipPlugin {
             .add_systems(OnEnter(GameState::GameOver), spawn_spaceship)
             .add_systems(
                 Update,
-                (spaceship_movement_controls, spaceship_shield_controls)
+                (
+                    spaceship_movement_controls,
+                    spaceship_shield_controls,
+                    toggle_continuous_fire.run_if(input_just_pressed(F9)),
+                )
                     .chain()
                     .in_set(InGameSet::UserInput),
-            )
-            .add_systems(
-                Update,
-                toggle_continuous_fire.run_if(input_just_pressed(F9)),
             )
             // check if spaceship is destroyed...this will change the GameState
             .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
@@ -65,7 +65,7 @@ impl Plugin for SpaceshipPlugin {
 
 // This is the list of "things in the game I want to be able to do based on input"
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
-enum Action {
+pub enum Action {
     Accelerate,
     Decelerate,
     Fire,
