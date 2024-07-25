@@ -40,7 +40,7 @@ struct MissileSpawnTimer {
     pub timer: Timer,
 }
 
-// #todo: #rustquestion - how can i make it so that new has to be used and DrawDirection isn't constructed directly - i still need the fields visible
+// todo: #rustquestion - how can i make it so that new has to be used and DrawDirection isn't constructed directly - i still need the fields visible
 #[derive(Copy, Clone, Component, Debug)]
 pub struct MissileMovement {
     pub direction: Vec3,
@@ -110,7 +110,7 @@ fn fire_missile(
     mut spawn_timer: ResMut<MissileSpawnTimer>,
     time: Res<Time>,
 ) {
-    // #todo #rustquestion - is this short circuit idiomatic rust?
+    // todo: #rustquestion - is this short circuit idiomatic rust?
     let Ok((transform, continuous_fire)) = q_spaceship.get_single() else {
         return;
     };
