@@ -28,6 +28,10 @@ start playing! (gawd i like it that rust has such minimal rigamarole)
 
 ## Building WASM Target
 
+you can run this natively or you can target wasm to run it in a browser.
+you can use http-server (or something equivalent) to serve the wasm target locally. you can install it with npm
+or use your own - i've tested the wasm target with http-server and chrome and this combination works. ymmv.
+
 ```sh
 cargo build --release --target wasm32-unknown-unknown
 wasm-bindgen --out-name spaceship-game --out-dir target/wasm32 --target web target/wasm32-unknown-unknown/release/nateroids.wasm
