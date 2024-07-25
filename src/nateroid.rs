@@ -5,11 +5,11 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::{Collider, Velocity};
 use rand::Rng;
 
+use crate::movement::MovingObjectBundle;
 use crate::{
     asset_loader::SceneAssets, collision_detection::CollisionDamage, health::Health,
     schedule::InGameSet, utils::name_entity,
 };
-use crate::movement::MovingObjectBundle;
 
 #[derive(Resource, Debug)]
 pub struct NateroidSpawnTimer {
@@ -31,8 +31,6 @@ const VELOCITY_RANGE: Range<f32> = -20.0..20.0;
 pub struct Nateroid;
 
 impl Plugin for Nateroid {
-    //noinspection Annotator
-    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app.insert_resource(NateroidSpawnTimer {
             timer: Timer::from_seconds(SPAWN_TIMER_SECONDS, TimerMode::Repeating),
@@ -41,9 +39,6 @@ impl Plugin for Nateroid {
     }
 }
 
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
 fn spawn_nateroid(
     mut commands: Commands,
     mut spawn_timer: ResMut<NateroidSpawnTimer>,
@@ -95,8 +90,6 @@ fn spawn_nateroid(
     name_entity(&mut commands, nateroid, NATEROID_NAME);
 }
 
-//noinspection Annotator
-//noinspection Annotator
 fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {
     let mut rng = rand::thread_rng();
     let x = if range_x.start < range_x.end {

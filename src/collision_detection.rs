@@ -22,8 +22,6 @@ impl CollisionDamage {
 pub struct CollisionDetectionPlugin;
 
 impl Plugin for CollisionDetectionPlugin {
-    //noinspection Annotator
-    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
@@ -32,8 +30,6 @@ impl Plugin for CollisionDetectionPlugin {
     }
 }
 
-//noinspection Annotator
-//noinspection Annotator
 fn handle_collision_events(
     mut collision_events: EventReader<CollisionEvent>,
     mut health_query: Query<&mut Health>,
@@ -66,9 +62,6 @@ fn handle_collision_events(
     }
 }
 
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
 fn apply_collision_damage(
     health_query: &mut Query<&mut Health>,
     collision_damage_query: &Query<&CollisionDamage>,

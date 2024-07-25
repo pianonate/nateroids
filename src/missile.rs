@@ -1,4 +1,4 @@
-use bevy::prelude::{*, KeyCode::Space};
+use bevy::prelude::{KeyCode::Space, *};
 use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGroups, Velocity};
 
 use crate::{
@@ -32,8 +32,6 @@ pub struct MissileSpawnTimer {
 pub struct MissilePlugin;
 
 impl Plugin for MissilePlugin {
-    //noinspection Annotator
-    //noinspection Annotator
     // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
         app.insert_resource(MissileSpawnTimer {
@@ -43,9 +41,6 @@ impl Plugin for MissilePlugin {
     }
 }
 
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
 // todo: #bevyquestion - how could i reduce the number of arguments here?
 #[allow(clippy::too_many_arguments)]
 fn fire_missile(

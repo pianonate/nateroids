@@ -1,10 +1,10 @@
+use bevy::input::common_conditions::input_just_pressed;
 use bevy::{
     color::palettes::basic::BLUE,
     color::palettes::css::{GREEN, RED},
+    prelude::KeyCode::F8,
     prelude::*,
 };
-use bevy::input::common_conditions::input_just_pressed;
-use bevy::prelude::KeyCode::F8;
 use bevy_rapier3d::{
     dynamics::{GravityScale, LockedAxes},
     geometry::ActiveEvents,
@@ -25,9 +25,6 @@ const DEFAULT_HEALTH: f32 = 100.0;
 const DEFAULT_MASS: f32 = 1.0;
 const LIMITED_DISTANCE_MOVEMENT_SCALAR: f32 = 0.9;
 
-#[derive(Default, Resource, Debug)]
-pub struct MissileParty;
-
 // #todo: #rustquestion - how can i make it so that new has to be used and DrawDirection isn't constructed directly - i still need the fields visible
 #[derive(Copy, Clone, Component, Debug)]
 pub struct LimitedDistanceMover {
@@ -38,10 +35,8 @@ pub struct LimitedDistanceMover {
 }
 
 /// take the distance to the nearest edge in front and behind and make that
-/// the distance this thing will travel - it's no perfect but it will do
+/// the distance this thing will travel - it's not perfect but it will do
 impl LimitedDistanceMover {
-    //noinspection Annotator
-    //noinspection Annotator
     pub fn new(
         origin: Vec3,
         direction: Vec3,
@@ -68,6 +63,11 @@ impl LimitedDistanceMover {
     }
 }
 
+#[derive(Resource, Debug)]
+struct MissileParty {
+    enabled: bool,
+}
+
 #[derive(Component, Debug, Default)]
 pub struct Wrappable {
     pub wrapped: bool,
@@ -81,23 +81,18 @@ struct ViewableDimensions {
 
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
-    //noinspection Annotator
-    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Update,
-            toggle_missile_party_system.run_if(input_just_pressed(F8)),
-        )
-        .add_systems(
             Update,
             (
                 teleport_system,
                 update_distance_traveled_system,
-                missile_party_system.run_if(resource_exists::<MissileParty>),
+                missile_party_system,
             )
                 .chain()
                 .in_set(InGameSet::EntityUpdates),
-        );
+        )
+        .insert_resource(MissileParty { enabled: false });
     }
 }
 
@@ -143,22 +138,7 @@ impl Default for MovingObjectBundle {
         }
     }
 }
-//noinspection Annotator
-//noinspection Annotator
-fn toggle_missile_party_system(mut commands: Commands, missile: Option<Res<MissileParty>>) {
-    if missile.is_some() {
-        println!("bye bye missile party");
-        commands.remove_resource::<MissileParty>();
-    } else {
-        println!("missile party!");
-        commands.init_resource::<MissileParty>();
-    }
-}
 
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
 fn teleport_system(
     windows: Query<&Window>,
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
@@ -178,10 +158,6 @@ fn teleport_system(
     }
 }
 
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
 fn update_distance_traveled_system(
     mut query: Query<(&Transform, &mut LimitedDistanceMover, &Wrappable)>,
 ) {
@@ -201,15 +177,23 @@ fn update_distance_traveled_system(
     }
 }
 
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
 fn missile_party_system(
-    windows: Query<&Window>,
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
     direction_query: Query<&LimitedDistanceMover>,
     mut gizmos: Gizmos,
+    kbd: Res<ButtonInput<KeyCode>>,
+    mut missile_party: ResMut<MissileParty>,
+    windows: Query<&Window>,
 ) {
+    if kbd.just_pressed(F8) {
+        missile_party.enabled = !missile_party.enabled;
+        println!("missile party: {}", missile_party.enabled);
+    }
+
+    if !missile_party.enabled {
+        return;
+    }
+
     if let Some(dimensions) = calculate_viewable_dimensions(windows, camera_query) {
         for limited_distance_mover in direction_query.iter() {
             let origin = limited_distance_mover.last_position;
@@ -269,11 +253,6 @@ fn calculate_viewable_dimensions(
     None
 }
 
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
 /// given a particular point, what is the point on the opposite side of the screen?
 fn calculate_wrapped_position(position: Vec3, dimensions: ViewableDimensions) -> Vec3 {
     let ViewableDimensions { width, height } = dimensions;
@@ -315,9 +294,6 @@ fn calculate_perpendicular_points(origin: Vec3, direction: Vec3, distance: f32) 
     (point1, point2)
 }
 
-//noinspection Annotator
-//noinspection Annotator
-//noinspection Annotator
 /// Finds the intersection point of a ray (defined by an origin and direction) with the edges of a viewable area.
 ///
 /// # Parameters

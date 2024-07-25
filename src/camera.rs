@@ -7,21 +7,20 @@ const CAMERA_DISTANCE: f32 = 80.0;
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
-    //noinspection Annotator
-    //noinspection Annotator
     fn build(&self, app: &mut App) {
-        app //.add_plugins(LookTransformPlugin)
-            // .add_plugins(UnrealCameraPlugin::default())
-            .add_systems(Startup, spawn_camera)
-            .add_systems(Update, zoom_camera);
+        app.add_systems(Startup, spawn_camera)
+            .add_systems(Update, zoom_camera)
+            .insert_resource(ClearColor(Color::srgb(0.1, 0.0, 0.15)))
+            .insert_resource(AmbientLight {
+                color: Color::default(),
+                brightness: 1000.0,
+            });
     }
 }
 
 #[derive(Component, Debug)]
 pub struct PrimaryCamera;
 
-//noinspection Annotator
-//noinspection Annotator
 fn spawn_camera(mut commands: Commands) {
     commands
         .spawn(Camera3dBundle {
@@ -32,8 +31,6 @@ fn spawn_camera(mut commands: Commands) {
         .insert(PrimaryCamera);
 }
 
-//noinspection Annotator
-//noinspection Annotator
 fn zoom_camera(
     mut query: Query<&mut Transform, With<PrimaryCamera>>,
     mut mouse_wheel_reader: EventReader<MouseWheel>,

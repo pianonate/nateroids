@@ -13,8 +13,6 @@ pub enum InGameSet {
 pub struct SchedulePlugin;
 
 impl Plugin for SchedulePlugin {
-    //noinspection Annotator
-    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app.configure_sets(
             Update,

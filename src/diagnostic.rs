@@ -7,8 +7,6 @@ use iyes_perf_ui::prelude::*;
 pub struct DiagnosticPlugin;
 
 impl Plugin for DiagnosticPlugin {
-    //noinspection Annotator
-    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app
             // we want Bevy to measure these values for us:
@@ -23,7 +21,6 @@ impl Plugin for DiagnosticPlugin {
     }
 }
 
-//noinspection Annotator
 fn toggle(
     mut commands: Commands,
     q_root: Query<Entity, With<PerfUiRoot>>,

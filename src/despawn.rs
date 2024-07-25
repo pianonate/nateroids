@@ -7,8 +7,6 @@ use crate::{
 pub struct DespawnPlugin;
 
 impl Plugin for DespawnPlugin {
-    //noinspection Annotator
-    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
@@ -19,7 +17,6 @@ impl Plugin for DespawnPlugin {
     }
 }
 
-//noinspection Annotator
 fn despawn_limited_distance_movers(
     mut commands: Commands,
     query: Query<(Entity, &LimitedDistanceMover)>,
@@ -32,13 +29,10 @@ fn despawn_limited_distance_movers(
     }
 }
 
-//noinspection Annotator
 fn despawn(commands: &mut Commands, entity: Entity) {
     commands.entity(entity).despawn_recursive();
 }
 
-//noinspection Annotator
-//noinspection Annotator
 fn despawn_dead_entities(mut commands: Commands, query: Query<(Entity, &Health, &Name)>) {
     for (entity, health, _name) in query.iter() {
         if health.value <= 0.0 {
@@ -50,7 +44,6 @@ fn despawn_dead_entities(mut commands: Commands, query: Query<(Entity, &Health, 
     }
 }
 
-//noinspection Annotator
 fn despawn_all_entities(mut commands: Commands, query: Query<Entity, With<Health>>) {
     println!("GameOver");
     for entity in query.iter() {

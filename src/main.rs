@@ -1,14 +1,13 @@
 use bevy::prelude::*;
 
+#[cfg(not(target_arch = "wasm32"))]
+use crate::diagnostic::DiagnosticPlugin;
 use crate::{
     asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin,
-    environment::EnvironmentPlugin, missile::MissilePlugin, movement::MovementPlugin,
     nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
     spaceship::SpaceshipPlugin, state::StatePlugin,
 };
-#[cfg(not(target_arch = "wasm32"))]
-use crate::diagnostic::DiagnosticPlugin;
 
 // exclude when targeting wasm - this breaks in the browser right now
 mod asset_loader;
@@ -17,7 +16,6 @@ mod collision_detection;
 mod despawn;
 #[cfg(not(target_arch = "wasm32"))]
 mod diagnostic;
-mod environment;
 mod health;
 mod missile;
 mod movement;
@@ -29,7 +27,7 @@ mod state;
 mod utils;
 
 //noinspection ALL
-//noinspection Annotator
+
 fn main() {
     let mut app = App::new();
 
