@@ -1,9 +1,7 @@
-use bevy::input::common_conditions::input_just_pressed;
-use bevy::prelude::KeyCode::F9;
 use bevy::{
-    math::NormedVectorSpace,
+    input::common_conditions::input_just_pressed,
     prelude::{
-        KeyCode::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp, KeyA, KeyD, KeyS, KeyW},
+        KeyCode::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp, F9, KeyA, KeyD, KeyS, KeyW},
         *,
     },
 };
