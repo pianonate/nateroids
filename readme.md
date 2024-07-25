@@ -37,5 +37,5 @@ http-server -c-1 -o ./
 - [Bevy CheatBook Overview](https://bevy-cheatbook.github.io/overview.html) also this.
 - [Blender docs](https://docs.blender.org/manual/en/latest/)
 - [Rapier physics docs](https://rapier.rs/docs/user_guides/bevy_plugin/getting_started_bevy)
-- [Tainted Coders](https://taintedcoders.com/) has a lot of inside info about Bevy game development
+- [Tainted Coders](https://taintedcoders.com/) has a lot of inside info about Bevy game developmentg
 - 
