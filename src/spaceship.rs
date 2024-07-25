@@ -1,13 +1,5 @@
-use crate::{
-    asset_loader::SceneAssets,
-    collision_detection::CollisionDamage,
-    health::Health,
-    movement::MovingObjectBundle,
-    schedule::InGameSet,
-    state::GameState,
-    utils::{name_entity, GROUP_ASTEROID, GROUP_SPACESHIP},
-};
-
+use bevy::input::common_conditions::input_just_pressed;
+use bevy::prelude::KeyCode::{F10, F9};
 use bevy::{
     math::NormedVectorSpace,
     prelude::{
@@ -15,9 +7,18 @@ use bevy::{
         *,
     },
 };
-
 use bevy_rapier3d::prelude::{
     Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
+};
+
+use crate::{
+    asset_loader::SceneAssets,
+    collision_detection::{CollisionDamage, GROUP_ASTEROID, GROUP_SPACESHIP},
+    health::Health,
+    movement::MovingObjectBundle,
+    schedule::InGameSet,
+    state::GameState,
+    utils::name_entity,
 };
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
@@ -26,7 +27,7 @@ const SPACESHIP_HEALTH: f32 = 100.0;
 const SPACESHIP_MAX_SPEED: f32 = 40.0;
 const SPACESHIP_RADIUS: f32 = 5.0;
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
-const SPACESHIP_ROTATION_SPEED: f32 = 2.5;
+const SPACESHIP_ROTATION_SPEED: f32 = 5.0;
 const SPACESHIP_SCALE: Vec3 = Vec3::new(0.5, 0.5, 0.5);
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, -20.0);
 
@@ -37,11 +38,7 @@ pub struct Spaceship;
 pub struct SpaceshipShield;
 
 #[derive(Component, Debug)]
-pub struct SpaceshipMissile {
-    direction: Dir3,
-    origin: Vec3,
-    distance_traveled: f32,
-}
+pub struct ContinuousFire;
 
 pub struct SpaceshipPlugin;
 
@@ -57,8 +54,27 @@ impl Plugin for SpaceshipPlugin {
                     .chain()
                     .in_set(InGameSet::UserInput),
             )
+            .add_systems(
+                Update,
+                toggle_continuous_fire.run_if(input_just_pressed(F9)),
+            )
             // check if spaceship is destroyed...this will change the GameState
             .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
+    }
+}
+
+fn toggle_continuous_fire(
+    mut commands: Commands,
+    q_spaceship: Query<(Entity, Option<&ContinuousFire>), With<Spaceship>>,
+) {
+    if let Ok((entity, continuous)) = q_spaceship.get_single() {
+        if let Some(continuous) = continuous {
+            println!("removing continuous");
+            commands.entity(entity).remove::<ContinuousFire>();
+        } else {
+            println!("adding continuous");
+            commands.entity(entity).insert(ContinuousFire);
+        }
     }
 }
 
@@ -86,10 +102,11 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             },
             ..default()
         })
+        // only rotate in x and z plane - i.e., - around the y axis
         .insert(
             LockedAxes::TRANSLATION_LOCKED_Y
-               /* | LockedAxes::ROTATION_LOCKED_Y*/
-                | LockedAxes::ROTATION_LOCKED_X | LockedAxes::ROTATION_LOCKED_Z,
+                | LockedAxes::ROTATION_LOCKED_X
+                | LockedAxes::ROTATION_LOCKED_Z,
         )
         .id();
 

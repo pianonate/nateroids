@@ -1,7 +1,12 @@
 use bevy::prelude::*;
+use bevy_rapier3d::geometry::Group;
 use bevy_rapier3d::prelude::CollisionEvent;
 
 use crate::{health::Health, schedule::InGameSet};
+
+pub const GROUP_SPACESHIP: Group = Group::GROUP_1;
+pub const GROUP_ASTEROID: Group = Group::GROUP_2;
+pub const GROUP_MISSILE: Group = Group::GROUP_3;
 
 #[derive(Component, Debug)]
 pub struct CollisionDamage {

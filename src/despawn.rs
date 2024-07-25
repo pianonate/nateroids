@@ -1,19 +1,11 @@
 use bevy::prelude::*;
 
-use crate::{health::Health, schedule::InGameSet, state::GameState};
-
-const OLD_AGE: u32 = 120;
-
-#[derive(Component, Debug)]
-pub struct AgedEntity {
-    age: u32,
-}
-
-impl AgedEntity {
-    pub fn new(age: u32) -> Self {
-        Self { age }
-    }
-}
+use crate::{
+    health::Health,
+    movement::{LimitedDistanceMover, Wrappable},
+    schedule::InGameSet,
+    state::GameState,
+};
 
 pub struct DespawnPlugin;
 
@@ -21,18 +13,20 @@ impl Plugin for DespawnPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (despawn_aged_entities, despawn_dead_entities).in_set(InGameSet::DespawnEntities),
+            (despawn_dead_entities, despawn_limited_distance_movers)
+                .in_set(InGameSet::DespawnEntities),
         )
         .add_systems(OnEnter(GameState::GameOver), despawn_all_entities);
     }
 }
 
-fn despawn_aged_entities(mut commands: Commands, mut query: Query<(Entity, &mut AgedEntity)>) {
-    for (entity, mut mortal) in query.iter_mut() {
-        mortal.age += 1;
-
-        if mortal.age > OLD_AGE {
-            // println!("dead from age");
+fn despawn_limited_distance_movers(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut LimitedDistanceMover, &Wrappable)>,
+) {
+    for (entity, mut limited_distance_mover, wrappable) in query.iter_mut() {
+        // Despawn the entity if it has traveled the total distance
+        if limited_distance_mover.traveled_distance >= limited_distance_mover.total_distance {
             despawn(&mut commands, entity);
         }
     }
