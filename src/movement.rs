@@ -1,7 +1,7 @@
 use bevy::{
     color::palettes::basic::BLUE,
     color::palettes::css::{GREEN, RED},
-    prelude::KeyCode::F8,
+    input::common_conditions::input_toggle_active,
     prelude::*,
 };
 use bevy_rapier3d::{
@@ -62,11 +62,6 @@ impl LimitedDistanceMover {
     }
 }
 
-#[derive(Resource, Debug)]
-struct MissileParty {
-    enabled: bool,
-}
-
 #[derive(Component, Debug, Default)]
 pub struct Wrappable {
     pub wrapped: bool,
@@ -86,12 +81,11 @@ impl Plugin for MovementPlugin {
             (
                 teleport_system,
                 update_distance_traveled_system,
-                missile_party_system,
+                missile_party_system.run_if(input_toggle_active(false, KeyCode::F8)),
             )
                 .chain()
                 .in_set(InGameSet::EntityUpdates),
-        )
-        .insert_resource(MissileParty { enabled: false });
+        );
     }
 }
 
@@ -180,25 +174,13 @@ fn missile_party_system(
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
     direction_query: Query<&LimitedDistanceMover>,
     mut gizmos: Gizmos,
-    kbd: Res<ButtonInput<KeyCode>>,
-    mut missile_party: ResMut<MissileParty>,
+
     windows: Query<&Window>,
 ) {
-    if kbd.just_pressed(F8) {
-        missile_party.enabled = !missile_party.enabled;
-        println!("missile party: {}", missile_party.enabled);
-    }
-
-    if !missile_party.enabled {
-        return;
-    }
-
     if let Some(dimensions) = calculate_viewable_dimensions(windows, camera_query) {
         for limited_distance_mover in direction_query.iter() {
             let origin = limited_distance_mover.last_position;
             let direction = limited_distance_mover.direction;
-
-            // println!("{:?}", draw_direction);
 
             let (p1, p2) = calculate_perpendicular_points(origin, direction, 100.0);
             gizmos.line_gradient(p1, p2, BLUE, RED);

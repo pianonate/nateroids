@@ -1,5 +1,6 @@
 //! This example shows the simplest way to create a Perf UI.
 //! (using defaults for everything)
+//! note this doesn't work with the wasm target
 
 use bevy::prelude::*;
 use iyes_perf_ui::prelude::*;
