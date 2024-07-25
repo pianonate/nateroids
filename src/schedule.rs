@@ -1,5 +1,6 @@
-use crate::state::GameState;
 use bevy::prelude::*;
+
+use crate::state::GameState;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum InGameSet {
@@ -12,6 +13,8 @@ pub enum InGameSet {
 pub struct SchedulePlugin;
 
 impl Plugin for SchedulePlugin {
+    //noinspection Annotator
+    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app.configure_sets(
             Update,

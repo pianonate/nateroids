@@ -1,10 +1,10 @@
-use bevy::input::common_conditions::input_just_pressed;
-use bevy::prelude::KeyCode::F8;
 use bevy::{
     color::palettes::basic::BLUE,
     color::palettes::css::{GREEN, RED},
     prelude::*,
 };
+use bevy::input::common_conditions::input_just_pressed;
+use bevy::prelude::KeyCode::F8;
 use bevy_rapier3d::{
     dynamics::{GravityScale, LockedAxes},
     geometry::ActiveEvents,
@@ -40,6 +40,8 @@ pub struct LimitedDistanceMover {
 /// take the distance to the nearest edge in front and behind and make that
 /// the distance this thing will travel - it's no perfect but it will do
 impl LimitedDistanceMover {
+    //noinspection Annotator
+    //noinspection Annotator
     pub fn new(
         origin: Vec3,
         direction: Vec3,
@@ -66,15 +68,9 @@ impl LimitedDistanceMover {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Default)]
 pub struct Wrappable {
     pub wrapped: bool,
-}
-
-impl Default for Wrappable {
-    fn default() -> Self {
-        Wrappable { wrapped: false }
-    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -85,6 +81,8 @@ struct ViewableDimensions {
 
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
+    //noinspection Annotator
+    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
@@ -145,8 +143,10 @@ impl Default for MovingObjectBundle {
         }
     }
 }
+//noinspection Annotator
+//noinspection Annotator
 fn toggle_missile_party_system(mut commands: Commands, missile: Option<Res<MissileParty>>) {
-    if let Some(_) = missile {
+    if missile.is_some() {
         println!("bye bye missile party");
         commands.remove_resource::<MissileParty>();
     } else {
@@ -155,6 +155,10 @@ fn toggle_missile_party_system(mut commands: Commands, missile: Option<Res<Missi
     }
 }
 
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
 fn teleport_system(
     windows: Query<&Window>,
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
@@ -174,6 +178,10 @@ fn teleport_system(
     }
 }
 
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
 fn update_distance_traveled_system(
     mut query: Query<(&Transform, &mut LimitedDistanceMover, &Wrappable)>,
 ) {
@@ -193,6 +201,9 @@ fn update_distance_traveled_system(
     }
 }
 
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
 fn missile_party_system(
     windows: Query<&Window>,
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
@@ -236,30 +247,33 @@ fn calculate_viewable_dimensions(
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
 ) -> Option<ViewableDimensions> {
     if let Ok(window) = windows.get_single() {
-        if let Ok((projection, global_transform)) = camera_query.get_single() {
-            if let Projection::Perspective(perspective_projection) = projection {
-                let screen_width = window.width() as f32;
-                let screen_height = window.height() as f32;
+        let screen_width = window.width();
+        let screen_height = window.height();
+        // Calculate the aspect ratio
+        let aspect_ratio = screen_width / screen_height;
 
-                // Calculate the aspect ratio
-                let aspect_ratio = screen_width / screen_height;
+        if let Ok((Projection::Perspective(perspective_projection), global_transform)) =
+            camera_query.get_single()
+        {
+            // Calculate the viewable width and height at the plane level
+            let camera_distance = global_transform.translation().y;
+            let viewable_height = 2.0 * (perspective_projection.fov / 2.0).tan() * camera_distance;
+            let viewable_width = viewable_height * aspect_ratio;
 
-                // Calculate the viewable width and height at the plane level
-                let camera_distance = global_transform.translation().y;
-                let viewable_height =
-                    2.0 * (perspective_projection.fov / 2.0).tan() * camera_distance;
-                let viewable_width = viewable_height * aspect_ratio;
-
-                return Some(ViewableDimensions {
-                    width: viewable_width,
-                    height: viewable_height,
-                });
-            }
+            return Some(ViewableDimensions {
+                width: viewable_width,
+                height: viewable_height,
+            });
         }
     }
     None
 }
 
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
 /// given a particular point, what is the point on the opposite side of the screen?
 fn calculate_wrapped_position(position: Vec3, dimensions: ViewableDimensions) -> Vec3 {
     let ViewableDimensions { width, height } = dimensions;
@@ -301,6 +315,9 @@ fn calculate_perpendicular_points(origin: Vec3, direction: Vec3, distance: f32) 
     (point1, point2)
 }
 
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
 /// Finds the intersection point of a ray (defined by an origin and direction) with the edges of a viewable area.
 ///
 /// # Parameters

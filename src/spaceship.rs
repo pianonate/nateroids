@@ -42,6 +42,8 @@ pub struct ContinuousFire;
 pub struct SpaceshipPlugin;
 
 impl Plugin for SpaceshipPlugin {
+    //noinspection Annotator
+    //noinspection Annotator
     // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
         app.add_systems(PostStartup, spawn_spaceship)
@@ -62,12 +64,13 @@ impl Plugin for SpaceshipPlugin {
     }
 }
 
+//noinspection Annotator
 fn toggle_continuous_fire(
     mut commands: Commands,
     q_spaceship: Query<(Entity, Option<&ContinuousFire>), With<Spaceship>>,
 ) {
     if let Ok((entity, continuous)) = q_spaceship.get_single() {
-        if let Some(_) = continuous {
+        if continuous.is_some() {
             println!("removing continuous");
             commands.entity(entity).remove::<ContinuousFire>();
         } else {
@@ -77,6 +80,8 @@ fn toggle_continuous_fire(
     }
 }
 
+//noinspection Annotator
+//noinspection Annotator
 fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
     let spaceship = commands
         .spawn(Spaceship)
@@ -112,6 +117,9 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
     name_entity(&mut commands, spaceship, SPACESHIP_NAME);
 }
 
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
 fn spaceship_movement_controls(
     //mut query: Query<&mut Transform, With<Spaceship>>,
     mut query: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
@@ -172,6 +180,9 @@ fn spaceship_movement_controls(
     // transform.rotate_local_z(roll);
 }
 
+//noinspection Annotator
+//noinspection Annotator
+//noinspection Annotator
 fn apply_acceleration(
     velocity: &mut Velocity,
     direction: Vec3,
@@ -193,6 +204,7 @@ fn apply_acceleration(
     velocity.linvel.y = 0.0;
 }
 
+//noinspection Annotator
 fn spaceship_shield_controls(
     mut commands: Commands,
     query: Query<Entity, With<Spaceship>>,
@@ -207,6 +219,8 @@ fn spaceship_shield_controls(
     }
 }
 
+//noinspection Annotator
+//noinspection Annotator
 // check if spaceship exists or not - query
 // if get single (there should only be one - returns an error then the spaceship doesn't exist
 fn spaceship_destroyed(

@@ -1,9 +1,8 @@
-use bevy::prelude::KeyCode::Escape;
 use bevy::prelude::*;
-use bevy_rapier3d::plugin::RapierConfiguration;
-
+use bevy::prelude::KeyCode::Escape;
 #[cfg(feature = "inspectors")]
 use bevy_inspector_egui::quick::StateInspectorPlugin;
+use bevy_rapier3d::plugin::RapierConfiguration;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Reflect, States)]
 pub enum GameState {
@@ -16,6 +15,9 @@ pub enum GameState {
 pub struct StatePlugin;
 
 impl Plugin for StatePlugin {
+    //noinspection Annotator
+    //noinspection Annotator
+    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
             .add_systems(
@@ -38,6 +40,8 @@ impl Plugin for StatePlugin {
     }
 }
 
+//noinspection Annotator
+//noinspection Annotator
 // i think it would be a lot of trouble to merge rapier's schedule
 // with this one so i'm just going to pause it directly
 // with its physics_pipeline_active configuration flag
@@ -59,14 +63,20 @@ fn game_state_input_events(
     }
 }
 
+//noinspection Annotator
+//noinspection Annotator
 fn transition_to_in_game(mut next_state: ResMut<NextState<GameState>>) {
     next_state.set(GameState::InGame);
 }
 
+//noinspection Annotator
+//noinspection Annotator
 fn pause_rapier(mut rapier_config: ResMut<RapierConfiguration>) {
     rapier_config.physics_pipeline_active = false;
 }
 
+//noinspection Annotator
+//noinspection Annotator
 fn unpause_rapier(mut rapier_config: ResMut<RapierConfiguration>) {
     rapier_config.physics_pipeline_active = true;
 }

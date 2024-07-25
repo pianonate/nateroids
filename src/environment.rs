@@ -3,6 +3,8 @@ use bevy::prelude::*;
 pub struct EnvironmentPlugin;
 
 impl Plugin for EnvironmentPlugin {
+    //noinspection Annotator
+    //noinspection Annotator
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::srgb(0.1, 0.0, 0.15)))
             .insert_resource(AmbientLight {
