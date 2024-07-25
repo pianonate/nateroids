@@ -1,7 +1,10 @@
 ## nateroids
 
-this game has been crated to teach [natepiano](https://youtube.com/natepiano) how to code games, visualizations and
-simulations in bevy using the awesome programming language, rust.
+created to teach [natepiano](https://youtube.com/natepiano) how to code games, visualizations and
+simulations in bevy using the awesome programming language, rust. i started
+with [this tutorial](https://www.youtube.com/@ZymartuGames),
+added [rapier3d](https://www.rapier.rs/docs/user_guides/bevy_plugin/getting_started_bevy) for
+physics and am continuing to enhance it
 
 install rust (from https://www.rust-lang.org/tools/install)
 
