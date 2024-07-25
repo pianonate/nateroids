@@ -1,4 +1,3 @@
-use bevy::input::common_conditions::input_just_pressed;
 use bevy::{
     color::palettes::basic::BLUE,
     color::palettes::css::{GREEN, RED},

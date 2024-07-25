@@ -4,8 +4,8 @@ use bevy::prelude::*;
 use crate::diagnostic::DiagnosticPlugin;
 use crate::{
     asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
-    collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin,
-    nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
+    collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin, missile::MissilePlugin,
+    movement::MovementPlugin, nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
     spaceship::SpaceshipPlugin, state::StatePlugin,
 };
 
@@ -36,7 +36,6 @@ fn main() {
         .add_plugins(CameraPlugin)
         .add_plugins(CollisionDetectionPlugin)
         .add_plugins(DespawnPlugin)
-        .add_plugins(EnvironmentPlugin)
         .add_plugins(MovementPlugin)
         .add_plugins(MissilePlugin)
         .add_plugins(Nateroid)
