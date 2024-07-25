@@ -13,7 +13,7 @@ use crate::{
     utils::name_entity,
 };
 
-const MISSILE_COLLISION_DAMAGE: f32 = 20.0;
+const MISSILE_COLLISION_DAMAGE: f32 = 50.0;
 const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.5;
 const MISSILE_HEALTH: f32 = 1.0;
 const MISSILE_MASS: f32 = 0.001;

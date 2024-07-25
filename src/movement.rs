@@ -1,9 +1,10 @@
+use bevy::input::common_conditions::input_just_pressed;
+use bevy::prelude::KeyCode::F8;
 use bevy::{
     color::palettes::basic::BLUE,
     color::palettes::css::{GREEN, RED},
     prelude::*,
 };
-
 use bevy_rapier3d::{
     dynamics::{GravityScale, LockedAxes},
     geometry::ActiveEvents,
@@ -24,8 +25,11 @@ const DEFAULT_HEALTH: f32 = 100.0;
 const DEFAULT_MASS: f32 = 1.0;
 const LIMITED_DISTANCE_MOVEMENT_SCALAR: f32 = 0.9;
 
+#[derive(Default, Resource, Debug)]
+pub struct MissileParty;
+
 // #todo: #rustquestion - how can i make it so that new has to be used and DrawDirection isn't constructed directly - i still need the fields visible
-#[derive(Component, Debug)]
+#[derive(Copy, Clone, Component, Debug)]
 pub struct LimitedDistanceMover {
     pub direction: Vec3,
     pub total_distance: f32,
@@ -50,11 +54,6 @@ impl LimitedDistanceMover {
                     total_distance =
                         edge_point.distance(opposite_edge) * LIMITED_DISTANCE_MOVEMENT_SCALAR;
                 }
-
-                println!(
-                    "dimensions:{:?} total_distance: {:?}",
-                    dimensions, total_distance
-                );
             }
         }
 
@@ -89,10 +88,14 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
+            toggle_missile_party_system.run_if(input_just_pressed(F8)),
+        )
+        .add_systems(
+            Update,
             (
                 teleport_system,
                 update_distance_traveled_system,
-                draw_limited_distance_movers_system,
+                draw_limited_distance_movers_system.run_if(resource_exists::<MissileParty>),
             )
                 .chain()
                 .in_set(InGameSet::EntityUpdates),
@@ -142,6 +145,15 @@ impl Default for MovingObjectBundle {
         }
     }
 }
+fn toggle_missile_party_system(mut commands: Commands, missile: Option<Res<MissileParty>>) {
+    if let Some(_) = missile {
+        println!("bye bye missile party");
+        commands.remove_resource::<MissileParty>();
+    } else {
+        println!("missile party!");
+        commands.init_resource::<MissileParty>();
+    }
+}
 
 fn teleport_system(
     windows: Query<&Window>,
@@ -163,10 +175,9 @@ fn teleport_system(
 }
 
 fn update_distance_traveled_system(
-    mut commands: Commands,
-    mut query: Query<(Entity, &Transform, &mut LimitedDistanceMover, &Wrappable)>,
+    mut query: Query<(&Transform, &mut LimitedDistanceMover, &Wrappable)>,
 ) {
-    for (entity, transform, mut draw_direction, wrappable) in query.iter_mut() {
+    for (transform, mut draw_direction, wrappable) in query.iter_mut() {
         let current_position = transform.translation;
 
         // Calculate the distance traveled since the last update
@@ -185,11 +196,11 @@ fn update_distance_traveled_system(
 fn draw_limited_distance_movers_system(
     windows: Query<&Window>,
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
-    direction_query: Query<(&Transform, &LimitedDistanceMover)>,
+    direction_query: Query<&LimitedDistanceMover>,
     mut gizmos: Gizmos,
 ) {
     if let Some(dimensions) = calculate_viewable_dimensions(windows, camera_query) {
-        for (transform, limited_distance_mover) in direction_query.iter() {
+        for limited_distance_mover in direction_query.iter() {
             let origin = limited_distance_mover.last_position;
             let direction = limited_distance_mover.direction;
 

@@ -1,5 +1,5 @@
 use bevy::input::common_conditions::input_just_pressed;
-use bevy::prelude::KeyCode::{F10, F9};
+use bevy::prelude::KeyCode::F9;
 use bevy::{
     math::NormedVectorSpace,
     prelude::{
@@ -68,7 +68,7 @@ fn toggle_continuous_fire(
     q_spaceship: Query<(Entity, Option<&ContinuousFire>), With<Spaceship>>,
 ) {
     if let Ok((entity, continuous)) = q_spaceship.get_single() {
-        if let Some(continuous) = continuous {
+        if let Some(_) = continuous {
             println!("removing continuous");
             commands.entity(entity).remove::<ContinuousFire>();
         } else {
@@ -125,39 +125,39 @@ fn spaceship_movement_controls(
     };
 
     let mut rotation = 0.0;
+    let delta_seconds = time.delta_seconds();
 
     if keyboard_input.any_pressed([KeyD, ArrowRight]) {
         // right
         velocity.angvel.y = 0.0;
-        rotation = -SPACESHIP_ROTATION_SPEED * time.delta_seconds();
+        rotation = -SPACESHIP_ROTATION_SPEED * delta_seconds;
     } else if keyboard_input.any_pressed([KeyA, ArrowLeft]) {
         // left
         velocity.angvel.y = 0.0;
-        rotation = SPACESHIP_ROTATION_SPEED * time.delta_seconds();
+        rotation = SPACESHIP_ROTATION_SPEED * delta_seconds;
     }
 
     // rotate around the y-axis
     transform.rotate_y(rotation);
 
-    // we don't need to multiply time time.delta_seconds() because we already do this in Movement
     if keyboard_input.any_pressed([KeyS, ArrowDown]) {
         // down
-        // here you could add code that apply force in the opposite direction
+        apply_acceleration(
+            &mut velocity,
+            -transform.forward().as_vec3(),
+            -SPACESHIP_ACCELERATION,
+            SPACESHIP_MAX_SPEED,
+            delta_seconds,
+        );
     } else if keyboard_input.any_pressed([KeyW, ArrowUp]) {
         // up
-        let proposed_velocity =
-            velocity.linvel - transform.forward() * (SPACESHIP_ACCELERATION * time.delta_seconds());
-        let proposed_speed = proposed_velocity.norm();
-
-        // Ensure we're not exceeding max velocity
-        if proposed_speed > SPACESHIP_MAX_SPEED {
-            velocity.linvel = proposed_velocity.normalize() * SPACESHIP_MAX_SPEED;
-        } else {
-            velocity.linvel = proposed_velocity;
-        }
-
-        // Force the `y` value of velocity.linvel to be 0
-        velocity.linvel.y = 0.0;
+        apply_acceleration(
+            &mut velocity,
+            -transform.forward().as_vec3(),
+            SPACESHIP_ACCELERATION,
+            SPACESHIP_MAX_SPEED,
+            delta_seconds,
+        );
     }
 
     /* let mut roll = 0.0;
@@ -171,6 +171,27 @@ fn spaceship_movement_controls(
     // rotate around the local z-axis
     // the rotation is relative to the current rotation
     // transform.rotate_local_z(roll);
+}
+
+fn apply_acceleration(
+    velocity: &mut Velocity,
+    direction: Vec3,
+    acceleration: f32,
+    max_speed: f32,
+    delta_seconds: f32,
+) {
+    let proposed_velocity = velocity.linvel + direction * (acceleration * delta_seconds);
+    let proposed_speed = proposed_velocity.length();
+
+    // Ensure we're not exceeding max velocity
+    if proposed_speed > max_speed {
+        velocity.linvel = proposed_velocity.normalize() * max_speed;
+    } else {
+        velocity.linvel = proposed_velocity;
+    }
+
+    // Force the `y` value of velocity.linvel to be 0
+    velocity.linvel.y = 0.0;
 }
 
 fn spaceship_shield_controls(
