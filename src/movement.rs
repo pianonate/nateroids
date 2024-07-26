@@ -8,14 +8,9 @@ use bevy_rapier3d::{
     },
 };
 
-use crate::{
-    collision_detection::CollisionDamage, health::Health, schedule::InGameSet,
-    window::ViewportDimensions,
-};
+use crate::{schedule::InGameSet, window::ViewportDimensions};
 
-const DEFAULT_COLLISION_DAMAGE: f32 = 100.0;
 const DEFAULT_GRAVITY: f32 = 0.0;
-const DEFAULT_HEALTH: f32 = 100.0;
 const DEFAULT_MASS: f32 = 1.0;
 
 #[derive(Component, Debug, Default)]
@@ -34,10 +29,8 @@ impl Plugin for MovementPlugin {
 pub struct MovingObjectBundle {
     pub active_events: ActiveEvents,
     pub collider: Collider,
-    pub collision_damage: CollisionDamage,
     pub collision_groups: CollisionGroups,
     pub gravity_scale: GravityScale,
-    pub health: Health,
     pub locked_axes: LockedAxes,
     pub mass: ColliderMassProperties,
     pub model: SceneBundle,
@@ -52,10 +45,8 @@ impl Default for MovingObjectBundle {
         Self {
             active_events: ActiveEvents::COLLISION_EVENTS,
             collider: Collider::default(),
-            collision_damage: CollisionDamage(DEFAULT_COLLISION_DAMAGE),
             collision_groups: CollisionGroups::default(),
             gravity_scale: GravityScale(DEFAULT_GRAVITY),
-            health: Health(DEFAULT_HEALTH),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Y,
             mass: Mass(DEFAULT_MASS),
             model: SceneBundle::default(),

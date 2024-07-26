@@ -8,8 +8,8 @@ use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGr
 
 use crate::{
     asset_loader::SceneAssets,
-    collision_detection::{CollisionDamage, GROUP_ASTEROID, GROUP_MISSILE},
-    health::Health,
+    collision_detection::{GROUP_ASTEROID, GROUP_MISSILE},
+    health::{CollisionDamage, Health, HealthBundle},
     movement::{calculate_wrapped_position, MovingObjectBundle, Wrappable},
     schedule::InGameSet,
     spaceship::{Action, ContinuousFire, Spaceship},
@@ -139,11 +139,13 @@ fn fire_missile(
 
         let missile = commands
             .spawn(Missile)
+            .insert(HealthBundle {
+                collision_damage: CollisionDamage(MISSILE_COLLISION_DAMAGE),
+                health: Health(MISSILE_HEALTH),
+            })
             .insert(MovingObjectBundle {
                 collider: Collider::ball(MISSILE_RADIUS),
-                collision_damage: CollisionDamage(MISSILE_COLLISION_DAMAGE),
                 collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
-                health: Health(MISSILE_HEALTH),
                 mass: Mass(MISSILE_MASS),
                 model: SceneBundle {
                     scene: scene_assets.missiles.clone(),
@@ -156,7 +158,7 @@ fn fire_missile(
                 },
                 ..default()
             })
-            // Create the missile entity with the DrawDirection component
+            // todo: migrate this into missile
             .insert(limited_distance_mover)
             .id(); // to ensure we store the entity id for subsequent use
 

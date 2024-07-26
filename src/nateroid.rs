@@ -5,10 +5,12 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::{Collider, Velocity};
 use rand::Rng;
 
-use crate::movement::MovingObjectBundle;
 use crate::{
-    asset_loader::SceneAssets, collision_detection::CollisionDamage, health::Health,
-    schedule::InGameSet, utils::name_entity,
+    asset_loader::SceneAssets,
+    health::{CollisionDamage, Health, HealthBundle},
+    movement::MovingObjectBundle,
+    schedule::InGameSet,
+    utils::name_entity,
 };
 
 #[derive(Resource, Debug)]
@@ -70,10 +72,12 @@ fn spawn_nateroid(
 
     let nateroid = commands
         .spawn(Nateroid)
-        .insert(MovingObjectBundle {
-            collider: Collider::ball(NATEROID_RADIUS),
+        .insert(HealthBundle {
             collision_damage: CollisionDamage(NATEROID_COLLISION_DAMAGE),
             health: Health(NATEROID_HEALTH),
+        })
+        .insert(MovingObjectBundle {
+            collider: Collider::ball(NATEROID_RADIUS),
             model: SceneBundle {
                 scene: scene_assets.nateroid.clone(),
                 transform,

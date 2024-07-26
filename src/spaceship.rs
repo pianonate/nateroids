@@ -11,8 +11,8 @@ use bevy_rapier3d::prelude::{
 
 use crate::{
     asset_loader::SceneAssets,
-    collision_detection::{CollisionDamage, GROUP_ASTEROID, GROUP_SPACESHIP},
-    health::Health,
+    collision_detection::{GROUP_ASTEROID, GROUP_SPACESHIP},
+    health::{CollisionDamage, Health, HealthBundle},
     movement::MovingObjectBundle,
     schedule::InGameSet,
     state::GameState,
@@ -113,10 +113,12 @@ fn toggle_continuous_fire(
 fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
     let spaceship = commands
         .spawn(Spaceship)
-        .insert(MovingObjectBundle {
-            collider: Collider::ball(SPACESHIP_RADIUS),
+        .insert(HealthBundle {
             collision_damage: CollisionDamage(SPACESHIP_COLLISION_DAMAGE),
             health: Health(SPACESHIP_HEALTH),
+        })
+        .insert(MovingObjectBundle {
+            collider: Collider::ball(SPACESHIP_RADIUS),
             collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Y
                 | LockedAxes::ROTATION_LOCKED_X
