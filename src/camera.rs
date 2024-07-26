@@ -8,7 +8,7 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_camera)
+        app.add_systems(PreStartup, spawn_camera)
             .add_systems(Update, zoom_camera)
             .insert_resource(ClearColor(Color::srgb(0.1, 0.0, 0.15)))
             .insert_resource(AmbientLight {

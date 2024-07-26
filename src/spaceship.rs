@@ -135,12 +135,6 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             ..default()
         })
         .insert(InputManagerBundle::with_map(Action::default_input_map()))
-        // only rotate in x and z plane - i.e., - around the y-axis
-        .insert(
-            LockedAxes::TRANSLATION_LOCKED_Y
-                | LockedAxes::ROTATION_LOCKED_X
-                | LockedAxes::ROTATION_LOCKED_Z,
-        )
         .id();
 
     name_entity(&mut commands, spaceship, SPACESHIP_NAME);
@@ -176,7 +170,7 @@ fn spaceship_movement_controls(
             apply_acceleration(
                 &mut velocity,
                 -transform.forward().as_vec3(),
-                -SPACESHIP_ACCELERATION,
+                SPACESHIP_ACCELERATION,
                 SPACESHIP_MAX_SPEED,
                 delta_seconds,
             );
@@ -185,7 +179,7 @@ fn spaceship_movement_controls(
             apply_acceleration(
                 &mut velocity,
                 -transform.forward().as_vec3(),
-                SPACESHIP_ACCELERATION,
+                -SPACESHIP_ACCELERATION,
                 SPACESHIP_MAX_SPEED,
                 delta_seconds,
             );

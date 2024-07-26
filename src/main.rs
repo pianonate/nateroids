@@ -6,7 +6,7 @@ use crate::{
     asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin, missile::MissilePlugin,
     movement::MovementPlugin, nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
-    spaceship::SpaceshipPlugin, state::StatePlugin,
+    spaceship::SpaceshipPlugin, state::StatePlugin, window::WindowPlugin,
 };
 
 // exclude when targeting wasm - this breaks in the browser right now
@@ -25,8 +25,7 @@ mod schedule;
 mod spaceship;
 mod state;
 mod utils;
-
-//noinspection ALL
+mod window;
 
 fn main() {
     let mut app = App::new();
@@ -42,7 +41,8 @@ fn main() {
         .add_plugins(PhysicsPlugin)
         .add_plugins(SchedulePlugin)
         .add_plugins(SpaceshipPlugin)
-        .add_plugins(StatePlugin);
+        .add_plugins(StatePlugin)
+        .add_plugins(WindowPlugin);
 
     #[cfg(not(target_arch = "wasm32"))]
     app.add_plugins(DiagnosticPlugin);

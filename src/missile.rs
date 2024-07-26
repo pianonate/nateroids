@@ -8,16 +8,13 @@ use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGr
 
 use crate::{
     asset_loader::SceneAssets,
-    camera::PrimaryCamera,
     collision_detection::{CollisionDamage, GROUP_ASTEROID, GROUP_MISSILE},
     health::Health,
-    movement::{
-        calculate_viewable_dimensions, calculate_wrapped_position, MovingObjectBundle,
-        ViewableDimensions, Wrappable,
-    },
+    movement::{calculate_wrapped_position, MovingObjectBundle, Wrappable},
     schedule::InGameSet,
     spaceship::{Action, ContinuousFire, Spaceship},
     utils::name_entity,
+    window::ViewportDimensions,
 };
 
 use leafwing_input_manager::prelude::*;
@@ -31,6 +28,7 @@ const MISSILE_NAME: &str = "Missile";
 const MISSILE_RADIUS: f32 = 0.4;
 const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
 const MISSILE_SPEED: f32 = 75.0;
+const MISSILE_PERPENDICULAR_LENGTH: f32 = 10.0;
 
 #[derive(Component, Debug)]
 struct Missile;
@@ -55,18 +53,19 @@ impl MissileMovement {
     pub fn new(
         origin: Vec3,
         direction: Vec3,
-        windows: Query<&Window>,
-        camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
+        viewport: Res<ViewportDimensions>,
+        // windows: Query<&Window>,
+        // camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
     ) -> Self {
         let mut total_distance = 0.0;
 
-        if let Some(dimensions) = calculate_viewable_dimensions(windows, camera_query) {
-            if let Some(edge_point) = find_edge_point(origin, direction, dimensions) {
-                if let Some(opposite_edge) = find_edge_point(origin, -direction, dimensions) {
-                    total_distance = edge_point.distance(opposite_edge) * MISSILE_MOVEMENT_SCALAR;
-                }
+        // if let Some(dimensions) = calculate_viewable_dimensions(windows, camera_query) {
+        if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
+            if let Some(opposite_edge) = find_edge_point(origin, -direction, &viewport) {
+                total_distance = edge_point.distance(opposite_edge) * MISSILE_MOVEMENT_SCALAR;
             }
         }
+        // }
 
         MissileMovement {
             direction,
@@ -102,13 +101,12 @@ impl Plugin for MissilePlugin {
 #[allow(clippy::too_many_arguments)]
 fn fire_missile(
     mut commands: Commands,
-    q_camera: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
-    q_windows: Query<&Window>,
     q_spaceship: Query<(&Transform, Option<&ContinuousFire>), With<Spaceship>>,
     input_map: Query<&ActionState<Action>>,
     scene_assets: Res<SceneAssets>,
     mut spawn_timer: ResMut<MissileSpawnTimer>,
     time: Res<Time>,
+    viewport: Res<ViewportDimensions>,
 ) {
     // todo: #rustquestion - is this short circuit idiomatic rust?
     let Ok((transform, continuous_fire)) = q_spaceship.get_single() else {
@@ -137,7 +135,7 @@ fn fire_missile(
 
         let direction = -transform.forward().as_vec3();
         let origin = transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
-        let limited_distance_mover = MissileMovement::new(origin, direction, q_windows, q_camera);
+        let limited_distance_mover = MissileMovement::new(origin, direction, viewport);
 
         let missile = commands
             .spawn(Missile)
@@ -166,13 +164,17 @@ fn fire_missile(
     }
 }
 
+/// we update missile movement so that it can be despawned after it has traveled its total distance
 fn update_missile_movement(mut query: Query<(&Transform, &mut MissileMovement, &Wrappable)>) {
     for (transform, mut draw_direction, wrappable) in query.iter_mut() {
         let current_position = transform.translation;
 
         // Calculate the distance traveled since the last update
+        // we use wrapped as a sentinel so that we don't consider
+        // the teleport of the missile at the edge of the screen to have
+        // used up any distance
         let distance_traveled = if wrappable.wrapped {
-            0.0 // Reset distance if wrapped
+            0.0
         } else {
             draw_direction.last_position.distance(current_position)
         };
@@ -183,38 +185,36 @@ fn update_missile_movement(mut query: Query<(&Transform, &mut MissileMovement, &
     }
 }
 
+/// fun! with missiles!
 fn missile_party_system(
-    camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
-    direction_query: Query<&MissileMovement>,
+    missile_movement_query: Query<&MissileMovement>,
     mut gizmos: Gizmos,
-
-    windows: Query<&Window>,
+    viewport: Res<ViewportDimensions>,
 ) {
-    if let Some(dimensions) = crate::movement::calculate_viewable_dimensions(windows, camera_query)
-    {
-        for limited_distance_mover in direction_query.iter() {
-            let origin = limited_distance_mover.last_position;
-            let direction = limited_distance_mover.direction;
+    for missile in missile_movement_query.iter() {
+        let origin = missile.last_position;
+        let direction = missile.direction;
+        let distance_traveled = 1.0 - missile.traveled_distance / missile.total_distance;
+        let perpendicular_length = MISSILE_PERPENDICULAR_LENGTH * distance_traveled;
 
-            let (p1, p2) = calculate_perpendicular_points(origin, direction, 100.0);
-            gizmos.line_gradient(p1, p2, BLUE, RED);
+        let (p1, p2) = calculate_perpendicular_points(origin, direction, perpendicular_length);
+        gizmos.line_gradient(p1, p2, BLUE, RED);
 
-            if let Some(edge_point) = find_edge_point(origin, direction, dimensions) {
-                gizmos
-                    .sphere(edge_point, Quat::IDENTITY, 1., Color::WHITE)
-                    .resolution(64);
+        if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
+            gizmos
+                .sphere(edge_point, Quat::IDENTITY, 1., Color::WHITE)
+                .resolution(64);
 
-                gizmos.line_gradient(origin, edge_point, GREEN, RED);
+            gizmos.line_gradient(origin, edge_point, GREEN, RED);
 
-                let opposite_edge = calculate_wrapped_position(edge_point, dimensions);
+            let opposite_edge = calculate_wrapped_position(edge_point, &viewport);
 
-                gizmos
-                    .sphere(opposite_edge, Quat::IDENTITY, 1., Color::WHITE)
-                    .resolution(64);
+            gizmos
+                .sphere(opposite_edge, Quat::IDENTITY, 1., Color::WHITE)
+                .resolution(64);
 
-                if let Some(next_edge) = find_edge_point(opposite_edge, direction, dimensions) {
-                    gizmos.line_gradient(opposite_edge, next_edge, RED, GREEN);
-                }
+            if let Some(next_edge) = find_edge_point(opposite_edge, direction, &viewport) {
+                gizmos.line_gradient(opposite_edge, next_edge, RED, GREEN);
             }
         }
     }
@@ -249,8 +249,13 @@ fn calculate_perpendicular_points(origin: Vec3, direction: Vec3, distance: f32) 
 /// - The function calculates the intersection points of the ray with the positive and negative boundaries of the viewable area along both the x and z axes.
 /// - It iterates over these axes, updating the minimum intersection distance (`t_min`) if a valid intersection is found.
 /// - Finally, it returns the intersection point corresponding to the minimum distance, or `None` if no valid intersection is found.
-fn find_edge_point(origin: Vec3, direction: Vec3, dimensions: ViewableDimensions) -> Option<Vec3> {
-    let ViewableDimensions { width, height } = dimensions;
+fn find_edge_point(
+    origin: Vec3,
+    direction: Vec3,
+    dimensions: &Res<ViewportDimensions>,
+) -> Option<Vec3> {
+    let width = dimensions.width;
+    let height = dimensions.height;
 
     let half_width = width / 2.0;
     let half_height = height / 2.0;

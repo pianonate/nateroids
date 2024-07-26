@@ -9,8 +9,8 @@ use bevy_rapier3d::{
 };
 
 use crate::{
-    camera::PrimaryCamera, collision_detection::CollisionDamage, health::Health,
-    schedule::InGameSet,
+    collision_detection::CollisionDamage, health::Health, schedule::InGameSet,
+    window::ViewportDimensions,
 };
 
 const DEFAULT_COLLISION_DAMAGE: f32 = 100.0;
@@ -21,12 +21,6 @@ const DEFAULT_MASS: f32 = 1.0;
 #[derive(Component, Debug, Default)]
 pub struct Wrappable {
     pub wrapped: bool,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct ViewableDimensions {
-    pub width: f32,
-    pub height: f32,
 }
 
 pub struct MovementPlugin;
@@ -80,27 +74,25 @@ impl Default for MovingObjectBundle {
 }
 
 fn teleport_system(
-    windows: Query<&Window>,
-    camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
+    viewport: Res<ViewportDimensions>,
     mut wrappable_entities: Query<(&mut Transform, &mut Wrappable)>,
 ) {
-    if let Some(dimensions) = calculate_viewable_dimensions(windows, camera_query) {
-        for (mut transform, mut wrappable) in wrappable_entities.iter_mut() {
-            let original_position = transform.translation;
-            let wrapped_position = calculate_wrapped_position(original_position, dimensions);
-            if wrapped_position != original_position {
-                wrappable.wrapped = true;
-                transform.translation = wrapped_position;
-            } else {
-                wrappable.wrapped = false;
-            }
+    for (mut transform, mut wrappable) in wrappable_entities.iter_mut() {
+        let original_position = transform.translation;
+        let wrapped_position = calculate_wrapped_position(original_position, &viewport);
+        if wrapped_position != original_position {
+            wrappable.wrapped = true;
+            transform.translation = wrapped_position;
+        } else {
+            wrappable.wrapped = false;
         }
     }
 }
 
 /// given a particular point, what is the point on the opposite side of the screen?
-pub fn calculate_wrapped_position(position: Vec3, dimensions: ViewableDimensions) -> Vec3 {
-    let ViewableDimensions { width, height } = dimensions;
+pub fn calculate_wrapped_position(position: Vec3, dimensions: &Res<ViewportDimensions>) -> Vec3 {
+    let width = dimensions.width;
+    let height = dimensions.height;
 
     let screen_right = width / 2.0;
     let screen_left = -screen_right;
@@ -122,32 +114,4 @@ pub fn calculate_wrapped_position(position: Vec3, dimensions: ViewableDimensions
     }
 
     wrapped_position
-}
-
-/// given a particular camera, what is the viewable/width and height for that camera?
-pub fn calculate_viewable_dimensions(
-    windows: Query<&Window>,
-    camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
-) -> Option<ViewableDimensions> {
-    if let Ok(window) = windows.get_single() {
-        let screen_width = window.width();
-        let screen_height = window.height();
-        // Calculate the aspect ratio
-        let aspect_ratio = screen_width / screen_height;
-
-        if let Ok((Projection::Perspective(perspective_projection), global_transform)) =
-            camera_query.get_single()
-        {
-            // Calculate the viewable width and height at the plane level
-            let camera_distance = global_transform.translation().y;
-            let viewable_height = 2.0 * (perspective_projection.fov / 2.0).tan() * camera_distance;
-            let viewable_width = viewable_height * aspect_ratio;
-
-            return Some(ViewableDimensions {
-                width: viewable_width,
-                height: viewable_height,
-            });
-        }
-    }
-    None
 }
