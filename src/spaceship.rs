@@ -59,15 +59,21 @@ impl Plugin for SpaceshipPlugin {
     }
 }
 
+// had to set the type-complexity-threshold in clippy.toml to 260
+// to allow this type to pass - it is complex but queries in Bevy are complex
 fn toggle_continuous_fire(
     mut commands: Commands,
-    q_input_map: Query<&ActionState<SpaceshipAction>>,
-    q_spaceship: Query<(Entity, Option<&ContinuousFire>), With<Spaceship>>,
+    q_spaceship: Query<
+        (
+            Entity,
+            &ActionState<SpaceshipAction>,
+            Option<&ContinuousFire>,
+        ),
+        With<Spaceship>,
+    >,
 ) {
-    let spaceship_action = q_input_map.single();
-
-    if spaceship_action.just_pressed(&SpaceshipAction::ContinuousFire) {
-        if let Ok((entity, continuous)) = q_spaceship.get_single() {
+    if let Ok((entity, spaceship_action, continuous)) = q_spaceship.get_single() {
+        if spaceship_action.just_pressed(&SpaceshipAction::ContinuousFire) {
             if continuous.is_some() {
                 println!("removing continuous");
                 commands.entity(entity).remove::<ContinuousFire>();

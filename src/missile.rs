@@ -1,6 +1,5 @@
 use bevy::{
     color::palettes::basic::{BLUE, GREEN, RED, WHITE},
-    input::common_conditions::input_toggle_active,
     prelude::Color::Srgba,
     prelude::*,
 };
@@ -49,8 +48,6 @@ pub struct MissileMovement {
     pub last_teleport_position: Option<Vec3>, // Add this field
 }
 
-/// take the distance to the nearest edge in front and behind and make that
-/// the distance this thing will travel - it's not perfect but it will do
 impl MissileMovement {
     pub fn new(
         origin: Vec3,
@@ -92,11 +89,15 @@ impl Plugin for MissilePlugin {
             Update,
             (
                 missile_movement,
-                missile_party.run_if(input_toggle_active(false, KeyCode::F8)),
+                // toggles the MissilePartyEnabled if the MissileParty spaceship action is pressed
+                toggle_missile_party,
+                // allows missile party to run only if the MissilePartyEnabled resource is true
+                missile_party.run_if(|enabled: Res<MissilePartyEnabled>| enabled.0),
             )
                 .chain()
                 .in_set(InGameSet::EntityUpdates),
-        );
+        )
+        .insert_resource(MissilePartyEnabled(false));
     }
 }
 
@@ -190,6 +191,20 @@ fn missile_movement(mut query: Query<(&Transform, &mut MissileMovement, &Wrappab
         // Update the last teleport position if the missile wrapped
         if wrappable.wrapped {
             missile_movement.last_teleport_position = Some(missile_movement.last_position);
+        }
+    }
+}
+
+#[derive(Resource, Default)]
+struct MissilePartyEnabled(bool);
+
+fn toggle_missile_party(
+    q_input_map: Query<&ActionState<SpaceshipAction>, With<Spaceship>>,
+    mut missile_party_enabled: ResMut<MissilePartyEnabled>,
+) {
+    if let Ok(spaceship_action) = q_input_map.get_single() {
+        if spaceship_action.just_pressed(&SpaceshipAction::MissileParty) {
+            missile_party_enabled.0 = !missile_party_enabled.0;
         }
     }
 }
