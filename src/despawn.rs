@@ -1,6 +1,5 @@
+use crate::{health::Health, missile::Missile, schedule::InGameSet, state::GameState};
 use bevy::prelude::*;
-
-use crate::{health::Health, missile::MissileMovement, schedule::InGameSet, state::GameState};
 
 pub struct DespawnPlugin;
 
@@ -14,10 +13,9 @@ impl Plugin for DespawnPlugin {
     }
 }
 
-fn despawn_missiles(mut commands: Commands, query: Query<(Entity, &MissileMovement)>) {
-    for (entity, &limited_distance_mover) in query.iter() {
-        // Despawn the entity if it has traveled the total distance
-        if limited_distance_mover.traveled_distance >= limited_distance_mover.total_distance {
+fn despawn_missiles(mut commands: Commands, query: Query<(Entity, &Missile)>) {
+    for (entity, &missile) in query.iter() {
+        if missile.traveled_distance >= missile.total_distance {
             despawn(&mut commands, entity);
         }
     }

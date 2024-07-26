@@ -30,9 +30,6 @@ const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
 const MISSILE_SPEED: f32 = 75.0;
 const MISSILE_PERPENDICULAR_LENGTH: f32 = 10.0;
 
-#[derive(Component, Debug)]
-struct Missile;
-
 #[derive(Resource, Debug)]
 struct MissileSpawnTimer {
     pub timer: Timer,
@@ -40,7 +37,7 @@ struct MissileSpawnTimer {
 
 // todo: #rustquestion - how can i make it so that new has to be used and DrawDirection isn't constructed directly - i still need the fields visible
 #[derive(Copy, Clone, Component, Debug)]
-pub struct MissileMovement {
+pub struct Missile {
     pub direction: Vec3,
     pub total_distance: f32,
     pub traveled_distance: f32,
@@ -48,7 +45,7 @@ pub struct MissileMovement {
     pub last_teleport_position: Option<Vec3>, // Add this field
 }
 
-impl MissileMovement {
+impl Missile {
     pub fn new(
         origin: Vec3,
         direction: Vec3,
@@ -58,15 +55,13 @@ impl MissileMovement {
     ) -> Self {
         let mut total_distance = 0.0;
 
-        // if let Some(dimensions) = calculate_viewable_dimensions(windows, camera_query) {
         if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
             if let Some(opposite_edge) = find_edge_point(origin, -direction, &viewport) {
                 total_distance = edge_point.distance(opposite_edge) * MISSILE_MOVEMENT_SCALAR;
             }
         }
-        // }
 
-        MissileMovement {
+        Missile {
             direction,
             total_distance,
             traveled_distance: 0.0,
@@ -138,10 +133,10 @@ fn fire_missile(
 
         let direction = -transform.forward().as_vec3();
         let origin = transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
-        let limited_distance_mover = MissileMovement::new(origin, direction, viewport);
+        let missile = Missile::new(origin, direction, viewport);
 
         let missile = commands
-            .spawn(Missile)
+            .spawn(missile)
             .insert(HealthBundle {
                 collision_damage: CollisionDamage(MISSILE_COLLISION_DAMAGE),
                 health: Health(MISSILE_HEALTH),
@@ -161,8 +156,6 @@ fn fire_missile(
                 },
                 ..default()
             })
-            // todo: migrate this into missile
-            .insert(limited_distance_mover)
             .id(); // to ensure we store the entity id for subsequent use
 
         name_entity(&mut commands, missile, MISSILE_NAME);
@@ -170,8 +163,8 @@ fn fire_missile(
 }
 
 /// we update missile movement so that it can be despawned after it has traveled its total distance
-fn missile_movement(mut query: Query<(&Transform, &mut MissileMovement, &Wrappable)>) {
-    for (transform, mut missile_movement, wrappable) in query.iter_mut() {
+fn missile_movement(mut query: Query<(&Transform, &mut Missile, &Wrappable)>) {
+    for (transform, mut missile, wrappable) in query.iter_mut() {
         let current_position = transform.translation;
 
         // Calculate the distance traveled since the last update
@@ -181,16 +174,16 @@ fn missile_movement(mut query: Query<(&Transform, &mut MissileMovement, &Wrappab
         let distance_traveled = if wrappable.wrapped {
             0.0
         } else {
-            missile_movement.last_position.distance(current_position)
+            missile.last_position.distance(current_position)
         };
 
         // Update the total traveled distance
-        missile_movement.traveled_distance += distance_traveled;
-        missile_movement.last_position = current_position;
+        missile.traveled_distance += distance_traveled;
+        missile.last_position = current_position;
 
         // Update the last teleport position if the missile wrapped
         if wrappable.wrapped {
-            missile_movement.last_teleport_position = Some(missile_movement.last_position);
+            missile.last_teleport_position = Some(missile.last_position);
         }
     }
 }
@@ -211,11 +204,11 @@ fn toggle_missile_party(
 
 /// fun! with missiles!
 fn missile_party(
-    missile_movement_query: Query<&MissileMovement>,
+    q_missile: Query<&Missile>,
     mut gizmos: Gizmos,
     viewport: Res<ViewportDimensions>,
 ) {
-    for missile in missile_movement_query.iter() {
+    for missile in q_missile.iter() {
         let current_position = missile.last_position;
         let direction = missile.direction;
 
@@ -227,7 +220,7 @@ fn missile_party(
 fn draw_missile_ray(
     gizmos: &mut Gizmos,
     viewport: &Res<ViewportDimensions>,
-    missile: &MissileMovement,
+    missile: &Missile,
     current_position: Vec3,
     direction: Vec3,
 ) {
@@ -272,7 +265,7 @@ fn draw_sphere(gizmos: &mut Gizmos, position: Vec3, color: Color) {
 
 fn draw_missile_perpendicular(
     gizmos: &mut Gizmos,
-    missile: &MissileMovement,
+    missile: &Missile,
     current_position: Vec3,
     direction: Vec3,
 ) {
@@ -326,27 +319,40 @@ fn find_edge_point(
 
     let mut t_min = f32::MAX;
 
-    // learning rust - this for syntax destructures the two provided tuples into the variables
-    // so we get a pas through this loop for both x and z - i like rust
     for (start, dir, pos_bound, neg_bound) in [
         (origin.x, direction.x, half_width, -half_width),
         (origin.z, direction.z, half_height, -half_height),
     ] {
         if dir != 0.0 {
             let t_positive = (pos_bound - start) / dir;
-            if t_positive > 0.0 && t_positive < t_min {
+            let point_positive = origin + direction * t_positive;
+            let in_bounds_positive = if start == origin.x {
+                point_positive.z.abs() <= half_height
+            } else {
+                point_positive.x.abs() <= half_width
+            };
+
+            if t_positive > 0.0 && t_positive < t_min && in_bounds_positive {
                 t_min = t_positive;
             }
+
             let t_negative = (neg_bound - start) / dir;
-            if t_negative > 0.0 && t_negative < t_min {
+            let point_negative = origin + direction * t_negative;
+            let in_bounds_negative = if start == origin.x {
+                point_negative.z.abs() <= half_height
+            } else {
+                point_negative.x.abs() <= half_width
+            };
+
+            if t_negative > 0.0 && t_negative < t_min && in_bounds_negative {
                 t_min = t_negative;
             }
         }
     }
 
     if t_min != f32::MAX {
-        Some(origin + direction * t_min)
-    } else {
-        None
+        let edge_point = origin + direction * t_min;
+        return Some(edge_point);
     }
+    None
 }
