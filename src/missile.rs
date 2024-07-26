@@ -10,9 +10,10 @@ use crate::{
     asset_loader::SceneAssets,
     collision_detection::{GROUP_ASTEROID, GROUP_MISSILE},
     health::{CollisionDamage, Health, HealthBundle},
+    input::Action,
     movement::{calculate_wrapped_position, MovingObjectBundle, Wrappable},
     schedule::InGameSet,
-    spaceship::{Action, ContinuousFire, Spaceship},
+    spaceship::{ContinuousFire, Spaceship},
     utils::name_entity,
     window::ViewportDimensions,
 };

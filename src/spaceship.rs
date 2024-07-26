@@ -1,10 +1,8 @@
 use bevy::{
     input::common_conditions::input_just_pressed,
-    prelude::{
-        KeyCode::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp, KeyA, KeyD, KeyS, KeyW, F9},
-        *,
-    },
+    prelude::{KeyCode::F9, *},
 };
+
 use bevy_rapier3d::prelude::{
     Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
 };
@@ -18,6 +16,8 @@ use crate::{
     state::GameState,
     utils::name_entity,
 };
+
+use crate::input::Action;
 use leafwing_input_manager::prelude::*;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
@@ -44,8 +44,7 @@ pub struct SpaceshipPlugin;
 impl Plugin for SpaceshipPlugin {
     // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
-        app.add_plugins(InputManagerPlugin::<Action>::default())
-            .add_systems(PostStartup, spawn_spaceship)
+        app.add_systems(PostStartup, spawn_spaceship)
             // spawn a new Spaceship if we're in GameOver state
             .add_systems(OnEnter(GameState::GameOver), spawn_spaceship)
             .add_systems(
@@ -60,38 +59,6 @@ impl Plugin for SpaceshipPlugin {
             )
             // check if spaceship is destroyed...this will change the GameState
             .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
-    }
-}
-
-// This is the list of "things I want the spaceship to be able to do based on input"
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
-pub enum Action {
-    Accelerate,
-    Decelerate,
-    Fire,
-    TurnLeft,
-    TurnRight,
-}
-
-impl Action {
-    fn default_input_map() -> InputMap<Self> {
-        let mut input_map = InputMap::default();
-
-        input_map.insert(Self::Accelerate, KeyW);
-        input_map.insert(Self::Accelerate, ArrowUp);
-
-        input_map.insert(Self::Decelerate, KeyS);
-        input_map.insert(Self::Decelerate, ArrowDown);
-
-        input_map.insert(Self::Fire, KeyCode::Space);
-
-        input_map.insert(Self::TurnLeft, KeyA);
-        input_map.insert(Self::TurnLeft, ArrowLeft);
-
-        input_map.insert(Self::TurnRight, KeyD);
-        input_map.insert(Self::TurnRight, ArrowRight);
-
-        input_map
     }
 }
 
