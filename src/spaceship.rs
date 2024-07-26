@@ -63,7 +63,7 @@ impl Plugin for SpaceshipPlugin {
     }
 }
 
-// This is the list of "things in the game I want to be able to do based on input"
+// This is the list of "things I want the spaceship to be able to do based on input"
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum Action {
     Accelerate,
@@ -114,10 +114,9 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
     let spaceship = commands
         .spawn(Spaceship)
         .insert(MovingObjectBundle {
-            // todo: #rustquestion - it seems awkward to override default with just a different constant value - is there a way to make this more idiomatic?
             collider: Collider::ball(SPACESHIP_RADIUS),
-            collision_damage: CollisionDamage::new(SPACESHIP_COLLISION_DAMAGE),
-            health: Health::new(SPACESHIP_HEALTH),
+            collision_damage: CollisionDamage(SPACESHIP_COLLISION_DAMAGE),
+            health: Health(SPACESHIP_HEALTH),
             collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Y
                 | LockedAxes::ROTATION_LOCKED_X

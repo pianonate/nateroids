@@ -101,10 +101,10 @@ impl Plugin for MissilePlugin {
 #[allow(clippy::too_many_arguments)]
 fn fire_missile(
     mut commands: Commands,
-    q_spaceship: Query<(&Transform, Option<&ContinuousFire>), With<Spaceship>>,
-    input_map: Query<&ActionState<Action>>,
-    scene_assets: Res<SceneAssets>,
     mut spawn_timer: ResMut<MissileSpawnTimer>,
+    q_input_map: Query<&ActionState<Action>>,
+    q_spaceship: Query<(&Transform, Option<&ContinuousFire>), With<Spaceship>>,
+    scene_assets: Res<SceneAssets>,
     time: Res<Time>,
     viewport: Res<ViewportDimensions>,
 ) {
@@ -125,7 +125,7 @@ fn fire_missile(
         None => false,
     };
 
-    let action_state = input_map.single();
+    let action_state = q_input_map.single();
 
     if continuous && action_state.pressed(&Action::Fire)
         || !continuous && action_state.just_pressed(&Action::Fire)
@@ -141,9 +141,9 @@ fn fire_missile(
             .spawn(Missile)
             .insert(MovingObjectBundle {
                 collider: Collider::ball(MISSILE_RADIUS),
-                collision_damage: CollisionDamage::new(MISSILE_COLLISION_DAMAGE),
+                collision_damage: CollisionDamage(MISSILE_COLLISION_DAMAGE),
                 collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
-                health: Health::new(MISSILE_HEALTH),
+                health: Health(MISSILE_HEALTH),
                 mass: Mass(MISSILE_MASS),
                 model: SceneBundle {
                     scene: scene_assets.missiles.clone(),

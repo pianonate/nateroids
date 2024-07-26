@@ -72,8 +72,8 @@ fn spawn_nateroid(
         .spawn(Nateroid)
         .insert(MovingObjectBundle {
             collider: Collider::ball(NATEROID_RADIUS),
-            collision_damage: CollisionDamage::new(NATEROID_COLLISION_DAMAGE),
-            health: Health::new(NATEROID_HEALTH),
+            collision_damage: CollisionDamage(NATEROID_COLLISION_DAMAGE),
+            health: Health(NATEROID_HEALTH),
             model: SceneBundle {
                 scene: scene_assets.nateroid.clone(),
                 transform,

@@ -9,15 +9,7 @@ pub const GROUP_ASTEROID: Group = Group::GROUP_2;
 pub const GROUP_MISSILE: Group = Group::GROUP_3;
 
 #[derive(Component, Debug)]
-pub struct CollisionDamage {
-    pub amount: f32,
-}
-
-impl CollisionDamage {
-    pub fn new(amount: f32) -> Self {
-        Self { amount }
-    }
-}
+pub struct CollisionDamage(pub f32);
 
 pub struct CollisionDetectionPlugin;
 
@@ -72,7 +64,7 @@ fn apply_collision_damage(
 ) {
     if let Ok(mut health) = health_query.get_mut(receiving_entity) {
         if let Ok(collision_damage) = collision_damage_query.get(applying_entity) {
-            health.value -= collision_damage.amount;
+            health.0 -= collision_damage.0;
             // println!(
             //     "{:?} applied {:?} damage to {:?} now it has health:{:?}",
             //     _applying_entity_name, collision_damage.amount, _receiving_entity_name, health.value

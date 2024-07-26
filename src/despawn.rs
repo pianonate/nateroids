@@ -29,7 +29,7 @@ fn despawn(commands: &mut Commands, entity: Entity) {
 
 fn despawn_dead_entities(mut commands: Commands, query: Query<(Entity, &Health, &Name)>) {
     for (entity, health, _name) in query.iter() {
-        if health.value <= 0.0 {
+        if health.0 <= 0.0 {
             // if !name.contains("Missile") {
             //     println!("{:?} died from poor health: {:?}\n", _name, health);
             // }

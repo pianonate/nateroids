@@ -52,10 +52,10 @@ impl Default for MovingObjectBundle {
         Self {
             active_events: ActiveEvents::COLLISION_EVENTS,
             collider: Collider::default(),
-            collision_damage: CollisionDamage::new(DEFAULT_COLLISION_DAMAGE),
+            collision_damage: CollisionDamage(DEFAULT_COLLISION_DAMAGE),
             collision_groups: CollisionGroups::default(),
             gravity_scale: GravityScale(DEFAULT_GRAVITY),
-            health: Health::new(DEFAULT_HEALTH),
+            health: Health(DEFAULT_HEALTH),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Y,
             mass: Mass(DEFAULT_MASS),
             model: SceneBundle::default(),
