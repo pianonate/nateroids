@@ -70,7 +70,7 @@ fn teleport_system(
 ) {
     for (mut transform, mut wrappable) in wrappable_entities.iter_mut() {
         let original_position = transform.translation;
-        let wrapped_position = calculate_wrapped_position(original_position, &viewport);
+        let wrapped_position = calculate_teleport_position(original_position, &viewport);
         if wrapped_position != original_position {
             wrappable.wrapped = true;
             transform.translation = wrapped_position;
@@ -81,7 +81,7 @@ fn teleport_system(
 }
 
 /// given a particular point, what is the point on the opposite side of the screen?
-pub fn calculate_wrapped_position(position: Vec3, dimensions: &Res<ViewportDimensions>) -> Vec3 {
+pub fn calculate_teleport_position(position: Vec3, dimensions: &Res<ViewportDimensions>) -> Vec3 {
     let width = dimensions.width;
     let height = dimensions.height;
 

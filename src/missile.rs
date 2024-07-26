@@ -1,9 +1,9 @@
 use bevy::{
-    color::palettes::basic::{BLUE, GREEN, RED},
+    color::palettes::basic::{BLUE, GREEN, RED, WHITE},
     input::common_conditions::input_toggle_active,
+    prelude::Color::Srgba,
     prelude::*,
 };
-
 use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGroups, Velocity};
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
     collision_detection::{GROUP_ASTEROID, GROUP_MISSILE},
     health::{CollisionDamage, Health, HealthBundle},
     input::Action,
-    movement::{calculate_wrapped_position, MovingObjectBundle, Wrappable},
+    movement::{calculate_teleport_position, MovingObjectBundle, Wrappable},
     schedule::InGameSet,
     spaceship::{ContinuousFire, Spaceship},
     utils::name_entity,
@@ -46,6 +46,7 @@ pub struct MissileMovement {
     pub total_distance: f32,
     pub traveled_distance: f32,
     pub last_position: Vec3,
+    pub last_teleport_position: Option<Vec3>, // Add this field
 }
 
 /// take the distance to the nearest edge in front and behind and make that
@@ -73,6 +74,7 @@ impl MissileMovement {
             total_distance,
             traveled_distance: 0.0,
             last_position: origin,
+            last_teleport_position: None, // Initialize this field
         }
     }
 }
@@ -89,7 +91,7 @@ impl Plugin for MissilePlugin {
         .add_systems(
             Update,
             (
-                update_missile_movement,
+                missile_movement_system,
                 missile_party_system.run_if(input_toggle_active(false, KeyCode::F8)),
             )
                 .chain()
@@ -168,8 +170,8 @@ fn fire_missile(
 }
 
 /// we update missile movement so that it can be despawned after it has traveled its total distance
-fn update_missile_movement(mut query: Query<(&Transform, &mut MissileMovement, &Wrappable)>) {
-    for (transform, mut draw_direction, wrappable) in query.iter_mut() {
+fn missile_movement_system(mut query: Query<(&Transform, &mut MissileMovement, &Wrappable)>) {
+    for (transform, mut missile_movement, wrappable) in query.iter_mut() {
         let current_position = transform.translation;
 
         // Calculate the distance traveled since the last update
@@ -179,12 +181,17 @@ fn update_missile_movement(mut query: Query<(&Transform, &mut MissileMovement, &
         let distance_traveled = if wrappable.wrapped {
             0.0
         } else {
-            draw_direction.last_position.distance(current_position)
+            missile_movement.last_position.distance(current_position)
         };
 
         // Update the total traveled distance
-        draw_direction.traveled_distance += distance_traveled;
-        draw_direction.last_position = current_position;
+        missile_movement.traveled_distance += distance_traveled;
+        missile_movement.last_position = current_position;
+
+        // Update the last teleport position if the missile wrapped
+        if wrappable.wrapped {
+            missile_movement.last_teleport_position = Some(missile_movement.last_position);
+        }
     }
 }
 
@@ -195,32 +202,72 @@ fn missile_party_system(
     viewport: Res<ViewportDimensions>,
 ) {
     for missile in missile_movement_query.iter() {
-        let origin = missile.last_position;
+        let current_position = missile.last_position;
         let direction = missile.direction;
-        let distance_traveled = 1.0 - missile.traveled_distance / missile.total_distance;
-        let perpendicular_length = MISSILE_PERPENDICULAR_LENGTH * distance_traveled;
 
-        let (p1, p2) = calculate_perpendicular_points(origin, direction, perpendicular_length);
-        gizmos.line_gradient(p1, p2, BLUE, RED);
+        draw_missile_perpendicular(&mut gizmos, missile, current_position, direction);
+        draw_missile_ray(&mut gizmos, &viewport, missile, current_position, direction);
+    }
+}
 
-        if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
-            gizmos
-                .sphere(edge_point, Quat::IDENTITY, 1., Color::WHITE)
-                .resolution(64);
+fn draw_missile_ray(
+    gizmos: &mut Gizmos,
+    viewport: &Res<ViewportDimensions>,
+    missile: &MissileMovement,
+    current_position: Vec3,
+    direction: Vec3,
+) {
+    let remaining_distance = missile.total_distance - missile.traveled_distance;
 
-            gizmos.line_gradient(origin, edge_point, GREEN, RED);
+    if let Some(edge_point) = find_edge_point(current_position, direction, viewport) {
+        let distance_to_edge = current_position.distance(edge_point);
 
-            let opposite_edge = calculate_wrapped_position(edge_point, &viewport);
+        if remaining_distance > distance_to_edge {
+            // Draw line to the edge point and a sphere at the edge point
+            draw_line(gizmos, current_position, edge_point);
+            draw_sphere(gizmos, edge_point, Srgba(BLUE));
 
-            gizmos
-                .sphere(opposite_edge, Quat::IDENTITY, 1., Color::WHITE)
-                .resolution(64);
+            // Calculate the opposite edge point
+            let opposite_edge = calculate_teleport_position(edge_point, viewport);
+            draw_sphere(gizmos, opposite_edge, Srgba(RED));
 
-            if let Some(next_edge) = find_edge_point(opposite_edge, direction, &viewport) {
-                gizmos.line_gradient(opposite_edge, next_edge, RED, GREEN);
+            // Draw a sphere at the last teleport position if it exists
+            if let Some(last_teleport_position) = missile.last_teleport_position {
+                draw_sphere(gizmos, last_teleport_position, Srgba(WHITE));
             }
+        } else {
+            // Draw the final segment of the line
+            let final_point = current_position + direction * remaining_distance;
+            draw_line(gizmos, current_position, final_point);
+
+            // Draw a sphere at the final point
+            draw_sphere(gizmos, final_point, Srgba(GREEN));
         }
     }
+}
+
+fn draw_line(gizmos: &mut Gizmos, current_position: Vec3, final_point: Vec3) {
+    gizmos.line_gradient(current_position, final_point, BLUE, RED);
+}
+
+fn draw_sphere(gizmos: &mut Gizmos, position: Vec3, color: Color) {
+    gizmos
+        .sphere(position, Quat::IDENTITY, 1., color)
+        .resolution(16);
+}
+
+fn draw_missile_perpendicular(
+    gizmos: &mut Gizmos,
+    missile: &MissileMovement,
+    current_position: Vec3,
+    direction: Vec3,
+) {
+    let distance_traveled_ratio = 1.0 - missile.traveled_distance / missile.total_distance;
+    let perpendicular_length = MISSILE_PERPENDICULAR_LENGTH * distance_traveled_ratio;
+
+    let (p1, p2) =
+        calculate_perpendicular_points(current_position, direction, perpendicular_length);
+    gizmos.line_gradient(p1, p2, BLUE, RED);
 }
 
 /// only used to help draw some groovy things to highlight what a missile is doing
