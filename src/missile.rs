@@ -10,7 +10,7 @@ use crate::{
     asset_loader::SceneAssets,
     collision_detection::{GROUP_ASTEROID, GROUP_MISSILE},
     health::{CollisionDamage, Health, HealthBundle},
-    input::Action,
+    input::SpaceshipAction,
     movement::{calculate_teleport_position, MovingObjectBundle, Wrappable},
     schedule::InGameSet,
     spaceship::{ContinuousFire, Spaceship},
@@ -91,8 +91,8 @@ impl Plugin for MissilePlugin {
         .add_systems(
             Update,
             (
-                missile_movement_system,
-                missile_party_system.run_if(input_toggle_active(false, KeyCode::F8)),
+                missile_movement,
+                missile_party.run_if(input_toggle_active(false, KeyCode::F8)),
             )
                 .chain()
                 .in_set(InGameSet::EntityUpdates),
@@ -101,11 +101,10 @@ impl Plugin for MissilePlugin {
 }
 
 // todo: #bevyquestion - how could i reduce the number of arguments here?
-#[allow(clippy::too_many_arguments)]
 fn fire_missile(
     mut commands: Commands,
     mut spawn_timer: ResMut<MissileSpawnTimer>,
-    q_input_map: Query<&ActionState<Action>>,
+    q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(&Transform, Option<&ContinuousFire>), With<Spaceship>>,
     scene_assets: Res<SceneAssets>,
     time: Res<Time>,
@@ -130,8 +129,8 @@ fn fire_missile(
 
     let action_state = q_input_map.single();
 
-    if continuous && action_state.pressed(&Action::Fire)
-        || !continuous && action_state.just_pressed(&Action::Fire)
+    if continuous && action_state.pressed(&SpaceshipAction::Fire)
+        || !continuous && action_state.just_pressed(&SpaceshipAction::Fire)
     {
         let mut velocity = -transform.forward() * MISSILE_SPEED;
         velocity.y = 0.0;
@@ -170,7 +169,7 @@ fn fire_missile(
 }
 
 /// we update missile movement so that it can be despawned after it has traveled its total distance
-fn missile_movement_system(mut query: Query<(&Transform, &mut MissileMovement, &Wrappable)>) {
+fn missile_movement(mut query: Query<(&Transform, &mut MissileMovement, &Wrappable)>) {
     for (transform, mut missile_movement, wrappable) in query.iter_mut() {
         let current_position = transform.translation;
 
@@ -196,7 +195,7 @@ fn missile_movement_system(mut query: Query<(&Transform, &mut MissileMovement, &
 }
 
 /// fun! with missiles!
-fn missile_party_system(
+fn missile_party(
     missile_movement_query: Query<&MissileMovement>,
     mut gizmos: Gizmos,
     viewport: Res<ViewportDimensions>,

@@ -2,8 +2,10 @@
 //! (using defaults for everything)
 //! note this doesn't work with the wasm target
 
+use crate::input::{GlobalAction, GlobalAction::Diagnostics};
 use bevy::prelude::*;
 use iyes_perf_ui::prelude::*;
+use leafwing_input_manager::action_state::ActionState;
 
 pub struct DiagnosticPlugin;
 
@@ -25,9 +27,9 @@ impl Plugin for DiagnosticPlugin {
 fn toggle(
     mut commands: Commands,
     q_root: Query<Entity, With<PerfUiRoot>>,
-    kbd: Res<ButtonInput<KeyCode>>,
+    user_input: Res<ActionState<GlobalAction>>,
 ) {
-    if kbd.just_pressed(KeyCode::F12) {
+    if user_input.just_pressed(&Diagnostics) {
         if let Ok(e) = q_root.get_single() {
             // despawn the existing Perf UI
             commands.entity(e).despawn_recursive();

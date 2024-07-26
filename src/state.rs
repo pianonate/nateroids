@@ -1,8 +1,10 @@
-use bevy::prelude::KeyCode::Escape;
+use crate::input::GlobalAction;
+use crate::input::GlobalAction::Pause;
 use bevy::prelude::*;
 #[cfg(feature = "inspectors")]
 use bevy_inspector_egui::quick::StateInspectorPlugin;
 use bevy_rapier3d::plugin::RapierConfiguration;
+use leafwing_input_manager::prelude::ActionState;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Reflect, States)]
 pub enum GameState {
@@ -41,11 +43,11 @@ impl Plugin for StatePlugin {
 // with this one so i'm just going to pause it directly
 // with its physics_pipeline_active configuration flag
 fn game_state_input_events(
+    user_input: Res<ActionState<GlobalAction>>,
     mut next_state: ResMut<NextState<GameState>>,
     state: Res<State<GameState>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
-    if keyboard_input.just_pressed(Escape) {
+    if user_input.just_pressed(&Pause) {
         match state.get() {
             GameState::InGame => {
                 next_state.set(GameState::Paused);

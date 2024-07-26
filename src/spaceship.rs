@@ -1,7 +1,4 @@
-use bevy::{
-    input::common_conditions::input_just_pressed,
-    prelude::{KeyCode::F9, *},
-};
+use bevy::prelude::*;
 
 use bevy_rapier3d::prelude::{
     Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
@@ -17,7 +14,7 @@ use crate::{
     utils::name_entity,
 };
 
-use crate::input::Action;
+use crate::input::SpaceshipAction;
 use leafwing_input_manager::prelude::*;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
@@ -52,7 +49,7 @@ impl Plugin for SpaceshipPlugin {
                 (
                     spaceship_movement_controls,
                     spaceship_shield_controls,
-                    toggle_continuous_fire.run_if(input_just_pressed(F9)),
+                    toggle_continuous_fire,
                 )
                     .chain()
                     .in_set(InGameSet::UserInput),
@@ -64,15 +61,20 @@ impl Plugin for SpaceshipPlugin {
 
 fn toggle_continuous_fire(
     mut commands: Commands,
+    q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(Entity, Option<&ContinuousFire>), With<Spaceship>>,
 ) {
-    if let Ok((entity, continuous)) = q_spaceship.get_single() {
-        if continuous.is_some() {
-            println!("removing continuous");
-            commands.entity(entity).remove::<ContinuousFire>();
-        } else {
-            println!("adding continuous");
-            commands.entity(entity).insert(ContinuousFire);
+    let spaceship_action = q_input_map.single();
+
+    if spaceship_action.just_pressed(&SpaceshipAction::ContinuousFire) {
+        if let Ok((entity, continuous)) = q_spaceship.get_single() {
+            if continuous.is_some() {
+                println!("removing continuous");
+                commands.entity(entity).remove::<ContinuousFire>();
+            } else {
+                println!("adding continuous");
+                commands.entity(entity).insert(ContinuousFire);
+            }
         }
     }
 }
@@ -102,29 +104,31 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             },
             ..default()
         })
-        .insert(InputManagerBundle::with_map(Action::default_input_map()))
+        .insert(InputManagerBundle::with_map(
+            SpaceshipAction::spaceship_input_map(),
+        ))
         .id();
 
     name_entity(&mut commands, spaceship, SPACESHIP_NAME);
 }
 
 fn spaceship_movement_controls(
-    mut query: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
-    input_map: Query<&ActionState<Action>>,
+    mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
+    q_input_map: Query<&ActionState<SpaceshipAction>>,
     time: Res<Time>,
 ) {
     // we can use this because there is only exactly one spaceship - so we're not looping over the query
-    if let Ok((mut transform, mut velocity)) = query.get_single_mut() {
-        let action_state = input_map.single();
+    if let Ok((mut transform, mut velocity)) = q_spaceship.get_single_mut() {
+        let spaceship_action = q_input_map.single();
 
         let mut rotation = 0.0;
         let delta_seconds = time.delta_seconds();
 
-        if action_state.pressed(&Action::TurnRight) {
+        if spaceship_action.pressed(&SpaceshipAction::TurnRight) {
             // right
             velocity.angvel.y = 0.0;
             rotation = -SPACESHIP_ROTATION_SPEED * delta_seconds;
-        } else if action_state.pressed(&Action::TurnLeft) {
+        } else if spaceship_action.pressed(&SpaceshipAction::TurnLeft) {
             // left
             velocity.angvel.y = 0.0;
             rotation = SPACESHIP_ROTATION_SPEED * delta_seconds;
@@ -133,7 +137,7 @@ fn spaceship_movement_controls(
         // rotate around the y-axis
         transform.rotate_y(rotation);
 
-        if action_state.pressed(&Action::Accelerate) {
+        if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
             // down
             apply_acceleration(
                 &mut velocity,
@@ -142,7 +146,7 @@ fn spaceship_movement_controls(
                 SPACESHIP_MAX_SPEED,
                 delta_seconds,
             );
-        } else if action_state.pressed(&Action::Decelerate) {
+        } else if spaceship_action.pressed(&SpaceshipAction::Decelerate) {
             // up
             apply_acceleration(
                 &mut velocity,

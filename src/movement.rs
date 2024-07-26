@@ -21,7 +21,10 @@ pub struct Wrappable {
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, teleport_system.in_set(InGameSet::EntityUpdates));
+        app.add_systems(
+            Update,
+            teleport_at_boundary.in_set(InGameSet::EntityUpdates),
+        );
     }
 }
 
@@ -64,7 +67,7 @@ impl Default for MovingObjectBundle {
     }
 }
 
-fn teleport_system(
+fn teleport_at_boundary(
     viewport: Res<ViewportDimensions>,
     mut wrappable_entities: Query<(&mut Transform, &mut Wrappable)>,
 ) {
