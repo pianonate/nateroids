@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGroups, Velocity};
+use std::fmt::Debug;
 
 use crate::{
     asset_loader::SceneAssets,
@@ -17,6 +18,7 @@ use crate::{
     window::ViewportDimensions,
 };
 
+use crate::input::{DebugEnabled, GlobalAction};
 use leafwing_input_manager::prelude::*;
 
 const MISSILE_COLLISION_DAMAGE: f32 = 50.0;

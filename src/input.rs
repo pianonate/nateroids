@@ -1,6 +1,7 @@
+use crate::schedule::InGameSet;
 use bevy::prelude::KeyCode::{
-    ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Escape, KeyA, KeyC, KeyD, KeyM, KeyS, KeyW,
-    ShiftLeft, ShiftRight, Space, F12,
+    ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Escape, KeyA, KeyC, KeyD, KeyM, KeyS, KeyW, Space,
+    F12, F2,
 };
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -15,7 +16,28 @@ impl Plugin for InputPlugin {
             // global actions such as Pause added as a resource to be used wherever necessary
             .add_plugins(InputManagerPlugin::<GlobalAction>::default())
             .init_resource::<ActionState<GlobalAction>>()
-            .insert_resource(GlobalAction::global_input_map());
+            .insert_resource(GlobalAction::global_input_map())
+            // puts us in debug mode which can be checked anywhere
+            .add_systems(Update, toggle_debug.in_set(InGameSet::UserInput))
+            .insert_resource(DebugEnabled(false));
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct DebugEnabled(pub bool);
+
+impl DebugEnabled {
+    pub fn enabled(&self) -> bool {
+        self.0
+    }
+}
+fn toggle_debug(
+    user_input: Res<ActionState<GlobalAction>>,
+    mut debug_enabled: ResMut<DebugEnabled>,
+) {
+    if user_input.just_pressed(&GlobalAction::Debug) {
+        debug_enabled.0 = !debug_enabled.0;
+        println!("DebugEnabled: {}", debug_enabled.0);
     }
 }
 
@@ -67,21 +89,20 @@ pub enum GlobalAction {
 /// Use Debug like this - pull it into a system as follows:
 /// ```rust
 /// fn some_system(
-///     user_input: Res<ActionState<GlobalAction>>,
+///    debug: Res<DebugEnabled>,
 /// )
 /// ```
-/// Then check if the Debug action was just pressed and you can use it in your system:
+/// DebugEnabled is a simple tuple struct with a boolean so the first (.0) parameter
+/// tells you if it's enabled or not
 /// ```rust
-///    if user_input.just_pressed(&GlobalAction::Debug) {
+///    if debug.enabled() {
 ///       println!("Debug action was just pressed!");
 ///    }
 /// ```
-/// Then just press and the debug combo and the println will only print while you're holding it down
 impl GlobalAction {
     pub fn global_input_map() -> InputMap<Self> {
         let mut input_map = InputMap::default();
-        input_map.insert(Self::Debug, UserInput::chord([ShiftLeft, KeyD]));
-        input_map.insert(Self::Debug, UserInput::chord([ShiftRight, KeyD]));
+        input_map.insert(Self::Debug, F2);
         input_map.insert(Self::Diagnostics, F12);
         input_map.insert(Self::Pause, Escape);
         input_map
