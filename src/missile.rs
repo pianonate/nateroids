@@ -93,6 +93,10 @@ impl Missile {
 }
 
 // todo: #bevyquestion - how could i reduce the number of arguments here?
+// todo: #bevyquestion - so, in an object oriented world i think of attaching fire as a method to
+//                       the spaceship - but there's a lot of missile logic so i have it setup in missile
+//                       so should i have a simple fire method in method in spaceship that in turn calls this
+//                       fn or is having it here fine?
 fn fire_missile(
     mut commands: Commands,
     mut spawn_timer: ResMut<MissileSpawnTimer>,
@@ -102,7 +106,6 @@ fn fire_missile(
     time: Res<Time>,
     viewport: Res<ViewportDimensions>,
 ) {
-    // todo: #rustquestion - is this short circuit idiomatic rust?
     let Ok((transform, continuous_fire)) = q_spaceship.get_single() else {
         return;
     };

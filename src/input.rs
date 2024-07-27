@@ -19,25 +19,20 @@ impl Plugin for InputPlugin {
             .insert_resource(GlobalAction::global_input_map())
             // puts us in debug mode which can be checked anywhere
             .add_systems(Update, toggle_debug.in_set(InGameSet::UserInput))
-            .insert_resource(DebugEnabled(false));
+            .insert_resource(DebugMode::default());
     }
 }
 
+// the default is false, which is what we want
 #[derive(Resource, Default)]
-pub struct DebugEnabled(pub bool);
-
-impl DebugEnabled {
-    pub fn enabled(&self) -> bool {
-        self.0
-    }
+pub struct DebugMode {
+    pub enabled: bool,
 }
-fn toggle_debug(
-    user_input: Res<ActionState<GlobalAction>>,
-    mut debug_enabled: ResMut<DebugEnabled>,
-) {
+
+fn toggle_debug(user_input: Res<ActionState<GlobalAction>>, mut debug_mode: ResMut<DebugMode>) {
     if user_input.just_pressed(&GlobalAction::Debug) {
-        debug_enabled.0 = !debug_enabled.0;
-        println!("DebugEnabled: {}", debug_enabled.0);
+        debug_mode.enabled = !debug_mode.enabled;
+        println!("DebugMode: {}", debug_mode.enabled);
     }
 }
 
