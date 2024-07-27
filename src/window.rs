@@ -31,6 +31,8 @@ fn initialize_viewport_dimensions(mut commands: Commands, windows: Query<&Window
     }
 }
 
+// todo: #rustquestion - what's the best way to handle the borrow structure through
+//       the call to update_viewport through to calculate_viewport
 fn window_resize_system(
     mut commands: Commands,
     mut resize_events: EventReader<WindowResized>,
@@ -38,16 +40,28 @@ fn window_resize_system(
     camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
 ) {
     for event in resize_events.read() {
-        if let Some(viewport) = calculate_viewport(&windows, &camera_query) {
+        if let Some(viewport) = update_viewport(&mut commands, &windows, &camera_query) {
             println!(
                 "Window resized to: {}x{} with viewport: {}x{} ",
-                event.width, event.height, viewport.width, viewport.height
+                event.width, event.height, viewport.width, viewport.height,
             );
-            commands.insert_resource(ViewportDimensions {
-                width: viewport.width,
-                height: viewport.height,
-            });
         }
+    }
+}
+
+pub fn update_viewport(
+    commands: &mut Commands,
+    windows: &Query<&Window>,
+    camera_query: &Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
+) -> Option<ViewportDimensions> {
+    if let Some(viewport) = calculate_viewport(windows, camera_query) {
+        commands.insert_resource(ViewportDimensions {
+            width: viewport.width,
+            height: viewport.height,
+        });
+        Some(viewport)
+    } else {
+        None
     }
 }
 
@@ -62,6 +76,7 @@ fn calculate_viewport(
         // Calculate the aspect ratio
         let aspect_ratio = screen_width / screen_height;
 
+        //todo: #rustquestion is it possible/better to match this higher in the call stack for readability?
         if let Ok((Projection::Perspective(perspective_projection), global_transform)) =
             camera_query.get_single()
         {

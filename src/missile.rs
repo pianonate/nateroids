@@ -3,8 +3,9 @@ use bevy::{
     prelude::Color::Srgba,
     prelude::*,
 };
-use bevy_rapier3d::prelude::{Collider, ColliderMassProperties::Mass, CollisionGroups, Velocity};
-use std::fmt::Debug;
+
+use bevy_rapier3d::prelude::ColliderMassProperties::Mass;
+use bevy_rapier3d::prelude::*;
 
 use crate::{
     asset_loader::SceneAssets,
@@ -18,8 +19,9 @@ use crate::{
     window::ViewportDimensions,
 };
 
-use crate::input::{DebugEnabled, GlobalAction};
 use leafwing_input_manager::prelude::*;
+
+pub struct MissilePlugin;
 
 const MISSILE_COLLISION_DAMAGE: f32 = 50.0;
 const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.5;
@@ -31,49 +33,6 @@ const MISSILE_RADIUS: f32 = 0.4;
 const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
 const MISSILE_SPEED: f32 = 75.0;
 const MISSILE_PERPENDICULAR_LENGTH: f32 = 10.0;
-
-#[derive(Resource, Debug)]
-struct MissileSpawnTimer {
-    pub timer: Timer,
-}
-
-// todo: #rustquestion - how can i make it so that new has to be used and DrawDirection isn't constructed directly - i still need the fields visible
-#[derive(Copy, Clone, Component, Debug)]
-pub struct Missile {
-    pub direction: Vec3,
-    pub total_distance: f32,
-    pub traveled_distance: f32,
-    pub last_position: Vec3,
-    pub last_teleport_position: Option<Vec3>, // Add this field
-}
-
-impl Missile {
-    pub fn new(
-        origin: Vec3,
-        direction: Vec3,
-        viewport: Res<ViewportDimensions>,
-        // windows: Query<&Window>,
-        // camera_query: Query<(&Projection, &GlobalTransform), With<PrimaryCamera>>,
-    ) -> Self {
-        let mut total_distance = 0.0;
-
-        if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
-            if let Some(opposite_edge) = find_edge_point(origin, -direction, &viewport) {
-                total_distance = edge_point.distance(opposite_edge) * MISSILE_MOVEMENT_SCALAR;
-            }
-        }
-
-        Missile {
-            direction,
-            total_distance,
-            traveled_distance: 0.0,
-            last_position: origin,
-            last_teleport_position: None, // Initialize this field
-        }
-    }
-}
-
-pub struct MissilePlugin;
 
 impl Plugin for MissilePlugin {
     // make sure this is done after asset_loader has run
@@ -95,6 +54,41 @@ impl Plugin for MissilePlugin {
                 .in_set(InGameSet::EntityUpdates),
         )
         .insert_resource(MissilePartyEnabled(false));
+    }
+}
+
+#[derive(Resource, Debug)]
+struct MissileSpawnTimer {
+    pub timer: Timer,
+}
+
+// todo: #rustquestion - how can i make it so that new has to be used and DrawDirection isn't constructed directly - i still need the fields visible
+#[derive(Copy, Clone, Component, Debug)]
+pub struct Missile {
+    pub direction: Vec3,
+    pub total_distance: f32,
+    pub traveled_distance: f32,
+    pub last_position: Vec3,
+    pub last_teleport_position: Option<Vec3>, // Add this field
+}
+
+impl Missile {
+    pub fn new(origin: Vec3, direction: Vec3, viewport: Res<ViewportDimensions>) -> Self {
+        let mut total_distance = 0.0;
+
+        if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
+            if let Some(opposite_edge) = find_edge_point(origin, -direction, &viewport) {
+                total_distance = edge_point.distance(opposite_edge) * MISSILE_MOVEMENT_SCALAR;
+            }
+        }
+
+        Missile {
+            direction,
+            total_distance,
+            traveled_distance: 0.0,
+            last_position: origin,
+            last_teleport_position: None, // Initialize this field
+        }
     }
 }
 
