@@ -1,8 +1,5 @@
 use bevy::prelude::*;
 
-#[cfg(debug_assertions)]
-use crate::{diagnostic::DiagnosticPlugin, inspector::InspectorPlugin};
-
 use crate::{
     asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin, input::InputPlugin,
@@ -11,8 +8,11 @@ use crate::{
 };
 
 #[cfg(debug_assertions)]
+use crate::{debug::DebugPlugin, diagnostic::DiagnosticPlugin, inspector::InspectorPlugin};
+#[cfg(debug_assertions)]
+mod debug;
+#[cfg(debug_assertions)]
 mod diagnostic;
-
 #[cfg(debug_assertions)]
 mod inspector;
 
@@ -53,6 +53,7 @@ fn main() {
 
     #[cfg(debug_assertions)]
     app.add_plugins(InspectorPlugin)
+        .add_plugins(DebugPlugin)
         .add_plugins(DiagnosticPlugin);
 
     app.run();

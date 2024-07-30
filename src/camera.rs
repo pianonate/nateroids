@@ -1,8 +1,8 @@
+use crate::input::CameraMovement;
 use crate::schedule::InGameSet;
 use bevy::prelude::*;
 use bevy::window::{PrimaryWindow, WindowResized};
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::Actionlike;
 
 const CAMERA_DISTANCE: f32 = 80.0;
 pub struct CameraPlugin;
@@ -10,7 +10,6 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreStartup, spawn_camera)
-            .add_plugins(InputManagerPlugin::<CameraMovement>::default())
             .add_systems(Update, zoom_camera.in_set(InGameSet::UserInput))
             .insert_resource(ClearColor(Color::srgb(0.1, 0.0, 0.15)))
             .insert_resource(AmbientLight {
@@ -20,26 +19,12 @@ impl Plugin for CameraPlugin {
     }
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
-enum CameraMovement {
-    Zoom,
-}
-
-impl Actionlike for CameraMovement {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            CameraMovement::Zoom => InputControlKind::Axis,
-        }
-    }
-}
-
 #[derive(Component, Debug)]
 pub struct PrimaryCamera;
 
 fn spawn_camera(mut commands: Commands) {
-    let input_map = InputMap::default()
-        // This will capture the total continuous value, for direct use.
-        .with_axis(CameraMovement::Zoom, MouseScrollAxis::Y);
+    // This will capture the total continuous value, for direct use.
+    let input_map = InputMap::default().with_axis(CameraMovement::Zoom, MouseScrollAxis::Y);
 
     commands
         .spawn(Camera3dBundle {
@@ -47,7 +32,9 @@ fn spawn_camera(mut commands: Commands) {
                 .looking_at(Vec3::ZERO, Vec3::Z),
             ..default()
         })
-        .insert(InputManagerBundle::with_map(input_map))
+        .insert(InputManagerBundle::with_map(
+            CameraMovement::camera_input_map(),
+        ))
         .insert(PrimaryCamera);
 }
 
