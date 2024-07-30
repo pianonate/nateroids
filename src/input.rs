@@ -1,11 +1,15 @@
+#[cfg(debug_assertions)]
 use crate::schedule::InGameSet;
+
+#[cfg(debug_assertions)]
+use bevy_inspector_egui::{prelude::*, InspectorOptions};
+
 use bevy::prelude::KeyCode::{
     ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Escape, KeyA, KeyC, KeyD, KeyM, KeyS, KeyW, Space,
     F2, F3, F4,
 };
 use bevy::prelude::*;
-use bevy_inspector_egui::prelude::*;
-use bevy_inspector_egui::InspectorOptions;
+
 use leafwing_input_manager::prelude::*;
 
 pub struct InputPlugin;
@@ -18,7 +22,10 @@ impl Plugin for InputPlugin {
             // global actions such as Pause added as a resource to be used wherever necessary
             .add_plugins(InputManagerPlugin::<GlobalAction>::default())
             .init_resource::<ActionState<GlobalAction>>()
-            .insert_resource(GlobalAction::global_input_map())
+            .insert_resource(GlobalAction::global_input_map());
+
+        #[cfg(debug_assertions)]
+        app
             // puts us in debug mode which can be checked anywhere
             .init_resource::<DebugMode>()
             .init_resource::<InspectorMode>()
@@ -28,12 +35,14 @@ impl Plugin for InputPlugin {
 }
 
 // the default bool is false, which is what we want
+#[cfg(debug_assertions)]
 #[derive(Reflect, Resource, Default, InspectorOptions)]
 #[reflect(InspectorOptions)]
 pub struct DebugMode {
     pub enabled: bool,
 }
 
+#[cfg(debug_assertions)]
 fn toggle_debug(user_input: Res<ActionState<GlobalAction>>, mut debug_mode: ResMut<DebugMode>) {
     if user_input.just_pressed(&GlobalAction::Debug) {
         debug_mode.enabled = !debug_mode.enabled;
@@ -41,15 +50,17 @@ fn toggle_debug(user_input: Res<ActionState<GlobalAction>>, mut debug_mode: ResM
     }
 }
 
+#[cfg(debug_assertions)]
 #[derive(Resource, Debug, Default)]
 pub struct InspectorMode {
     pub enabled: bool,
 }
 
+#[cfg(debug_assertions)]
 pub fn inspector_mode_enabled(inspector_mode: Res<InspectorMode>) -> bool {
     inspector_mode.enabled
 }
-
+#[cfg(debug_assertions)]
 fn toggle_inspector(
     user_input: Res<ActionState<GlobalAction>>,
     mut inspector_mode: ResMut<InspectorMode>,

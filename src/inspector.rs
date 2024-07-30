@@ -9,10 +9,12 @@ use bevy_inspector_egui::{
 use crate::{
     camera::PrimaryCamera,
     input::inspector_mode_enabled,
-    input::DebugMode,
     state::GameState,
     window::{update_world_viewport_dimensions, ViewportData},
 };
+
+#[cfg(debug_assertions)]
+use crate::input::DebugMode;
 
 use bevy_inspector_egui::bevy_inspector::{ui_for_resource, ui_for_state};
 use egui_dock::{DockArea, DockState, NodeIndex};

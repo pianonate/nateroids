@@ -6,15 +6,19 @@ edition = "2021"
 [dependencies]
 bevy = "0.14.0"
 rand = "0.8.5"
-iyes_perf_ui = "0.3.0"
 bevy_rapier3d = { version = "0.27.0", features = ["simd-stable", "debug-render-3d"] }
+leafwing-input-manager = { git = "https://github.com/Leafwing-Studios/leafwing-input-manager", branch = "main" }
+iyes_perf_ui = "0.3.0"
+# todo: rust question - bevy-inspector-egui explicilty asks for the "manage-clipboard" feature from bevy_egui
+#                       however this feature breaks the wasm build so that i have to disable it
+#                       as follows - this is unnessary because i've configured bevy-inspector-egui
+#                       code to not compile in release with #[cfg(debug_assertions)] but i want to be able
+#                       to just cargo run and get dev stuff and cargo build --release --target wasm32-unknown-unknown
+#                       without the extra rigamarole...is there a better way to do this?
+# RUSTFLAGS="--cfg=web_sys_unstable_apis" cargo build --release --target wasm32-unknown-unknown
+#
 bevy-inspector-egui = "0.25.1"
 egui_dock = "0.13"
-leafwing-input-manager = { git = "https://github.com/Leafwing-Studios/leafwing-input-manager", branch = "main" }
-
-# Enable a small amount of optimization in debug mode
-[profile.dev]
-opt-level = 1
 
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]

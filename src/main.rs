@@ -1,25 +1,28 @@
 use bevy::prelude::*;
 
-#[cfg(not(target_arch = "wasm32"))]
-use crate::diagnostic::DiagnosticPlugin;
+#[cfg(debug_assertions)]
+use crate::{diagnostic::DiagnosticPlugin, inspector::InspectorPlugin};
+
 use crate::{
     asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin, input::InputPlugin,
-    inspector::InspectorPlugin, missile::MissilePlugin, movement::MovementPlugin,
-    nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
-    spaceship::SpaceshipPlugin, state::StatePlugin, window::WindowPlugin,
+    missile::MissilePlugin, movement::MovementPlugin, nateroid::Nateroid, physics::PhysicsPlugin,
+    schedule::SchedulePlugin, spaceship::SpaceshipPlugin, state::StatePlugin, window::WindowPlugin,
 };
+
+#[cfg(debug_assertions)]
+mod diagnostic;
+
+#[cfg(debug_assertions)]
+mod inspector;
 
 // exclude when targeting wasm - this breaks in the browser right now
 mod asset_loader;
 mod camera;
 mod collision_detection;
 mod despawn;
-#[cfg(not(target_arch = "wasm32"))]
-mod diagnostic;
 mod health;
 mod input;
-mod inspector;
 mod missile;
 mod movement;
 mod nateroid;
@@ -38,7 +41,6 @@ fn main() {
         .add_plugins(CameraPlugin)
         .add_plugins(CollisionDetectionPlugin)
         .add_plugins(DespawnPlugin)
-        .add_plugins(InspectorPlugin)
         .add_plugins(InputPlugin)
         .add_plugins(MovementPlugin)
         .add_plugins(MissilePlugin)
@@ -49,7 +51,9 @@ fn main() {
         .add_plugins(StatePlugin)
         .add_plugins(WindowPlugin);
 
-    #[cfg(not(target_arch = "wasm32"))]
-    app.add_plugins(DiagnosticPlugin);
+    #[cfg(debug_assertions)]
+    app.add_plugins(InspectorPlugin)
+        .add_plugins(DiagnosticPlugin);
+
     app.run();
 }
