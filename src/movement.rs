@@ -50,7 +50,7 @@ impl Default for MovingObjectBundle {
             collider: Collider::default(),
             collision_groups: CollisionGroups::default(),
             gravity_scale: GravityScale(DEFAULT_GRAVITY),
-            locked_axes: LockedAxes::TRANSLATION_LOCKED_Y,
+            locked_axes: LockedAxes::TRANSLATION_LOCKED_Z,
             mass: Mass(DEFAULT_MASS),
             model: SceneBundle::default(),
             restitution: Restitution {
@@ -104,10 +104,10 @@ pub fn calculate_teleport_position(
         wrapped_position.x = viewport_right;
     }
 
-    if position.z >= viewport_top {
-        wrapped_position.z = viewport_bottom;
-    } else if position.z <= viewport_bottom {
-        wrapped_position.z = viewport_top;
+    if position.y >= viewport_top {
+        wrapped_position.y = viewport_bottom;
+    } else if position.y <= viewport_bottom {
+        wrapped_position.y = viewport_top;
     }
 
     wrapped_position

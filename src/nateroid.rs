@@ -25,7 +25,7 @@ const NATEROID_NAME: &str = "Nateroid";
 const NATEROID_RADIUS: f32 = 1.8;
 const ROTATION_RANGE: Range<f32> = 0.0..2.0 * PI;
 const SPAWN_RANGE_X: Range<f32> = -25.0..25.0;
-const SPAWN_RANGE_Z: Range<f32> = 0.0..25.0;
+const SPAWN_RANGE_Y: Range<f32> = 0.0..25.0;
 const SPAWN_TIMER_SECONDS: f32 = 1.0;
 const VELOCITY_RANGE: Range<f32> = -20.0..20.0;
 
@@ -55,8 +55,8 @@ fn spawn_nateroid(
 
     let mut rng = rand::thread_rng();
 
-    let spawn_translation = random_vec3(SPAWN_RANGE_X, 0.0..0.0, SPAWN_RANGE_Z);
-    let random_velocity = random_vec3(VELOCITY_RANGE, 0.0..0.0, VELOCITY_RANGE);
+    let spawn_translation = random_vec3(SPAWN_RANGE_X, SPAWN_RANGE_Y, 0.0..0.0);
+    let random_velocity = random_vec3(VELOCITY_RANGE, VELOCITY_RANGE, 0.0..0.0);
     let random_angular_velocity = random_vec3(
         ANGULAR_VELOCITY_RANGE,
         ANGULAR_VELOCITY_RANGE,

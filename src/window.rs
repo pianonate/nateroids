@@ -53,7 +53,7 @@ fn window_resize_system(
             // at this point we know we'll have values
             let viewport_data = ViewportData {
                 fov: perspective_projection.fov,
-                camera_distance: global_transform.translation().y,
+                camera_distance: global_transform.translation().z,
                 height: event.height,
                 width: event.width,
             };

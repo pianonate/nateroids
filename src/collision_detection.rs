@@ -64,10 +64,6 @@ fn apply_collision_damage(
     if let Ok(mut health) = health_query.get_mut(receiving_entity) {
         if let Ok(collision_damage) = collision_damage_query.get(applying_entity) {
             health.0 -= collision_damage.0;
-            // println!(
-            //     "{:?} applied {:?} damage to {:?} now it has health:{:?}",
-            //     _applying_entity_name, collision_damage.amount, _receiving_entity_name, health.value
-            // );
         }
     }
 }

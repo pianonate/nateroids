@@ -188,7 +188,7 @@ fn set_inspector_viewport(
 
             let viewport_data = ViewportData {
                 fov: perspective_projection.fov,
-                camera_distance: global_transform.translation().y,
+                camera_distance: global_transform.translation().z,
                 height: viewport_size.y,
                 width: viewport_size.x,
             };

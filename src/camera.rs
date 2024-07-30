@@ -25,8 +25,8 @@ pub struct PrimaryCamera;
 fn spawn_camera(mut commands: Commands) {
     commands
         .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(0.0, CAMERA_DISTANCE, 0.0)
-                .looking_at(Vec3::ZERO, Vec3::Z),
+            transform: Transform::from_xyz(0.0, 0.0, CAMERA_DISTANCE)
+                .looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
         .insert(InputManagerBundle::with_map(
@@ -54,7 +54,7 @@ fn zoom_camera(
 
         let zoom_update = 1. - zoom_delta * CAMERA_ZOOM_RATE;
 
-        transform.translation.y *= zoom_update;
+        transform.translation.z *= zoom_update;
 
         // to get the viewport properly updated with this different camera position
         // we need to hijack the resize where we also update the viewport

@@ -129,7 +129,7 @@ fn fire_missile(
         || !continuous && action_state.just_pressed(&SpaceshipAction::Fire)
     {
         let mut velocity = -transform.forward() * MISSILE_SPEED;
-        velocity.y = 0.0;
+        velocity.z = 0.0;
 
         let direction = -transform.forward().as_vec3();
         let origin = transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
@@ -290,7 +290,7 @@ fn calculate_perpendicular_points(origin: Vec3, direction: Vec3, distance: f32) 
     let direction = direction.normalize();
 
     // Calculate the perpendicular direction in the xz plane
-    let perpendicular = Vec3::new(-direction.z, 0.0, direction.x).normalize();
+    let perpendicular = Vec3::new(-direction.y, direction.x, 0.0).normalize();
 
     // Calculate the two points 100.0 units away in the perpendicular direction
     let point1 = origin + perpendicular * distance;
@@ -328,13 +328,13 @@ fn find_edge_point(
 
     for (start, dir, pos_bound, neg_bound) in [
         (origin.x, direction.x, half_width, -half_width),
-        (origin.z, direction.z, half_height, -half_height),
+        (origin.y, direction.y, half_height, -half_height),
     ] {
         if dir != 0.0 {
             let t_positive = (pos_bound - start) / dir;
             let point_positive = origin + direction * t_positive;
             let in_bounds_positive = if start == origin.x {
-                point_positive.z.abs() <= half_height
+                point_positive.y.abs() <= half_height
             } else {
                 point_positive.x.abs() <= half_width
             };
@@ -346,7 +346,7 @@ fn find_edge_point(
             let t_negative = (neg_bound - start) / dir;
             let point_negative = origin + direction * t_negative;
             let in_bounds_negative = if start == origin.x {
-                point_negative.z.abs() <= half_height
+                point_negative.y.abs() <= half_height
             } else {
                 point_negative.x.abs() <= half_width
             };

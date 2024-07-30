@@ -25,7 +25,7 @@ const SPACESHIP_RADIUS: f32 = 5.0;
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
 const SPACESHIP_ROTATION_SPEED: f32 = 5.0;
 const SPACESHIP_SCALE: Vec3 = Vec3::new(0.5, 0.5, 0.5);
-const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, -20.0);
+const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0);
 
 #[derive(Component, Debug)]
 pub struct Spaceship;
@@ -94,15 +94,16 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
         .insert(MovingObjectBundle {
             collider: Collider::ball(SPACESHIP_RADIUS),
             collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
-            locked_axes: LockedAxes::TRANSLATION_LOCKED_Y
+            locked_axes: LockedAxes::TRANSLATION_LOCKED_Z
                 | LockedAxes::ROTATION_LOCKED_X
-                | LockedAxes::ROTATION_LOCKED_Z,
+                | LockedAxes::ROTATION_LOCKED_Y,
             mass: Mass(3.0),
             model: SceneBundle {
                 scene: scene_assets.spaceship.clone(),
                 transform: Transform {
                     translation: STARTING_TRANSLATION,
                     scale: SPACESHIP_SCALE,
+                    rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2),
                     ..default()
                 },
                 ..default()
@@ -140,7 +141,7 @@ fn spaceship_movement_controls(
         }
 
         // rotate around the y-axis
-        transform.rotate_y(rotation);
+        transform.rotate_z(rotation);
 
         if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
             // down
@@ -193,8 +194,8 @@ fn apply_acceleration(
         velocity.linvel = proposed_velocity;
     }
 
-    // Force the `y` value of velocity.linvel to be 0
-    velocity.linvel.y = 0.0;
+    // Force the `z` value of velocity.linvel to be 0
+    velocity.linvel.z = 0.0;
 }
 
 fn spaceship_shield_controls(
