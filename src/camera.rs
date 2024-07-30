@@ -23,9 +23,6 @@ impl Plugin for CameraPlugin {
 pub struct PrimaryCamera;
 
 fn spawn_camera(mut commands: Commands) {
-    // This will capture the total continuous value, for direct use.
-    let input_map = InputMap::default().with_axis(CameraMovement::Zoom, MouseScrollAxis::Y);
-
     commands
         .spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, CAMERA_DISTANCE, 0.0)
