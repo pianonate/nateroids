@@ -88,23 +88,23 @@ pub fn calculate_teleport_position(position: Vec3, dimensions: &Res<ViewportDime
     let width = dimensions.width;
     let height = dimensions.height;
 
-    let screen_right = width / 2.0;
-    let screen_left = -screen_right;
-    let screen_top = height / 2.0;
-    let screen_bottom = -screen_top;
+    let viewport_right = width / 2.0;
+    let viewport_left = -viewport_right;
+    let viewport_top = height / 2.0;
+    let viewport_bottom = -viewport_top;
 
     let mut wrapped_position = position;
 
-    if position.x >= screen_right {
-        wrapped_position.x = screen_left;
-    } else if position.x <= screen_left {
-        wrapped_position.x = screen_right;
+    if position.x >= viewport_right {
+        wrapped_position.x = viewport_left;
+    } else if position.x <= viewport_left {
+        wrapped_position.x = viewport_right;
     }
 
-    if position.z >= screen_top {
-        wrapped_position.z = screen_bottom;
-    } else if position.z <= screen_bottom {
-        wrapped_position.z = screen_top;
+    if position.z >= viewport_top {
+        wrapped_position.z = viewport_bottom;
+    } else if position.z <= viewport_bottom {
+        wrapped_position.z = viewport_top;
     }
 
     wrapped_position

@@ -5,8 +5,9 @@ use crate::diagnostic::DiagnosticPlugin;
 use crate::{
     asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin, input::InputPlugin,
-    missile::MissilePlugin, movement::MovementPlugin, nateroid::Nateroid, physics::PhysicsPlugin,
-    schedule::SchedulePlugin, spaceship::SpaceshipPlugin, state::StatePlugin, window::WindowPlugin,
+    inspector::InspectorPlugin, missile::MissilePlugin, movement::MovementPlugin,
+    nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
+    spaceship::SpaceshipPlugin, state::StatePlugin, window::WindowPlugin,
 };
 
 // exclude when targeting wasm - this breaks in the browser right now
@@ -18,6 +19,7 @@ mod despawn;
 mod diagnostic;
 mod health;
 mod input;
+mod inspector;
 mod missile;
 mod movement;
 mod nateroid;
@@ -36,6 +38,7 @@ fn main() {
         .add_plugins(CameraPlugin)
         .add_plugins(CollisionDetectionPlugin)
         .add_plugins(DespawnPlugin)
+        .add_plugins(InspectorPlugin)
         .add_plugins(InputPlugin)
         .add_plugins(MovementPlugin)
         .add_plugins(MissilePlugin)

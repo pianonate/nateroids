@@ -4,6 +4,8 @@ use bevy::prelude::KeyCode::{
     F12, F2,
 };
 use bevy::prelude::*;
+use bevy_inspector_egui::prelude::*;
+use bevy_inspector_egui::InspectorOptions;
 use leafwing_input_manager::prelude::*;
 
 pub struct InputPlugin;
@@ -23,8 +25,9 @@ impl Plugin for InputPlugin {
     }
 }
 
-// the default is false, which is what we want
-#[derive(Resource, Default)]
+// the default bool is false, which is what we want
+#[derive(Reflect, Resource, Default, InspectorOptions)]
+#[reflect(InspectorOptions)]
 pub struct DebugMode {
     pub enabled: bool,
 }

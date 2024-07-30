@@ -1,8 +1,5 @@
-use crate::input::GlobalAction;
-use crate::input::GlobalAction::Pause;
+use crate::input::{GlobalAction, GlobalAction::Pause};
 use bevy::prelude::*;
-#[cfg(feature = "inspectors")]
-use bevy_inspector_egui::quick::StateInspectorPlugin;
 use bevy_rapier3d::plugin::RapierConfiguration;
 use leafwing_input_manager::prelude::ActionState;
 
@@ -28,10 +25,6 @@ impl Plugin for StatePlugin {
             )
             .add_systems(OnEnter(GameState::Paused), pause_rapier)
             .add_systems(OnEnter(GameState::InGame), unpause_rapier);
-
-        #[cfg(feature = "inspectors")]
-        app.register_type::<GameState>()
-            .add_plugins(StateInspectorPlugin::<GameState>::default());
     }
 
     fn name(&self) -> &str {

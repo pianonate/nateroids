@@ -1,3 +1,4 @@
+use crate::schedule::InGameSet;
 use bevy::prelude::*;
 use bevy::window::{PrimaryWindow, WindowResized};
 use leafwing_input_manager::prelude::*;
@@ -10,7 +11,7 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreStartup, spawn_camera)
             .add_plugins(InputManagerPlugin::<CameraMovement>::default())
-            .add_systems(Update, zoom_camera)
+            .add_systems(Update, zoom_camera.in_set(InGameSet::UserInput))
             .insert_resource(ClearColor(Color::srgb(0.1, 0.0, 0.15)))
             .insert_resource(AmbientLight {
                 color: Color::default(),

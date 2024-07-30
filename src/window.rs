@@ -9,7 +9,7 @@ impl Plugin for WindowPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            window_resize_system.in_set(InGameSet::DespawnEntities),
+            window_resize_system.in_set(InGameSet::EntityUpdates),
         )
         .add_systems(Startup, initialize_viewport_dimensions);
     }
@@ -82,6 +82,10 @@ fn calculate_viewport(
         {
             // Calculate the viewable width and height at the plane level
             let camera_distance = global_transform.translation().y;
+            // the ratio of half of the field of view allows you to use trigonometry (with a right triangle)
+            // to get the ratio (with the tan()) of the half height of the fov to the distance from the camera
+            // then multiplying by that distance gives you the visible height. multiplying by the aspect_ratio
+            // then would give you the width
             let viewable_height = 2.0 * (perspective_projection.fov / 2.0).tan() * camera_distance;
             let viewable_width = viewable_height * aspect_ratio;
 
