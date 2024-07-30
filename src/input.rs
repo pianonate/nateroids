@@ -1,7 +1,7 @@
 use crate::schedule::InGameSet;
 use bevy::prelude::KeyCode::{
     ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Escape, KeyA, KeyC, KeyD, KeyM, KeyS, KeyW, Space,
-    F12, F2,
+    F2, F3, F4,
 };
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
@@ -20,8 +20,10 @@ impl Plugin for InputPlugin {
             .init_resource::<ActionState<GlobalAction>>()
             .insert_resource(GlobalAction::global_input_map())
             // puts us in debug mode which can be checked anywhere
+            .init_resource::<DebugMode>()
+            .init_resource::<InspectorMode>()
             .add_systems(Update, toggle_debug.in_set(InGameSet::UserInput))
-            .insert_resource(DebugMode::default());
+            .add_systems(Update, toggle_inspector.in_set(InGameSet::UserInput));
     }
 }
 
@@ -36,6 +38,25 @@ fn toggle_debug(user_input: Res<ActionState<GlobalAction>>, mut debug_mode: ResM
     if user_input.just_pressed(&GlobalAction::Debug) {
         debug_mode.enabled = !debug_mode.enabled;
         println!("DebugMode: {}", debug_mode.enabled);
+    }
+}
+
+#[derive(Resource, Debug, Default)]
+pub struct InspectorMode {
+    pub enabled: bool,
+}
+
+pub fn inspector_mode_enabled(inspector_mode: Res<InspectorMode>) -> bool {
+    inspector_mode.enabled
+}
+
+fn toggle_inspector(
+    user_input: Res<ActionState<GlobalAction>>,
+    mut inspector_mode: ResMut<InspectorMode>,
+) {
+    if user_input.just_pressed(&GlobalAction::Inspector) {
+        inspector_mode.enabled = !inspector_mode.enabled;
+        println!("InspectorMode: {}", inspector_mode.enabled);
     }
 }
 
@@ -81,6 +102,7 @@ impl SpaceshipAction {
 pub enum GlobalAction {
     Diagnostics,
     Debug,
+    Inspector,
     Pause,
 }
 
@@ -101,7 +123,8 @@ impl GlobalAction {
     pub fn global_input_map() -> InputMap<Self> {
         let mut input_map = InputMap::default();
         input_map.insert(Self::Debug, F2);
-        input_map.insert(Self::Diagnostics, F12);
+        input_map.insert(Self::Diagnostics, F3);
+        input_map.insert(Self::Inspector, F4);
         input_map.insert(Self::Pause, Escape);
         input_map
     }

@@ -8,7 +8,7 @@ use bevy_rapier3d::{
     },
 };
 
-use crate::{schedule::InGameSet, window::ViewportDimensions};
+use crate::{schedule::InGameSet, window::ViewportWorldDimensions};
 
 const DEFAULT_GRAVITY: f32 = 0.0;
 const DEFAULT_MASS: f32 = 1.0;
@@ -68,7 +68,7 @@ impl Default for MovingObjectBundle {
 }
 
 fn teleport_at_boundary(
-    viewport: Res<ViewportDimensions>,
+    viewport: Res<ViewportWorldDimensions>,
     mut wrappable_entities: Query<(&mut Transform, &mut Wrappable)>,
 ) {
     for (mut transform, mut wrappable) in wrappable_entities.iter_mut() {
@@ -84,7 +84,10 @@ fn teleport_at_boundary(
 }
 
 /// given a particular point, what is the point on the opposite side of the screen?
-pub fn calculate_teleport_position(position: Vec3, dimensions: &Res<ViewportDimensions>) -> Vec3 {
+pub fn calculate_teleport_position(
+    position: Vec3,
+    dimensions: &Res<ViewportWorldDimensions>,
+) -> Vec3 {
     let width = dimensions.width;
     let height = dimensions.height;
 

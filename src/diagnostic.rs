@@ -20,11 +20,14 @@ impl Plugin for DiagnosticPlugin {
             // We need to order our system before PerfUiSet::Setup,
             // so that iyes_perf_ui can process any new Perf UI in the same
             // frame as we spawn the entities. Otherwise, Bevy UI will complain.
-            .add_systems(Update, toggle.before(iyes_perf_ui::PerfUiSet::Setup));
+            .add_systems(
+                Update,
+                toggle_diagnostics.before(iyes_perf_ui::PerfUiSet::Setup),
+            );
     }
 }
 
-fn toggle(
+fn toggle_diagnostics(
     mut commands: Commands,
     q_root: Query<Entity, With<PerfUiRoot>>,
     user_input: Res<ActionState<GlobalAction>>,

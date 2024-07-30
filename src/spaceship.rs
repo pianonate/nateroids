@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-
 use bevy_rapier3d::prelude::{
     Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
 };
@@ -34,7 +33,7 @@ pub struct Spaceship;
 #[derive(Component, Debug)]
 pub struct SpaceshipShield;
 
-#[derive(Component, Debug)]
+#[derive(Component, Default)]
 pub struct ContinuousFire;
 
 pub struct SpaceshipPlugin;

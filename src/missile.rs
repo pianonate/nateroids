@@ -16,7 +16,7 @@ use crate::{
     schedule::InGameSet,
     spaceship::{ContinuousFire, Spaceship},
     utils::name_entity,
-    window::ViewportDimensions,
+    window::ViewportWorldDimensions,
 };
 
 use leafwing_input_manager::prelude::*;
@@ -40,6 +40,7 @@ impl Plugin for MissilePlugin {
         app.insert_resource(MissileSpawnTimer {
             timer: Timer::from_seconds(MISSILE_SPAWN_TIMER_SECONDS, TimerMode::Repeating),
         })
+        .add_systems(Startup, config_gizmo_line_width)
         .add_systems(Update, fire_missile.in_set(InGameSet::UserInput))
         .add_systems(
             Update,
@@ -73,7 +74,7 @@ pub struct Missile {
 }
 
 impl Missile {
-    pub fn new(origin: Vec3, direction: Vec3, viewport: Res<ViewportDimensions>) -> Self {
+    pub fn new(origin: Vec3, direction: Vec3, viewport: Res<ViewportWorldDimensions>) -> Self {
         let mut total_distance = 0.0;
 
         if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
@@ -104,7 +105,7 @@ fn fire_missile(
     q_spaceship: Query<(&Transform, Option<&ContinuousFire>), With<Spaceship>>,
     scene_assets: Res<SceneAssets>,
     time: Res<Time>,
-    viewport: Res<ViewportDimensions>,
+    viewport: Res<ViewportWorldDimensions>,
 ) {
     let Ok((transform, continuous_fire)) = q_spaceship.get_single() else {
         return;
@@ -201,11 +202,18 @@ fn toggle_missile_party(
     }
 }
 
+fn config_gizmo_line_width(mut config_store: ResMut<GizmoConfigStore>) {
+    for (_, config, _) in config_store.iter_mut() {
+        // change default from 2.
+        config.line_width = 1.;
+    }
+}
+
 /// fun! with missiles!
 fn missile_party(
     q_missile: Query<&Missile>,
     mut gizmos: Gizmos,
-    viewport: Res<ViewportDimensions>,
+    viewport: Res<ViewportWorldDimensions>,
 ) {
     for missile in q_missile.iter() {
         let current_position = missile.last_position;
@@ -218,7 +226,7 @@ fn missile_party(
 
 fn draw_missile_ray(
     gizmos: &mut Gizmos,
-    viewport: &Res<ViewportDimensions>,
+    viewport: &Res<ViewportWorldDimensions>,
     missile: &Missile,
     current_position: Vec3,
     direction: Vec3,
@@ -308,7 +316,7 @@ fn calculate_perpendicular_points(origin: Vec3, direction: Vec3, distance: f32) 
 fn find_edge_point(
     origin: Vec3,
     direction: Vec3,
-    dimensions: &Res<ViewportDimensions>,
+    dimensions: &Res<ViewportWorldDimensions>,
 ) -> Option<Vec3> {
     let width = dimensions.width;
     let height = dimensions.height;
