@@ -1,8 +1,10 @@
-use bevy::color::palettes::css::RED;
-use bevy::prelude::Color::Srgba;
+use bevy::color::palettes::css::GREEN;
 use bevy::prelude::*;
+use bevy_inspector_egui::{prelude::*, InspectorOptions};
 
-const DEFAULT_BOUNDARY: f32 = 75.0;
+const DEFAULT_CELL_SCALE: Vec3 = Vec3::new(75., 75., 75.);
+const DEFAULT_CELL_COUNT: UVec3 = UVec3::new(2, 1, 1);
+const DEFAULT_CELL_COLOR: Srgba = GREEN;
 
 pub struct BoundaryPlugin;
 
@@ -14,20 +16,33 @@ impl Plugin for BoundaryPlugin {
 }
 
 fn draw_boundary(boundary: Res<Boundary>, mut gizmos: Gizmos) {
-    gizmos.cuboid(boundary.transform, Srgba(RED));
+    gizmos
+        .grid_3d(
+            boundary.transform.translation,
+            Quat::IDENTITY,
+            boundary.cell_count,
+            boundary.cell_scale,
+            DEFAULT_CELL_COLOR,
+        )
+        .outer_edges();
 }
 
-#[derive(Resource)]
+#[derive(Reflect, Resource, InspectorOptions)]
+#[reflect(InspectorOptions)]
 pub struct Boundary {
-    pub(crate) transform: Transform,
+    pub cell_count: UVec3,
+    pub cell_scale: Vec3,
+    pub transform: Transform,
 }
 
 impl Default for Boundary {
     fn default() -> Self {
         Self {
+            cell_count: DEFAULT_CELL_COUNT,
+            cell_scale: DEFAULT_CELL_SCALE,
             transform: Transform {
                 translation: Vec3::ZERO,
-                scale: Vec3::splat(DEFAULT_BOUNDARY),
+                scale: DEFAULT_CELL_SCALE * DEFAULT_CELL_COUNT.as_vec3(),
                 ..Default::default()
             },
         }

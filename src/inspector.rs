@@ -7,6 +7,7 @@ use bevy_inspector_egui::{
 };
 
 use crate::{
+    boundary::Boundary,
     camera::PrimaryCamera,
     debug::{inspector_mode_enabled, DebugMode},
     state::GameState,
@@ -116,7 +117,8 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                 ui.label("DebugMode");
                 ui_for_resource::<DebugMode>(self.world, ui);
                 ui.add_space(8.0);
-                ui.label("DebugMode");
+                ui.label("Boundary");
+                ui_for_resource::<Boundary>(self.world, ui);
             }
             EguiWindow::GameView => {
                 *self.viewport_rect = ui.clip_rect();

@@ -1,10 +1,8 @@
-use crate::input::CameraMovement;
-use crate::schedule::InGameSet;
+use crate::boundary::Boundary;
+use crate::{input::CameraMovement, schedule::InGameSet};
 use bevy::prelude::*;
-use bevy::window::{PrimaryWindow, WindowResized};
 use leafwing_input_manager::prelude::*;
 
-const CAMERA_DISTANCE: f32 = 80.0;
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
@@ -22,10 +20,10 @@ impl Plugin for CameraPlugin {
 #[derive(Component, Debug)]
 pub struct PrimaryCamera;
 
-fn spawn_camera(mut commands: Commands) {
+fn spawn_camera(mut commands: Commands, boundary: Res<Boundary>) {
     commands
         .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 0.0, CAMERA_DISTANCE)
+            transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.0)
                 .looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
@@ -36,14 +34,9 @@ fn spawn_camera(mut commands: Commands) {
 }
 
 fn zoom_camera(
-    window: Query<(Entity, &Window), With<PrimaryWindow>>,
-    mut event_writer: EventWriter<WindowResized>,
     mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<PrimaryCamera>>,
 ) {
-    if let Ok((window_entity, window)) = window.get_single() {
-        const CAMERA_ZOOM_RATE: f32 = 0.05;
-
-        let (mut transform, action_state) = query.single_mut();
+    if let Ok((mut transform, action_state)) = query.get_single_mut() {
         // Here, we use the `action_value` method to extract the total net amount that the mouse wheel has travelled
         // Up and right axis movements are always positive by default
         let zoom_delta = action_state.value(&CameraMovement::Zoom);
@@ -52,17 +45,9 @@ fn zoom_camera(
             return;
         }
 
-        let zoom_update = 1. - zoom_delta * CAMERA_ZOOM_RATE;
+        let zoom_update = 1. - zoom_delta;
 
         transform.translation.z *= zoom_update;
-
-        // to get the viewport properly updated with this different camera position
-        // we need to hijack the resize where we also update the viewport
-        event_writer.send(WindowResized {
-            window: window_entity,
-            width: window.width(),
-            height: window.height(),
-        });
 
         println!("zoom_delta {}", zoom_delta);
     }

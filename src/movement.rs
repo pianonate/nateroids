@@ -68,28 +68,13 @@ impl Default for MovingObjectBundle {
     }
 }
 
-// fn teleport_at_boundary(
-//     viewport: Res<ViewportWorldDimensions>,
-//     mut wrappable_entities: Query<(&mut Transform, &mut Wrappable)>,
-// ) {
-//     for (mut transform, mut wrappable) in wrappable_entities.iter_mut() {
-//         let original_position = transform.translation;
-//         let wrapped_position = calculate_teleport_position(original_position, &viewport);
-//         if wrapped_position != original_position {
-//             wrappable.wrapped = true;
-//             transform.translation = wrapped_position;
-//         } else {
-//             wrappable.wrapped = false;
-//         }
-//     }
-// }
 fn teleport_at_boundary(
     boundary: Res<Boundary>,
     mut wrappable_entities: Query<(&mut Transform, &mut Wrappable)>,
 ) {
     for (mut transform, mut wrappable) in wrappable_entities.iter_mut() {
         let original_position = transform.translation;
-        let wrapped_position = calculate_teleport_position(original_position, &boundary);
+        let wrapped_position = calculate_teleport_position(original_position, &boundary.transform);
         if wrapped_position != original_position {
             wrappable.wrapped = true;
             transform.translation = wrapped_position;
@@ -99,39 +84,10 @@ fn teleport_at_boundary(
     }
 }
 
-/// given a particular point, what is the point on the opposite side of the screen?
-// pub fn calculate_teleport_position(
-//     position: Vec3,
-//     dimensions: &Res<ViewportWorldDimensions>,
-// ) -> Vec3 {
-//     let width = dimensions.width;
-//     let height = dimensions.height;
-//
-//     let viewport_right = width / 2.0;
-//     let viewport_left = -viewport_right;
-//     let viewport_top = height / 2.0;
-//     let viewport_bottom = -viewport_top;
-//
-//     let mut wrapped_position = position;
-//
-//     if position.x >= viewport_right {
-//         wrapped_position.x = viewport_left;
-//     } else if position.x <= viewport_left {
-//         wrapped_position.x = viewport_right;
-//     }
-//
-//     if position.y >= viewport_top {
-//         wrapped_position.y = viewport_bottom;
-//     } else if position.y <= viewport_bottom {
-//         wrapped_position.y = viewport_top;
-//     }
-//
-//     wrapped_position
-// }
-
-pub fn calculate_teleport_position(position: Vec3, boundary: &Res<Boundary>) -> Vec3 {
-    let boundary_min = boundary.transform.translation - boundary.transform.scale / 2.0;
-    let boundary_max = boundary.transform.translation + boundary.transform.scale / 2.0;
+/// given a particular point, what is the point on the opposite side of the boundary?
+pub fn calculate_teleport_position(position: Vec3, transform: &Transform) -> Vec3 {
+    let boundary_min = transform.translation - transform.scale / 2.0;
+    let boundary_max = transform.translation + transform.scale / 2.0;
 
     let mut wrapped_position = position;
 

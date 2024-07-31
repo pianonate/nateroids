@@ -331,7 +331,7 @@ fn draw_missile_ray(
 
             // Calculate the opposite edge point
             //let opposite_edge = calculate_teleport_position(edge_point, viewport);
-            let opposite_edge = calculate_teleport_position(edge_point, boundary);
+            let opposite_edge = calculate_teleport_position(edge_point, &boundary.transform);
 
             draw_sphere(gizmos, opposite_edge, Srgba(RED));
 
