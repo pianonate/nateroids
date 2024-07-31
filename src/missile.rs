@@ -142,6 +142,10 @@ fn fire_missile(
     let mut missile_velocity = forward * MISSILE_SPEED;
     missile_velocity.z = 0.0;
 
+    // add these so that the missile fires in the direction the spaceship
+    // when it is going in a direction but it has turned
+    // without this it looks as if the missiles are trailing off to the
+    // left or to the right from where the spaceship is currently pointing
     let initial_velocity = spaceship_velocity.linvel + missile_velocity;
 
     let direction = forward.as_vec3();
