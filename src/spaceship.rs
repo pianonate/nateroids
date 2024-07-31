@@ -13,6 +13,7 @@ use crate::{
     utils::name_entity,
 };
 
+use crate::camera::PrimaryCamera;
 use crate::input::SpaceshipAction;
 use leafwing_input_manager::prelude::*;
 
@@ -23,7 +24,7 @@ const SPACESHIP_MAX_SPEED: f32 = 40.0;
 const SPACESHIP_NAME: &str = "Spaceship";
 const SPACESHIP_RADIUS: f32 = 5.0;
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
-const SPACESHIP_ROTATION_SPEED: f32 = 5.0;
+const SPACESHIP_ROTATION_SPEED: f32 = 3.0;
 const SPACESHIP_SCALE: Vec3 = Vec3::new(0.5, 0.5, 0.5);
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0);
 
@@ -84,7 +85,11 @@ fn toggle_continuous_fire(
     }
 }
 
-fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
+fn spawn_spaceship(
+    mut commands: Commands,
+    scene_assets: Res<SceneAssets>,
+    q_camera: Query<Entity, With<PrimaryCamera>>,
+) {
     let spaceship = commands
         .spawn(Spaceship)
         .insert(HealthBundle {
@@ -113,6 +118,10 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
             SpaceshipAction::spaceship_input_map(),
         ))
         .id();
+
+    // if let Ok(camera) = q_camera.get_single() {
+    //     commands.entity(spaceship).add_child(camera);
+    // }
 
     name_entity(&mut commands, spaceship, SPACESHIP_NAME);
 }

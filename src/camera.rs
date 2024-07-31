@@ -49,6 +49,7 @@ fn spawn_camera(mut commands: Commands, boundary: Res<Boundary>) {
     commands
         .spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.0)
+                //transform: Transform::from_xyz(0.0, 5.0, -20.0) // -boundary.transform.scale.z) //
                 .looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })

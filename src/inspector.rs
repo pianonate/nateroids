@@ -15,7 +15,9 @@ use bevy_inspector_egui::{
 };
 
 use crate::camera::AppClearColor;
+use crate::input::GlobalAction;
 use egui_dock::{DockArea, DockState, NodeIndex};
+use leafwing_input_manager::action_state::ActionState;
 
 pub struct InspectorPlugin;
 
@@ -158,11 +160,16 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 }
 
 // make camera render to full window
-// todo: #bevyquestion - set_normal_viewport run every update
-//                       seems as if it only need to run once, when the egui is toggled off
-fn reset_camera_viewport(mut cameras: Query<&mut Camera, With<PrimaryCamera>>) {
-    let mut primary_camera = cameras.single_mut();
-    primary_camera.viewport = None;
+fn reset_camera_viewport(
+    user_input: Res<ActionState<GlobalAction>>,
+    mut cameras: Query<&mut Camera, With<PrimaryCamera>>,
+) {
+    if user_input.just_pressed(&GlobalAction::Inspector) {
+        if let Ok(mut primary_camera) = cameras.get_single_mut() {
+            primary_camera.viewport = None;
+            println!("resetting primary_camera_viewport back to normal")
+        }
+    }
 }
 
 // make camera only render to view not obstructed by UI

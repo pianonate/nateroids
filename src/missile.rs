@@ -93,6 +93,28 @@ impl Missile {
     }
 }
 
+/// Logic to handle whether we're in continuous fire mode or just regular fire mode
+/// if continuous we want to make sure that enough time has passed and that we're
+/// holding down the fire button
+fn should_fire(
+    continuous_fire: Option<&ContinuousFire>,
+    mut spawn_timer: ResMut<MissileSpawnTimer>,
+    time: Res<Time>,
+    q_input_map: Query<&ActionState<SpaceshipAction>>,
+) -> bool {
+    let action_state = q_input_map.single();
+
+    if continuous_fire.is_some() {
+        spawn_timer.timer.tick(time.delta());
+        if !spawn_timer.timer.just_finished() {
+            return false;
+        }
+        action_state.pressed(&SpaceshipAction::Fire)
+    } else {
+        action_state.just_pressed(&SpaceshipAction::Fire)
+    }
+}
+
 // todo: #bevyquestion - how could i reduce the number of arguments here?
 // todo: #bevyquestion - so, in an object oriented world i think of attaching fire as a method to
 //                       the spaceship - but there's a lot of missile logic so i have it setup in missile
@@ -100,66 +122,73 @@ impl Missile {
 //                       fn or is having it here fine?
 fn fire_missile(
     mut commands: Commands,
-    mut spawn_timer: ResMut<MissileSpawnTimer>,
+    spawn_timer: ResMut<MissileSpawnTimer>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
-    q_spaceship: Query<(&Transform, Option<&ContinuousFire>), With<Spaceship>>,
+    q_spaceship: Query<(&Transform, &Velocity, Option<&ContinuousFire>), With<Spaceship>>,
     scene_assets: Res<SceneAssets>,
     time: Res<Time>,
     boundary: Res<Boundary>,
 ) {
-    let Ok((transform, continuous_fire)) = q_spaceship.get_single() else {
+    let Ok((transform, spaceship_velocity, continuous_fire)) = q_spaceship.get_single() else {
         return;
     };
 
-    let continuous = match continuous_fire {
-        Some(_) => {
-            spawn_timer.timer.tick(time.delta());
-
-            if !spawn_timer.timer.just_finished() {
-                return;
-            }
-            true
-        }
-        None => false,
-    };
-
-    let action_state = q_input_map.single();
-
-    if continuous && action_state.pressed(&SpaceshipAction::Fire)
-        || !continuous && action_state.just_pressed(&SpaceshipAction::Fire)
-    {
-        let mut velocity = -transform.forward() * MISSILE_SPEED;
-        velocity.z = 0.0;
-
-        let direction = -transform.forward().as_vec3();
-        let origin = transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
-        let missile = Missile::new(origin, direction, &boundary);
-
-        let missile = commands
-            .spawn(missile)
-            .insert(HealthBundle {
-                collision_damage: CollisionDamage(MISSILE_COLLISION_DAMAGE),
-                health: Health(MISSILE_HEALTH),
-            })
-            .insert(MovingObjectBundle {
-                collider: Collider::ball(MISSILE_RADIUS),
-                collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
-                mass: Mass(MISSILE_MASS),
-                model: SceneBundle {
-                    scene: scene_assets.missiles.clone(),
-                    transform: Transform::from_translation(origin),
-                    ..default()
-                },
-                velocity: Velocity {
-                    linvel: velocity,
-                    angvel: Default::default(),
-                },
-                ..default()
-            })
-            .id();
-
-        name_entity(&mut commands, missile, MISSILE_NAME);
+    if !should_fire(continuous_fire, spawn_timer, time, q_input_map) {
+        return;
     }
+
+    let forward = -transform.forward();
+
+    let mut missile_velocity = forward * MISSILE_SPEED;
+    missile_velocity.z = 0.0;
+
+    let initial_velocity = spaceship_velocity.linvel + missile_velocity;
+
+    let direction = forward.as_vec3();
+    let origin = transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
+    let missile = Missile::new(origin, direction, &boundary);
+
+    // extracted for readability
+    spawn_missile(
+        &mut commands,
+        scene_assets,
+        initial_velocity,
+        origin,
+        missile,
+    );
+}
+
+fn spawn_missile(
+    commands: &mut Commands,
+    scene_assets: Res<SceneAssets>,
+    initial_velocity: Vec3,
+    origin: Vec3,
+    missile: Missile,
+) {
+    let missile = commands
+        .spawn(missile)
+        .insert(HealthBundle {
+            collision_damage: CollisionDamage(MISSILE_COLLISION_DAMAGE),
+            health: Health(MISSILE_HEALTH),
+        })
+        .insert(MovingObjectBundle {
+            collider: Collider::ball(MISSILE_RADIUS),
+            collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
+            mass: Mass(MISSILE_MASS),
+            model: SceneBundle {
+                scene: scene_assets.missiles.clone(),
+                transform: Transform::from_translation(origin),
+                ..default()
+            },
+            velocity: Velocity {
+                linvel: initial_velocity,
+                angvel: Default::default(),
+            },
+            ..default()
+        })
+        .id();
+
+    name_entity(commands, missile, MISSILE_NAME);
 }
 
 /// we update missile movement so that it can be despawned after it has traveled its total distance

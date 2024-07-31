@@ -1,7 +1,7 @@
 use bevy::{color::palettes::css::GREEN, prelude::*};
 use bevy_inspector_egui::InspectorOptions;
 
-const DEFAULT_CELL_SCALE: Vec3 = Vec3::new(75., 75., 75.);
+const DEFAULT_CELL_SCALE: Vec3 = Vec3::new(175., 175., 175.);
 const DEFAULT_CELL_COUNT: UVec3 = UVec3::new(2, 1, 1);
 const DEFAULT_CELL_COLOR: Srgba = GREEN;
 
