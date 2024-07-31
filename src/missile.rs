@@ -16,9 +16,9 @@ use crate::{
     schedule::InGameSet,
     spaceship::{ContinuousFire, Spaceship},
     utils::name_entity,
-    window::ViewportWorldDimensions,
 };
 
+use crate::boundary::Boundary;
 use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
@@ -74,11 +74,11 @@ pub struct Missile {
 }
 
 impl Missile {
-    pub fn new(origin: Vec3, direction: Vec3, viewport: Res<ViewportWorldDimensions>) -> Self {
+    pub fn new(origin: Vec3, direction: Vec3, boundary: &Res<Boundary>) -> Self {
         let mut total_distance = 0.0;
 
-        if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
-            if let Some(opposite_edge) = find_edge_point(origin, -direction, &viewport) {
+        if let Some(edge_point) = find_edge_point(origin, direction, boundary) {
+            if let Some(opposite_edge) = find_edge_point(origin, -direction, boundary) {
                 total_distance = edge_point.distance(opposite_edge) * MISSILE_MOVEMENT_SCALAR;
             }
         }
@@ -88,16 +88,100 @@ impl Missile {
             total_distance,
             traveled_distance: 0.0,
             last_position: origin,
-            last_teleport_position: None, // Initialize this field
+            last_teleport_position: None,
         }
     }
 }
+
+// impl Missile {
+//     pub fn new(origin: Vec3, direction: Vec3, viewport: Res<ViewportWorldDimensions>) -> Self {
+//         let mut total_distance = 0.0;
+//
+//         if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
+//             if let Some(opposite_edge) = find_edge_point(origin, -direction, &viewport) {
+//                 total_distance = edge_point.distance(opposite_edge) * MISSILE_MOVEMENT_SCALAR;
+//             }
+//         }
+//
+//         Missile {
+//             direction,
+//             total_distance,
+//             traveled_distance: 0.0,
+//             last_position: origin,
+//             last_teleport_position: None, // Initialize this field
+//         }
+//     }
+// }
 
 // todo: #bevyquestion - how could i reduce the number of arguments here?
 // todo: #bevyquestion - so, in an object oriented world i think of attaching fire as a method to
 //                       the spaceship - but there's a lot of missile logic so i have it setup in missile
 //                       so should i have a simple fire method in method in spaceship that in turn calls this
 //                       fn or is having it here fine?
+// fn fire_missile(
+//     mut commands: Commands,
+//     mut spawn_timer: ResMut<MissileSpawnTimer>,
+//     q_input_map: Query<&ActionState<SpaceshipAction>>,
+//     q_spaceship: Query<(&Transform, Option<&ContinuousFire>), With<Spaceship>>,
+//     scene_assets: Res<SceneAssets>,
+//     time: Res<Time>,
+//     viewport: Res<ViewportWorldDimensions>,
+// ) {
+//     let Ok((transform, continuous_fire)) = q_spaceship.get_single() else {
+//         return;
+//     };
+//
+//     let continuous = match continuous_fire {
+//         Some(_) => {
+//             spawn_timer.timer.tick(time.delta());
+//
+//             if !spawn_timer.timer.just_finished() {
+//                 return;
+//             }
+//             true
+//         }
+//         None => false,
+//     };
+//
+//     let action_state = q_input_map.single();
+//
+//     if continuous && action_state.pressed(&SpaceshipAction::Fire)
+//         || !continuous && action_state.just_pressed(&SpaceshipAction::Fire)
+//     {
+//         let mut velocity = -transform.forward() * MISSILE_SPEED;
+//         velocity.z = 0.0;
+//
+//         let direction = -transform.forward().as_vec3();
+//         let origin = transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
+//         let missile = Missile::new(origin, direction, viewport);
+//
+//         let missile = commands
+//             .spawn(missile)
+//             .insert(HealthBundle {
+//                 collision_damage: CollisionDamage(MISSILE_COLLISION_DAMAGE),
+//                 health: Health(MISSILE_HEALTH),
+//             })
+//             .insert(MovingObjectBundle {
+//                 collider: Collider::ball(MISSILE_RADIUS),
+//                 collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
+//                 mass: Mass(MISSILE_MASS),
+//                 model: SceneBundle {
+//                     scene: scene_assets.missiles.clone(),
+//                     transform: Transform::from_translation(origin),
+//                     ..default()
+//                 },
+//                 velocity: Velocity {
+//                     linvel: velocity,
+//                     angvel: Default::default(),
+//                 },
+//                 ..default()
+//             })
+//             .id(); // to ensure we store the entity id for subsequent use
+//
+//         name_entity(&mut commands, missile, MISSILE_NAME);
+//     }
+// }
+
 fn fire_missile(
     mut commands: Commands,
     mut spawn_timer: ResMut<MissileSpawnTimer>,
@@ -105,7 +189,7 @@ fn fire_missile(
     q_spaceship: Query<(&Transform, Option<&ContinuousFire>), With<Spaceship>>,
     scene_assets: Res<SceneAssets>,
     time: Res<Time>,
-    viewport: Res<ViewportWorldDimensions>,
+    boundary: Res<Boundary>,
 ) {
     let Ok((transform, continuous_fire)) = q_spaceship.get_single() else {
         return;
@@ -133,7 +217,7 @@ fn fire_missile(
 
         let direction = -transform.forward().as_vec3();
         let origin = transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
-        let missile = Missile::new(origin, direction, viewport);
+        let missile = Missile::new(origin, direction, &boundary);
 
         let missile = commands
             .spawn(missile)
@@ -156,7 +240,7 @@ fn fire_missile(
                 },
                 ..default()
             })
-            .id(); // to ensure we store the entity id for subsequent use
+            .id();
 
         name_entity(&mut commands, missile, MISSILE_NAME);
     }
@@ -213,27 +297,31 @@ fn config_gizmo_line_width(mut config_store: ResMut<GizmoConfigStore>) {
 fn missile_party(
     q_missile: Query<&Missile>,
     mut gizmos: Gizmos,
-    viewport: Res<ViewportWorldDimensions>,
+    //viewport: Res<ViewportWorldDimensions>,
+    boundary: Res<Boundary>,
 ) {
     for missile in q_missile.iter() {
         let current_position = missile.last_position;
         let direction = missile.direction;
 
         draw_missile_perpendicular(&mut gizmos, missile, current_position, direction);
-        draw_missile_ray(&mut gizmos, &viewport, missile, current_position, direction);
+        //draw_missile_ray(&mut gizmos, &viewport, missile, current_position, direction);
+        draw_missile_ray(&mut gizmos, &boundary, missile, current_position, direction);
     }
 }
 
 fn draw_missile_ray(
     gizmos: &mut Gizmos,
-    viewport: &Res<ViewportWorldDimensions>,
+    //viewport: &Res<ViewportWorldDimensions>,
+    boundary: &Res<Boundary>,
     missile: &Missile,
     current_position: Vec3,
     direction: Vec3,
 ) {
     let remaining_distance = missile.total_distance - missile.traveled_distance;
 
-    if let Some(edge_point) = find_edge_point(current_position, direction, viewport) {
+    //if let Some(edge_point) = find_edge_point(current_position, direction, viewport) {
+    if let Some(edge_point) = find_edge_point(current_position, direction, boundary) {
         let distance_to_edge = current_position.distance(edge_point);
 
         if remaining_distance > distance_to_edge {
@@ -242,7 +330,9 @@ fn draw_missile_ray(
             draw_sphere(gizmos, edge_point, Srgba(BLUE));
 
             // Calculate the opposite edge point
-            let opposite_edge = calculate_teleport_position(edge_point, viewport);
+            //let opposite_edge = calculate_teleport_position(edge_point, viewport);
+            let opposite_edge = calculate_teleport_position(edge_point, boundary);
+
             draw_sphere(gizmos, opposite_edge, Srgba(RED));
 
             // Draw a sphere at the last teleport position if it exists
@@ -313,30 +403,77 @@ fn calculate_perpendicular_points(origin: Vec3, direction: Vec3, distance: f32) 
 /// - The function calculates the intersection points of the ray with the positive and negative boundaries of the viewable area along both the x and z axes.
 /// - It iterates over these axes, updating the minimum intersection distance (`t_min`) if a valid intersection is found.
 /// - Finally, it returns the intersection point corresponding to the minimum distance, or `None` if no valid intersection is found.
-fn find_edge_point(
-    origin: Vec3,
-    direction: Vec3,
-    dimensions: &Res<ViewportWorldDimensions>,
-) -> Option<Vec3> {
-    let width = dimensions.width;
-    let height = dimensions.height;
+// fn find_edge_point(
+//     origin: Vec3,
+//     direction: Vec3,
+//     dimensions: &Res<ViewportWorldDimensions>,
+// ) -> Option<Vec3> {
+//     let width = dimensions.width;
+//     let height = dimensions.height;
+//
+//     let half_width = width / 2.0;
+//     let half_height = height / 2.0;
+//
+//     let mut t_min = f32::MAX;
+//
+//     for (start, dir, pos_bound, neg_bound) in [
+//         (origin.x, direction.x, half_width, -half_width),
+//         (origin.y, direction.y, half_height, -half_height),
+//     ] {
+//         if dir != 0.0 {
+//             let t_positive = (pos_bound - start) / dir;
+//             let point_positive = origin + direction * t_positive;
+//             let in_bounds_positive = if start == origin.x {
+//                 point_positive.y.abs() <= half_height
+//             } else {
+//                 point_positive.x.abs() <= half_width
+//             };
+//
+//             if t_positive > 0.0 && t_positive < t_min && in_bounds_positive {
+//                 t_min = t_positive;
+//             }
+//
+//             let t_negative = (neg_bound - start) / dir;
+//             let point_negative = origin + direction * t_negative;
+//             let in_bounds_negative = if start == origin.x {
+//                 point_negative.y.abs() <= half_height
+//             } else {
+//                 point_negative.x.abs() <= half_width
+//             };
+//
+//             if t_negative > 0.0 && t_negative < t_min && in_bounds_negative {
+//                 t_min = t_negative;
+//             }
+//         }
+//     }
+//
+//     if t_min != f32::MAX {
+//         let edge_point = origin + direction * t_min;
+//         return Some(edge_point);
+//     }
+//     None
+// }
 
-    let half_width = width / 2.0;
-    let half_height = height / 2.0;
+fn find_edge_point(origin: Vec3, direction: Vec3, boundary: &Res<Boundary>) -> Option<Vec3> {
+    let boundary_min = boundary.transform.translation - boundary.transform.scale / 2.0;
+    let boundary_max = boundary.transform.translation + boundary.transform.scale / 2.0;
 
     let mut t_min = f32::MAX;
 
     for (start, dir, pos_bound, neg_bound) in [
-        (origin.x, direction.x, half_width, -half_width),
-        (origin.y, direction.y, half_height, -half_height),
+        (origin.x, direction.x, boundary_max.x, boundary_min.x),
+        (origin.y, direction.y, boundary_max.y, boundary_min.y),
+        (origin.z, direction.z, boundary_max.z, boundary_min.z),
     ] {
         if dir != 0.0 {
             let t_positive = (pos_bound - start) / dir;
             let point_positive = origin + direction * t_positive;
             let in_bounds_positive = if start == origin.x {
-                point_positive.y.abs() <= half_height
+                point_positive.y.abs() <= boundary_max.y && point_positive.z.abs() <= boundary_max.z
+            } else if start == origin.y {
+                point_positive.x.abs() <= boundary_max.x && point_positive.z.abs() <= boundary_max.z
             } else {
-                point_positive.x.abs() <= half_width
+                point_positive.x.abs() <= boundary_max.x && point_positive.y.abs() <= boundary_max.y
             };
 
             if t_positive > 0.0 && t_positive < t_min && in_bounds_positive {
@@ -346,9 +483,11 @@ fn find_edge_point(
             let t_negative = (neg_bound - start) / dir;
             let point_negative = origin + direction * t_negative;
             let in_bounds_negative = if start == origin.x {
-                point_negative.y.abs() <= half_height
+                point_negative.y.abs() <= boundary_max.y && point_negative.z.abs() <= boundary_max.z
+            } else if start == origin.y {
+                point_negative.x.abs() <= boundary_max.x && point_negative.z.abs() <= boundary_max.z
             } else {
-                point_negative.x.abs() <= half_width
+                point_negative.x.abs() <= boundary_max.x && point_negative.y.abs() <= boundary_max.y
             };
 
             if t_negative > 0.0 && t_negative < t_min && in_bounds_negative {

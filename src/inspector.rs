@@ -10,7 +10,6 @@ use crate::{
     camera::PrimaryCamera,
     debug::{inspector_mode_enabled, DebugMode},
     state::GameState,
-    window::{update_world_viewport_dimensions, ViewportData},
 };
 
 use bevy_inspector_egui::bevy_inspector::{ui_for_resource, ui_for_state};
@@ -162,18 +161,12 @@ fn reset_camera_viewport(mut cameras: Query<&mut Camera, With<PrimaryCamera>>) {
 // make camera only render to view not obstructed by UI
 // this accommodates window and tab resizes because it runs every frame
 fn set_inspector_viewport(
-    mut commands: Commands,
     ui_state: Res<UiState>,
     primary_window: Query<&mut Window, With<PrimaryWindow>>,
     egui_settings: Res<bevy_egui::EguiSettings>,
-    mut camera: Query<(&mut Camera, &Projection, &GlobalTransform), With<PrimaryCamera>>,
+    mut camera: Query<&mut Camera, With<PrimaryCamera>>,
 ) {
-    if let Ok((
-        mut primary_camera,
-        Projection::Perspective(perspective_projection),
-        global_transform,
-    )) = camera.get_single_mut()
-    {
+    if let Ok(mut primary_camera) = camera.get_single_mut() {
         if let Ok(window) = primary_window.get_single() {
             let viewport_rect = ui_state.viewport_rect;
             let scale_factor = window.scale_factor() * egui_settings.scale_factor;
@@ -185,15 +178,6 @@ fn set_inspector_viewport(
                 physical_size: UVec2::new(viewport_size.x as u32, viewport_size.y as u32),
                 depth: 0.0..1.0,
             });
-
-            let viewport_data = ViewportData {
-                fov: perspective_projection.fov,
-                camera_distance: global_transform.translation().z,
-                height: viewport_size.y,
-                width: viewport_size.x,
-            };
-
-            update_world_viewport_dimensions(&mut commands, viewport_data);
         }
     }
 }

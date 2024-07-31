@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
-    asset_loader::AssetLoaderPlugin, camera::CameraPlugin,
+    asset_loader::AssetLoaderPlugin, boundary::BoundaryPlugin, camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin, input::InputPlugin,
     missile::MissilePlugin, movement::MovementPlugin, nateroid::Nateroid, physics::PhysicsPlugin,
-    schedule::SchedulePlugin, spaceship::SpaceshipPlugin, state::StatePlugin, window::WindowPlugin,
+    schedule::SchedulePlugin, spaceship::SpaceshipPlugin, state::StatePlugin,
 };
 
 #[cfg(debug_assertions)]
@@ -18,6 +18,7 @@ mod inspector;
 
 // exclude when targeting wasm - this breaks in the browser right now
 mod asset_loader;
+mod boundary;
 mod camera;
 mod collision_detection;
 mod despawn;
@@ -31,7 +32,6 @@ mod schedule;
 mod spaceship;
 mod state;
 mod utils;
-mod window;
 
 fn main() {
     let mut app = App::new();
@@ -41,6 +41,7 @@ fn main() {
         .add_plugins(CameraPlugin)
         .add_plugins(CollisionDetectionPlugin)
         .add_plugins(DespawnPlugin)
+        .add_plugins(BoundaryPlugin)
         .add_plugins(InputPlugin)
         .add_plugins(MovementPlugin)
         .add_plugins(MissilePlugin)
@@ -48,8 +49,7 @@ fn main() {
         .add_plugins(PhysicsPlugin)
         .add_plugins(SchedulePlugin)
         .add_plugins(SpaceshipPlugin)
-        .add_plugins(StatePlugin)
-        .add_plugins(WindowPlugin);
+        .add_plugins(StatePlugin);
 
     #[cfg(debug_assertions)]
     app.add_plugins(InspectorPlugin)

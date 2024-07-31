@@ -1,6 +1,6 @@
 use bevy::prelude::KeyCode::{
-    ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ControlLeft, Escape, Fn, KeyA, KeyC, KeyD, KeyM,
-    KeyP, KeyS, KeyW, ShiftLeft, Space, F2, F3, F4,
+    ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ControlLeft, Escape, KeyA, KeyC, KeyD, KeyM, KeyS,
+    KeyW, Space, F2, F3, F4,
 };
 use bevy::prelude::*;
 

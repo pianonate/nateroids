@@ -132,15 +132,15 @@ fn spaceship_movement_controls(
 
         if spaceship_action.pressed(&SpaceshipAction::TurnRight) {
             // right
-            velocity.angvel.y = 0.0;
+            velocity.angvel.z = 0.0;
             rotation = -SPACESHIP_ROTATION_SPEED * delta_seconds;
         } else if spaceship_action.pressed(&SpaceshipAction::TurnLeft) {
             // left
-            velocity.angvel.y = 0.0;
+            velocity.angvel.z = 0.0;
             rotation = SPACESHIP_ROTATION_SPEED * delta_seconds;
         }
 
-        // rotate around the y-axis
+        // rotate around the z-axis
         transform.rotate_z(rotation);
 
         if spaceship_action.pressed(&SpaceshipAction::Accelerate) {

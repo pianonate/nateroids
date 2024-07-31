@@ -19,22 +19,8 @@ impl Plugin for SchedulePlugin {
             (
                 InGameSet::DespawnEntities,
                 // Flush commands (i.e. `apply_deferred` runs)
-                InGameSet::UserInput,
-                // a bug that if entity updates happen before collision detection
-                // then the next despawn entities round gets rid of
-                // new nateroid if the ship is also firing - weird
-                // probably in the future i'll just use Rapier so i don't have
-                // to concern myself with this
-                //
-                // it's got something to do with the missiles being fired
-                // in any direction as that seems to cause a collision to be registered
-                // with collision detection so that subsequently the newly created
-                // nateroid is despawned
-                //
-                // for now putting collision detection before entity updates
-                // so that newly spawned things don't get included in detection
-                // which i suppose might make sense anyway...
                 InGameSet::CollisionDetection,
+                InGameSet::UserInput,
                 InGameSet::EntityUpdates,
             )
                 .chain()
@@ -44,8 +30,7 @@ impl Plugin for SchedulePlugin {
                 // in_state evaluates to true - i.e., we are in_game
                 // and we have a system that runs on state to watch for keyboard control
                 // that takes us in or out of InGame - i.e., pausing
-                // 1 line of code right here allows for pausing and starting the game
-                // because we set it up that way
+                // 1 line of code right here allows for pausing and starting the game!
                 .run_if(in_state(GameState::InGame)),
         )
         .add_systems(
