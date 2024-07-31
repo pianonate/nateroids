@@ -1,7 +1,19 @@
 use crate::boundary::Boundary;
 use crate::{input::CameraMovement, schedule::InGameSet};
+use bevy::color::palettes::css;
+use bevy::prelude::Color::Srgba;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+
+const DEFAULT_CLEAR_COLOR_DARKENING_FACTOR: f32 = 0.019;
+const DEFAULT_CLEAR_COLOR: Color = Srgba(css::MIDNIGHT_BLUE);
+
+#[derive(Resource, Reflect, Debug, Default)]
+#[reflect(Resource)]
+pub struct AppClearColor {
+    color: Color,
+    darkening_factor: f32,
+}
 
 pub struct CameraPlugin;
 
@@ -9,12 +21,25 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreStartup, spawn_camera)
             .add_systems(Update, zoom_camera.in_set(InGameSet::UserInput))
-            .insert_resource(ClearColor(Color::srgb(0.1, 0.0, 0.15)))
+            .insert_resource(AppClearColor {
+                color: DEFAULT_CLEAR_COLOR,
+                darkening_factor: DEFAULT_CLEAR_COLOR_DARKENING_FACTOR,
+            })
+            .insert_resource(ClearColor(
+                DEFAULT_CLEAR_COLOR.darker(DEFAULT_CLEAR_COLOR_DARKENING_FACTOR),
+            ))
             .insert_resource(AmbientLight {
                 color: Color::default(),
                 brightness: 1000.0,
-            });
+            })
+            .add_systems(Update, update_clear_color);
     }
+}
+
+fn update_clear_color(app_clear_color: Res<AppClearColor>, mut clear_color: ResMut<ClearColor>) {
+    clear_color.0 = app_clear_color
+        .color
+        .darker(app_clear_color.darkening_factor);
 }
 
 #[derive(Component, Debug)]

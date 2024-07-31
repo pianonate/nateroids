@@ -1,6 +1,5 @@
-use bevy::color::palettes::css::GREEN;
-use bevy::prelude::*;
-use bevy_inspector_egui::{prelude::*, InspectorOptions};
+use bevy::{color::palettes::css::GREEN, prelude::*};
+use bevy_inspector_egui::InspectorOptions;
 
 const DEFAULT_CELL_SCALE: Vec3 = Vec3::new(75., 75., 75.);
 const DEFAULT_CELL_COUNT: UVec3 = UVec3::new(2, 1, 1);
@@ -28,7 +27,7 @@ fn draw_boundary(boundary: Res<Boundary>, mut gizmos: Gizmos) {
 }
 
 #[derive(Reflect, Resource, InspectorOptions)]
-#[reflect(InspectorOptions)]
+#[reflect(Resource)]
 pub struct Boundary {
     pub cell_count: UVec3,
     pub cell_scale: Vec3,

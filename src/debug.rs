@@ -1,9 +1,7 @@
-use bevy::app::{App, Plugin, Update};
-use bevy::prelude::{IntoSystemConfigs, Reflect, Res, ResMut, Resource};
-use bevy_inspector_egui::{prelude::*, InspectorOptions};
-use leafwing_input_manager::action_state::ActionState;
-
 use crate::{input::GlobalAction, schedule::InGameSet};
+use bevy::prelude::{IntoSystemConfigs, Reflect, Res, ResMut, Resource, *};
+use bevy_inspector_egui::InspectorOptions;
+use leafwing_input_manager::action_state::ActionState;
 
 pub struct DebugPlugin;
 
@@ -20,7 +18,7 @@ impl Plugin for DebugPlugin {
 
 // the default bool is false, which is what we want
 #[derive(Reflect, Resource, Default, InspectorOptions)]
-#[reflect(InspectorOptions)]
+#[reflect(Resource)]
 pub struct DebugMode {
     pub enabled: bool,
 }
@@ -32,7 +30,8 @@ fn toggle_debug(user_input: Res<ActionState<GlobalAction>>, mut debug_mode: ResM
     }
 }
 
-#[derive(Resource, Debug, Default)]
+#[derive(Resource, Reflect, Debug, Default)]
+#[reflect(Resource)]
 pub struct InspectorMode {
     pub enabled: bool,
 }

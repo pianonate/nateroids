@@ -93,95 +93,11 @@ impl Missile {
     }
 }
 
-// impl Missile {
-//     pub fn new(origin: Vec3, direction: Vec3, viewport: Res<ViewportWorldDimensions>) -> Self {
-//         let mut total_distance = 0.0;
-//
-//         if let Some(edge_point) = find_edge_point(origin, direction, &viewport) {
-//             if let Some(opposite_edge) = find_edge_point(origin, -direction, &viewport) {
-//                 total_distance = edge_point.distance(opposite_edge) * MISSILE_MOVEMENT_SCALAR;
-//             }
-//         }
-//
-//         Missile {
-//             direction,
-//             total_distance,
-//             traveled_distance: 0.0,
-//             last_position: origin,
-//             last_teleport_position: None, // Initialize this field
-//         }
-//     }
-// }
-
 // todo: #bevyquestion - how could i reduce the number of arguments here?
 // todo: #bevyquestion - so, in an object oriented world i think of attaching fire as a method to
 //                       the spaceship - but there's a lot of missile logic so i have it setup in missile
 //                       so should i have a simple fire method in method in spaceship that in turn calls this
 //                       fn or is having it here fine?
-// fn fire_missile(
-//     mut commands: Commands,
-//     mut spawn_timer: ResMut<MissileSpawnTimer>,
-//     q_input_map: Query<&ActionState<SpaceshipAction>>,
-//     q_spaceship: Query<(&Transform, Option<&ContinuousFire>), With<Spaceship>>,
-//     scene_assets: Res<SceneAssets>,
-//     time: Res<Time>,
-//     viewport: Res<ViewportWorldDimensions>,
-// ) {
-//     let Ok((transform, continuous_fire)) = q_spaceship.get_single() else {
-//         return;
-//     };
-//
-//     let continuous = match continuous_fire {
-//         Some(_) => {
-//             spawn_timer.timer.tick(time.delta());
-//
-//             if !spawn_timer.timer.just_finished() {
-//                 return;
-//             }
-//             true
-//         }
-//         None => false,
-//     };
-//
-//     let action_state = q_input_map.single();
-//
-//     if continuous && action_state.pressed(&SpaceshipAction::Fire)
-//         || !continuous && action_state.just_pressed(&SpaceshipAction::Fire)
-//     {
-//         let mut velocity = -transform.forward() * MISSILE_SPEED;
-//         velocity.z = 0.0;
-//
-//         let direction = -transform.forward().as_vec3();
-//         let origin = transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
-//         let missile = Missile::new(origin, direction, viewport);
-//
-//         let missile = commands
-//             .spawn(missile)
-//             .insert(HealthBundle {
-//                 collision_damage: CollisionDamage(MISSILE_COLLISION_DAMAGE),
-//                 health: Health(MISSILE_HEALTH),
-//             })
-//             .insert(MovingObjectBundle {
-//                 collider: Collider::ball(MISSILE_RADIUS),
-//                 collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
-//                 mass: Mass(MISSILE_MASS),
-//                 model: SceneBundle {
-//                     scene: scene_assets.missiles.clone(),
-//                     transform: Transform::from_translation(origin),
-//                     ..default()
-//                 },
-//                 velocity: Velocity {
-//                     linvel: velocity,
-//                     angvel: Default::default(),
-//                 },
-//                 ..default()
-//             })
-//             .id(); // to ensure we store the entity id for subsequent use
-//
-//         name_entity(&mut commands, missile, MISSILE_NAME);
-//     }
-// }
-
 fn fire_missile(
     mut commands: Commands,
     mut spawn_timer: ResMut<MissileSpawnTimer>,
@@ -403,57 +319,6 @@ fn calculate_perpendicular_points(origin: Vec3, direction: Vec3, distance: f32) 
 /// - The function calculates the intersection points of the ray with the positive and negative boundaries of the viewable area along both the x and z axes.
 /// - It iterates over these axes, updating the minimum intersection distance (`t_min`) if a valid intersection is found.
 /// - Finally, it returns the intersection point corresponding to the minimum distance, or `None` if no valid intersection is found.
-// fn find_edge_point(
-//     origin: Vec3,
-//     direction: Vec3,
-//     dimensions: &Res<ViewportWorldDimensions>,
-// ) -> Option<Vec3> {
-//     let width = dimensions.width;
-//     let height = dimensions.height;
-//
-//     let half_width = width / 2.0;
-//     let half_height = height / 2.0;
-//
-//     let mut t_min = f32::MAX;
-//
-//     for (start, dir, pos_bound, neg_bound) in [
-//         (origin.x, direction.x, half_width, -half_width),
-//         (origin.y, direction.y, half_height, -half_height),
-//     ] {
-//         if dir != 0.0 {
-//             let t_positive = (pos_bound - start) / dir;
-//             let point_positive = origin + direction * t_positive;
-//             let in_bounds_positive = if start == origin.x {
-//                 point_positive.y.abs() <= half_height
-//             } else {
-//                 point_positive.x.abs() <= half_width
-//             };
-//
-//             if t_positive > 0.0 && t_positive < t_min && in_bounds_positive {
-//                 t_min = t_positive;
-//             }
-//
-//             let t_negative = (neg_bound - start) / dir;
-//             let point_negative = origin + direction * t_negative;
-//             let in_bounds_negative = if start == origin.x {
-//                 point_negative.y.abs() <= half_height
-//             } else {
-//                 point_negative.x.abs() <= half_width
-//             };
-//
-//             if t_negative > 0.0 && t_negative < t_min && in_bounds_negative {
-//                 t_min = t_negative;
-//             }
-//         }
-//     }
-//
-//     if t_min != f32::MAX {
-//         let edge_point = origin + direction * t_min;
-//         return Some(edge_point);
-//     }
-//     None
-// }
-
 fn find_edge_point(origin: Vec3, direction: Vec3, boundary: &Res<Boundary>) -> Option<Vec3> {
     let boundary_min = boundary.transform.translation - boundary.transform.scale / 2.0;
     let boundary_max = boundary.transform.translation + boundary.transform.scale / 2.0;
@@ -468,29 +333,19 @@ fn find_edge_point(origin: Vec3, direction: Vec3, boundary: &Res<Boundary>) -> O
         if dir != 0.0 {
             let t_positive = (pos_bound - start) / dir;
             let point_positive = origin + direction * t_positive;
-            let in_bounds_positive = if start == origin.x {
-                point_positive.y.abs() <= boundary_max.y && point_positive.z.abs() <= boundary_max.z
-            } else if start == origin.y {
-                point_positive.x.abs() <= boundary_max.x && point_positive.z.abs() <= boundary_max.z
-            } else {
-                point_positive.x.abs() <= boundary_max.x && point_positive.y.abs() <= boundary_max.y
-            };
-
-            if t_positive > 0.0 && t_positive < t_min && in_bounds_positive {
+            if t_positive > 0.0
+                && t_positive < t_min
+                && is_in_bounds(point_positive, start, origin, boundary_min, boundary_max)
+            {
                 t_min = t_positive;
             }
 
             let t_negative = (neg_bound - start) / dir;
             let point_negative = origin + direction * t_negative;
-            let in_bounds_negative = if start == origin.x {
-                point_negative.y.abs() <= boundary_max.y && point_negative.z.abs() <= boundary_max.z
-            } else if start == origin.y {
-                point_negative.x.abs() <= boundary_max.x && point_negative.z.abs() <= boundary_max.z
-            } else {
-                point_negative.x.abs() <= boundary_max.x && point_negative.y.abs() <= boundary_max.y
-            };
-
-            if t_negative > 0.0 && t_negative < t_min && in_bounds_negative {
+            if t_negative > 0.0
+                && t_negative < t_min
+                && is_in_bounds(point_negative, start, origin, boundary_min, boundary_max)
+            {
                 t_min = t_negative;
             }
         }
@@ -501,4 +356,29 @@ fn find_edge_point(origin: Vec3, direction: Vec3, boundary: &Res<Boundary>) -> O
         return Some(edge_point);
     }
     None
+}
+
+fn is_in_bounds(
+    point: Vec3,
+    start: f32,
+    origin: Vec3,
+    boundary_min: Vec3,
+    boundary_max: Vec3,
+) -> bool {
+    if start == origin.x {
+        point.y >= boundary_min.y
+            && point.y <= boundary_max.y
+            && point.z >= boundary_min.z
+            && point.z <= boundary_max.z
+    } else if start == origin.y {
+        point.x >= boundary_min.x
+            && point.x <= boundary_max.x
+            && point.z >= boundary_min.z
+            && point.z <= boundary_max.z
+    } else {
+        point.x >= boundary_min.x
+            && point.x <= boundary_max.x
+            && point.y >= boundary_min.y
+            && point.y <= boundary_max.y
+    }
 }

@@ -104,7 +104,6 @@ fn spawn_spaceship(mut commands: Commands, scene_assets: Res<SceneAssets>) {
                     translation: STARTING_TRANSLATION,
                     scale: SPACESHIP_SCALE,
                     rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2),
-                    ..default()
                 },
                 ..default()
             },

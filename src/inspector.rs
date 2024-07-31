@@ -1,19 +1,20 @@
 use bevy::{prelude::*, render::camera::Viewport, window::PrimaryWindow};
 
-use bevy_inspector_egui::{
-    bevy_egui,
-    bevy_egui::{EguiContext, EguiPlugin, EguiSet},
-    bevy_inspector, egui, DefaultInspectorConfigPlugin,
-};
-
 use crate::{
     boundary::Boundary,
     camera::PrimaryCamera,
     debug::{inspector_mode_enabled, DebugMode},
     state::GameState,
 };
+use bevy_inspector_egui::{
+    bevy_egui,
+    bevy_egui::{EguiContext, EguiPlugin, EguiSet},
+    bevy_inspector,
+    bevy_inspector::ui_for_state,
+    egui, DefaultInspectorConfigPlugin,
+};
 
-use bevy_inspector_egui::bevy_inspector::{ui_for_resource, ui_for_state};
+use crate::camera::AppClearColor;
 use egui_dock::{DockArea, DockState, NodeIndex};
 
 pub struct InspectorPlugin;
@@ -22,6 +23,7 @@ impl Plugin for InspectorPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
             .add_plugins(DefaultInspectorConfigPlugin)
+            .add_systems(Startup, register_resources)
             .insert_resource(UiState::new())
             .add_systems(
                 PostUpdate,
@@ -41,6 +43,13 @@ impl Plugin for InspectorPlugin {
                 reset_camera_viewport.run_if(not(inspector_mode_enabled)),
             );
     }
+}
+
+fn register_resources(world: &mut World) {
+    let type_registry = world.resource::<AppTypeRegistry>().0.clone();
+    type_registry.write().register::<Boundary>();
+    type_registry.write().register::<DebugMode>();
+    type_registry.write().register::<AppClearColor>();
 }
 
 fn show_ui_system(world: &mut World) {
@@ -114,11 +123,12 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                 ui.add_space(8.0);
                 ui.label("GameState");
                 ui_for_state::<GameState>(self.world, ui);
-                ui.label("DebugMode");
-                ui_for_resource::<DebugMode>(self.world, ui);
                 ui.add_space(8.0);
-                ui.label("Boundary");
-                ui_for_resource::<Boundary>(self.world, ui);
+                egui::CollapsingHeader::new("resources")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        bevy_inspector::ui_for_resources(self.world, ui);
+                    });
             }
             EguiWindow::GameView => {
                 *self.viewport_rect = ui.clip_rect();
@@ -128,11 +138,6 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     .default_open(false)
                     .show(ui, |ui| {
                         bevy_inspector::ui_for_world_entities(self.world, ui);
-                    });
-                egui::CollapsingHeader::new("resources")
-                    .default_open(false)
-                    .show(ui, |ui| {
-                        bevy_inspector::ui_for_resources(self.world, ui);
                     });
                 egui::CollapsingHeader::new("assets")
                     .default_open(false)
