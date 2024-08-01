@@ -1,11 +1,6 @@
 use bevy::{prelude::*, render::camera::Viewport, window::PrimaryWindow};
 
-use crate::{
-    boundary::Boundary,
-    camera::PrimaryCamera,
-    debug::{inspector_mode_enabled, DebugMode},
-    state::GameState,
-};
+use crate::{camera::PrimaryCamera, debug::inspector_mode_enabled, state::GameState};
 use bevy_inspector_egui::{
     bevy_egui,
     bevy_egui::{EguiContext, EguiPlugin, EguiSet},
@@ -14,7 +9,6 @@ use bevy_inspector_egui::{
     egui, DefaultInspectorConfigPlugin,
 };
 
-use crate::camera::AppClearColor;
 use crate::input::GlobalAction;
 use egui_dock::{DockArea, DockState, NodeIndex};
 use leafwing_input_manager::action_state::ActionState;

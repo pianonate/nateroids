@@ -1,4 +1,3 @@
-use crate::game_scale::GameScale;
 use crate::{boundary::Boundary, input::CameraMovement, schedule::InGameSet};
 use bevy::{
     color::palettes::css,

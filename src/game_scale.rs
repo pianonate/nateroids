@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_inspector_egui::InspectorOptions;
-use std::ops::Range;
 
 pub struct GameScalePlugin;
 
