@@ -6,26 +6,24 @@ use bevy_rapier3d::prelude::{
 use crate::{
     asset_loader::SceneAssets,
     collision_detection::{GROUP_ASTEROID, GROUP_SPACESHIP},
+    game_scale::GameScale,
     health::{CollisionDamage, Health, HealthBundle},
+    input::SpaceshipAction,
     movement::MovingObjectBundle,
     schedule::InGameSet,
     state::GameState,
     utils::name_entity,
 };
 
-use crate::camera::PrimaryCamera;
-use crate::input::SpaceshipAction;
 use leafwing_input_manager::prelude::*;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
 const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
 const SPACESHIP_HEALTH: f32 = 100.0;
-const SPACESHIP_MAX_SPEED: f32 = 40.0;
+// const SPACESHIP_MAX_SPEED: f32 = 40.0;
 const SPACESHIP_NAME: &str = "Spaceship";
-const SPACESHIP_RADIUS: f32 = 5.0;
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
 const SPACESHIP_ROTATION_SPEED: f32 = 3.0;
-const SPACESHIP_SCALE: Vec3 = Vec3::new(0.5, 0.5, 0.5);
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0);
 
 #[derive(Component, Debug)]
@@ -59,8 +57,8 @@ impl Plugin for SpaceshipPlugin {
     }
 }
 
-// had to set the type-complexity-threshold in clippy.toml to 260
-// to allow this type to pass - it is complex but queries in Bevy are complex
+// todo: how can i avoid setting this allow
+#[allow(clippy::type_complexity)]
 fn toggle_continuous_fire(
     mut commands: Commands,
     q_spaceship: Query<
@@ -87,9 +85,14 @@ fn toggle_continuous_fire(
 
 fn spawn_spaceship(
     mut commands: Commands,
+    game_scale: Res<GameScale>,
     scene_assets: Res<SceneAssets>,
-    q_camera: Query<Entity, With<PrimaryCamera>>,
+    //  q_camera: Query<Entity, With<PrimaryCamera>>,
 ) {
+    if !game_scale.spaceship.spawnable {
+        return;
+    }
+
     let spaceship = commands
         .spawn(Spaceship)
         .insert(HealthBundle {
@@ -97,7 +100,7 @@ fn spawn_spaceship(
             health: Health(SPACESHIP_HEALTH),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(SPACESHIP_RADIUS),
+            collider: Collider::ball(game_scale.spaceship.radius),
             collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Z
                 | LockedAxes::ROTATION_LOCKED_X
@@ -107,7 +110,7 @@ fn spawn_spaceship(
                 scene: scene_assets.spaceship.clone(),
                 transform: Transform {
                     translation: STARTING_TRANSLATION,
-                    scale: SPACESHIP_SCALE,
+                    scale: Vec3::splat(game_scale.spaceship.scalar),
                     rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2),
                 },
                 ..default()
@@ -129,10 +132,14 @@ fn spawn_spaceship(
 fn spaceship_movement_controls(
     mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
+    game_scale: Res<GameScale>,
     time: Res<Time>,
 ) {
     // we can use this because there is only exactly one spaceship - so we're not looping over the query
     if let Ok((mut transform, mut velocity)) = q_spaceship.get_single_mut() {
+        // dynamically update from inspector while game is running
+        transform.scale = Vec3::splat(game_scale.spaceship.scalar);
+
         let spaceship_action = q_input_map.single();
 
         let mut rotation = 0.0;
@@ -151,13 +158,15 @@ fn spaceship_movement_controls(
         // rotate around the z-axis
         transform.rotate_z(rotation);
 
+        let max_speed = game_scale.spaceship.velocity;
+
         if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
             // down
             apply_acceleration(
                 &mut velocity,
                 -transform.forward().as_vec3(),
                 SPACESHIP_ACCELERATION,
-                SPACESHIP_MAX_SPEED,
+                max_speed,
                 delta_seconds,
             );
         } else if spaceship_action.pressed(&SpaceshipAction::Decelerate) {
@@ -166,7 +175,7 @@ fn spaceship_movement_controls(
                 &mut velocity,
                 -transform.forward().as_vec3(),
                 -SPACESHIP_ACCELERATION,
-                SPACESHIP_MAX_SPEED,
+                max_speed,
                 delta_seconds,
             );
         }

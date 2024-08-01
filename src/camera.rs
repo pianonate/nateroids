@@ -1,8 +1,9 @@
-use crate::boundary::Boundary;
-use crate::{input::CameraMovement, schedule::InGameSet};
-use bevy::color::palettes::css;
-use bevy::prelude::Color::Srgba;
-use bevy::prelude::*;
+use crate::game_scale::GameScale;
+use crate::{boundary::Boundary, input::CameraMovement, schedule::InGameSet};
+use bevy::{
+    color::palettes::css,
+    prelude::{Color::Srgba, *},
+};
 use leafwing_input_manager::prelude::*;
 
 const DEFAULT_CLEAR_COLOR_DARKENING_FACTOR: f32 = 0.019;
@@ -19,23 +20,25 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, spawn_camera)
-            .add_systems(Update, zoom_camera.in_set(InGameSet::UserInput))
-            .insert_resource(AppClearColor {
-                color: DEFAULT_CLEAR_COLOR,
-                darkening_factor: DEFAULT_CLEAR_COLOR_DARKENING_FACTOR,
-            })
-            .insert_resource(ClearColor(
-                DEFAULT_CLEAR_COLOR.darker(DEFAULT_CLEAR_COLOR_DARKENING_FACTOR),
-            ))
-            .insert_resource(AmbientLight {
-                color: Color::default(),
-                brightness: 1000.0,
-            })
-            .add_systems(Update, update_clear_color);
+        app.insert_resource(AppClearColor {
+            color: DEFAULT_CLEAR_COLOR,
+            darkening_factor: DEFAULT_CLEAR_COLOR_DARKENING_FACTOR,
+        })
+        .insert_resource(ClearColor(
+            DEFAULT_CLEAR_COLOR.darker(DEFAULT_CLEAR_COLOR_DARKENING_FACTOR),
+        ))
+        .insert_resource(AmbientLight {
+            color: Color::default(),
+            brightness: 1000.0,
+        })
+        .add_systems(PreStartup, spawn_camera)
+        .add_systems(Update, zoom_camera.in_set(InGameSet::UserInput))
+        .add_systems(Update, update_clear_color.in_set(InGameSet::EntityUpdates));
     }
 }
 
+// this allows us to use Inspector reflection to manually update ClearColor to different values
+// while the game is running from the ui_for_resources provided by bevy_inspector_egui
 fn update_clear_color(app_clear_color: Res<AppClearColor>, mut clear_color: ResMut<ClearColor>) {
     clear_color.0 = app_clear_color
         .color
@@ -48,8 +51,7 @@ pub struct PrimaryCamera;
 fn spawn_camera(mut commands: Commands, boundary: Res<Boundary>) {
     commands
         .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.0)
-                //transform: Transform::from_xyz(0.0, 5.0, -20.0) // -boundary.transform.scale.z) //
+            transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.)
                 .looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })

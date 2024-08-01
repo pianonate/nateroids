@@ -1,4 +1,7 @@
-use crate::{input::GlobalAction, schedule::InGameSet};
+use crate::{
+    boundary::Boundary, camera::AppClearColor, game_scale::GameScale, input::GlobalAction,
+    schedule::InGameSet,
+};
 use bevy::prelude::{IntoSystemConfigs, Reflect, Res, ResMut, Resource, *};
 use bevy_inspector_egui::InspectorOptions;
 use leafwing_input_manager::action_state::ActionState;
@@ -11,9 +14,18 @@ impl Plugin for DebugPlugin {
             // puts us in debug mode which can be checked anywhere
             .init_resource::<DebugMode>()
             .init_resource::<InspectorMode>()
+            .add_systems(Startup, register_debug_resources)
             .add_systems(Update, toggle_debug.in_set(InGameSet::UserInput))
             .add_systems(Update, toggle_inspector.in_set(InGameSet::UserInput));
     }
+}
+
+fn register_debug_resources(world: &mut World) {
+    let type_registry = world.resource::<AppTypeRegistry>().0.clone();
+    type_registry.write().register::<AppClearColor>();
+    type_registry.write().register::<Boundary>();
+    type_registry.write().register::<DebugMode>();
+    type_registry.write().register::<GameScale>();
 }
 
 // the default bool is false, which is what we want

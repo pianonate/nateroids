@@ -2,13 +2,15 @@ use bevy::prelude::*;
 
 use crate::{
     asset_loader::AssetLoaderPlugin, boundary::BoundaryPlugin, camera::CameraPlugin,
-    collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin, input::InputPlugin,
-    missile::MissilePlugin, movement::MovementPlugin, nateroid::Nateroid, physics::PhysicsPlugin,
-    schedule::SchedulePlugin, spaceship::SpaceshipPlugin, state::StatePlugin,
+    collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin,
+    game_scale::GameScalePlugin, input::InputPlugin, missile::MissilePlugin,
+    movement::MovementPlugin, nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
+    spaceship::SpaceshipPlugin, state::StatePlugin,
 };
 
 #[cfg(debug_assertions)]
 use crate::{debug::DebugPlugin, diagnostic::DiagnosticPlugin, inspector::InspectorPlugin};
+
 #[cfg(debug_assertions)]
 mod debug;
 #[cfg(debug_assertions)]
@@ -22,6 +24,7 @@ mod boundary;
 mod camera;
 mod collision_detection;
 mod despawn;
+mod game_scale;
 mod health;
 mod input;
 mod missile;
@@ -38,10 +41,11 @@ fn main() {
 
     app.add_plugins(DefaultPlugins)
         .add_plugins(AssetLoaderPlugin)
+        .add_plugins(BoundaryPlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(CollisionDetectionPlugin)
         .add_plugins(DespawnPlugin)
-        .add_plugins(BoundaryPlugin)
+        .add_plugins(GameScalePlugin)
         .add_plugins(InputPlugin)
         .add_plugins(MovementPlugin)
         .add_plugins(MissilePlugin)

@@ -19,6 +19,7 @@ use crate::{
 };
 
 use crate::boundary::Boundary;
+use crate::game_scale::GameScale;
 use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
@@ -29,9 +30,7 @@ const MISSILE_HEALTH: f32 = 1.0;
 const MISSILE_MASS: f32 = 0.001;
 const MISSILE_MOVEMENT_SCALAR: f32 = 0.9;
 const MISSILE_NAME: &str = "Missile";
-const MISSILE_RADIUS: f32 = 0.4;
 const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
-const MISSILE_SPEED: f32 = 75.0;
 const MISSILE_PERPENDICULAR_LENGTH: f32 = 10.0;
 
 impl Plugin for MissilePlugin {
@@ -73,6 +72,9 @@ pub struct Missile {
     pub last_teleport_position: Option<Vec3>, // Add this field
 }
 
+// rust learnings:
+// boundary declared as reference because it is moved into find_edge_point so it would only be able
+// to be called once if it wasn't a reference
 impl Missile {
     pub fn new(origin: Vec3, direction: Vec3, boundary: &Res<Boundary>) -> Self {
         let mut total_distance = 0.0;
@@ -116,12 +118,14 @@ fn should_fire(
 }
 
 // todo: #bevyquestion - how could i reduce the number of arguments here?
-// todo: #bevyquestion - so, in an object oriented world i think of attaching fire as a method to
+// todo: #bevyquestion - in an object oriented world i think of attaching fire as a method to
 //                       the spaceship - but there's a lot of missile logic so i have it setup in missile
 //                       so should i have a simple fire method in method in spaceship that in turn calls this
 //                       fn or is having it here fine?
+#[allow(clippy::too_many_arguments)]
 fn fire_missile(
     mut commands: Commands,
+    game_scale: Res<GameScale>,
     spawn_timer: ResMut<MissileSpawnTimer>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(&Transform, &Velocity, Option<&ContinuousFire>), With<Spaceship>>,
@@ -129,7 +133,12 @@ fn fire_missile(
     time: Res<Time>,
     boundary: Res<Boundary>,
 ) {
-    let Ok((transform, spaceship_velocity, continuous_fire)) = q_spaceship.get_single() else {
+    if !game_scale.missile.spawnable {
+        return;
+    }
+
+    let Ok((spaceship_transform, spaceship_velocity, continuous_fire)) = q_spaceship.get_single()
+    else {
         return;
     };
 
@@ -137,9 +146,30 @@ fn fire_missile(
         return;
     }
 
-    let forward = -transform.forward();
+    // extracted for readability
+    spawn_missile(
+        &mut commands,
+        game_scale,
+        scene_assets,
+        spaceship_transform,
+        spaceship_velocity,
+        boundary,
+    );
+}
 
-    let mut missile_velocity = forward * MISSILE_SPEED;
+fn spawn_missile(
+    commands: &mut Commands,
+    game_scale: Res<GameScale>,
+    scene_assets: Res<SceneAssets>,
+    spaceship_transform: &Transform,
+    spaceship_velocity: &Velocity,
+    boundary: Res<Boundary>,
+) {
+    let forward = -spaceship_transform.forward();
+
+    let mut missile_velocity = forward * game_scale.missile.velocity;
+
+    // clamp it to 2d for now...
     missile_velocity.z = 0.0;
 
     // add these so that the missile fires in the direction the spaceship
@@ -149,26 +179,10 @@ fn fire_missile(
     let initial_velocity = spaceship_velocity.linvel + missile_velocity;
 
     let direction = forward.as_vec3();
-    let origin = transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
+    let origin = spaceship_transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
+    // boundary is used to set the total distance this missile can travel
     let missile = Missile::new(origin, direction, &boundary);
 
-    // extracted for readability
-    spawn_missile(
-        &mut commands,
-        scene_assets,
-        initial_velocity,
-        origin,
-        missile,
-    );
-}
-
-fn spawn_missile(
-    commands: &mut Commands,
-    scene_assets: Res<SceneAssets>,
-    initial_velocity: Vec3,
-    origin: Vec3,
-    missile: Missile,
-) {
     let missile = commands
         .spawn(missile)
         .insert(HealthBundle {
@@ -176,12 +190,13 @@ fn spawn_missile(
             health: Health(MISSILE_HEALTH),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(MISSILE_RADIUS),
+            collider: Collider::ball(game_scale.missile.radius),
             collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
             mass: Mass(MISSILE_MASS),
             model: SceneBundle {
                 scene: scene_assets.missiles.clone(),
-                transform: Transform::from_translation(origin),
+                transform: Transform::from_translation(origin)
+                    .with_scale(Vec3::splat(game_scale.missile.scalar)),
                 ..default()
             },
             velocity: Velocity {

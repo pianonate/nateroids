@@ -25,7 +25,6 @@ impl Plugin for InspectorPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
             .add_plugins(DefaultInspectorConfigPlugin)
-            .add_systems(Startup, register_resources)
             .insert_resource(UiState::new())
             .add_systems(
                 PostUpdate,
@@ -45,13 +44,6 @@ impl Plugin for InspectorPlugin {
                 reset_camera_viewport.run_if(not(inspector_mode_enabled)),
             );
     }
-}
-
-fn register_resources(world: &mut World) {
-    let type_registry = world.resource::<AppTypeRegistry>().0.clone();
-    type_registry.write().register::<Boundary>();
-    type_registry.write().register::<DebugMode>();
-    type_registry.write().register::<AppClearColor>();
 }
 
 fn show_ui_system(world: &mut World) {
