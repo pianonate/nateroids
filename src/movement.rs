@@ -86,6 +86,7 @@ fn teleport_at_boundary(
 
 /// given a particular point, what is the point on the opposite side of the boundary?
 pub fn calculate_teleport_position(position: Vec3, transform: &Transform) -> Vec3 {
+   
     let boundary_min = transform.translation - transform.scale / 2.0;
     let boundary_max = transform.translation + transform.scale / 2.0;
 
