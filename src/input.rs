@@ -19,7 +19,10 @@ impl Plugin for InputPlugin {
             .add_plugins(InputManagerPlugin::<SpaceshipAction>::default())
             .init_resource::<ActionState<GlobalAction>>()
             // this map is available to all systems
-            .insert_resource(GlobalAction::global_input_map());
+            .insert_resource(GlobalAction::global_input_map())
+            .init_resource::<ActionState<SpaceshipAction>>()
+            // this map is available to all systems
+            .insert_resource(SpaceshipAction::spaceship_input_map());
     }
 }
 

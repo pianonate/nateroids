@@ -35,11 +35,9 @@ impl Plugin for CameraPlugin {
             brightness: 1000.0,
         })
         .add_systems(PreStartup, spawn_camera)
+        .add_systems(Update, asset_loaded)
         .add_systems(Update, zoom_camera.in_set(InGameSet::UserInput))
-        .add_systems(
-            Update,
-            (update_clear_color, asset_loaded).in_set(InGameSet::EntityUpdates),
-        );
+        .add_systems(Update, update_clear_color.in_set(InGameSet::EntityUpdates));
     }
 }
 

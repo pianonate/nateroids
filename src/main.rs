@@ -5,7 +5,7 @@ use crate::{
     collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin,
     game_scale::GameScalePlugin, input::InputPlugin, missile::MissilePlugin,
     movement::MovementPlugin, nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
-    spaceship::SpaceshipPlugin, state::StatePlugin,
+    spaceship::SpaceshipPlugin, splash::SplashPlugin, state::StatePlugin,
 };
 
 #[cfg(debug_assertions)]
@@ -33,6 +33,7 @@ mod nateroid;
 mod physics;
 mod schedule;
 mod spaceship;
+mod splash;
 mod state;
 mod utils;
 
@@ -53,6 +54,7 @@ fn main() {
         .add_plugins(PhysicsPlugin)
         .add_plugins(SchedulePlugin)
         .add_plugins(SpaceshipPlugin)
+        .add_plugins(SplashPlugin)
         .add_plugins(StatePlugin);
 
     #[cfg(debug_assertions)]

@@ -6,6 +6,7 @@ use leafwing_input_manager::prelude::ActionState;
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Reflect, States)]
 pub enum GameState {
     #[default]
+    Splash,
     InGame,
     Paused,
     GameOver,
@@ -16,6 +17,7 @@ pub struct StatePlugin;
 impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
+            .add_systems(Startup, enter_splash_state)
             .add_systems(
                 Update,
                 (
@@ -63,4 +65,8 @@ fn pause_rapier(mut rapier_config: ResMut<RapierConfiguration>) {
 
 fn unpause_rapier(mut rapier_config: ResMut<RapierConfiguration>) {
     rapier_config.physics_pipeline_active = true;
+}
+
+fn enter_splash_state(mut next_state: ResMut<NextState<GameState>>) {
+    next_state.set(GameState::Splash);
 }

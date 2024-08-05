@@ -39,7 +39,7 @@ pub struct SpaceshipPlugin;
 impl Plugin for SpaceshipPlugin {
     // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
-        app.add_systems(PostStartup, spawn_spaceship)
+        app.add_systems(OnEnter(GameState::InGame), spawn_spaceship)
             // spawn a new Spaceship if we're in GameOver state
             .add_systems(OnEnter(GameState::GameOver), spawn_spaceship)
             .add_systems(
@@ -93,6 +93,8 @@ fn spawn_spaceship(
         return;
     }
 
+    let spaceship_input = InputManagerBundle::with_map(SpaceshipAction::spaceship_input_map());
+
     let spaceship = commands
         .spawn(Spaceship)
         .insert(HealthBundle {
@@ -117,9 +119,7 @@ fn spawn_spaceship(
             },
             ..default()
         })
-        .insert(InputManagerBundle::with_map(
-            SpaceshipAction::spaceship_input_map(),
-        ))
+        .insert(spaceship_input)
         .id();
 
     // if let Ok(camera) = q_camera.get_single() {

@@ -1,4 +1,5 @@
 use crate::game_scale::GameScale;
+use crate::state::GameState;
 use bevy::{color::palettes::css::GREEN, prelude::*};
 use bevy_inspector_egui::InspectorOptions;
 use std::cell::Cell;
@@ -11,7 +12,7 @@ pub struct BoundaryPlugin;
 impl Plugin for BoundaryPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Boundary>()
-            .add_systems(Update, draw_boundary);
+            .add_systems(Update, draw_boundary.run_if(in_state(GameState::InGame)));
     }
 }
 
