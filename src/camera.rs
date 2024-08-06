@@ -81,9 +81,20 @@ pub fn spawn_camera(
                     clear_color: ClearColorConfig::Custom(clear_color),
                     ..default()
                 },
+                projection: PerspectiveProjection {
+                    fov: std::f32::consts::FRAC_PI_3, // Adjust the field of view here
+                    near: 1.,
+                    far: 10000.0,
+                    ..Default::default()
+                }
+                .into(),
 
-                transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.)
-                    .looking_at(Vec3::ZERO, Vec3::Y),
+                transform: Transform::from_xyz(
+                    0.0,
+                    0.0,
+                    boundary.transform.scale.z * std::f32::consts::FRAC_PI_3,
+                )
+                .looking_at(Vec3::ZERO, Vec3::Y),
 
                 ..default()
             },
@@ -115,8 +126,11 @@ fn zoom_camera(
 
         let zoom_update = 1. - zoom_delta;
 
-        transform.translation.z *= zoom_update;
+        transform.translation.z += zoom_update;
 
-        println!("zoom_delta {}", zoom_delta);
+        println!(
+            "zoom_delta {} translation {}",
+            zoom_delta, transform.translation.z
+        );
     }
 }

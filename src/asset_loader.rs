@@ -39,6 +39,7 @@ pub struct SceneAssets {
     pub missiles: Handle<Scene>,
     pub nateroid: Handle<Scene>,
     pub spaceship: Handle<Scene>,
+    // pub sphere: Handle<Scene>,
 }
 
 fn load_assets(
@@ -54,6 +55,7 @@ fn load_assets(
         missiles: asset_server.load("models/Bullets Pickup.glb#Scene0"),
         nateroid: asset_server.load("models/Planet.glb#Scene0"),
         spaceship: asset_server.load("models/Spaceship.glb#Scene0"),
+        //    sphere: asset_server.load("models/sphere.glb#Scene0"),
     };
 }
 

@@ -37,7 +37,7 @@ impl CameraMovement {
 
         input_map.insert_axis(
             CameraMovement::Zoom,
-            AxislikeChord::new(ControlLeft, MouseScrollAxis::Y.with_bounds(-0.01, 0.01)),
+            AxislikeChord::new(ControlLeft, MouseScrollAxis::Y.with_bounds(-50.5, 50.5)),
         );
 
         input_map

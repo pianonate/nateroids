@@ -281,7 +281,7 @@ fn toggle_missile_party(
 fn config_gizmo_line_width(mut config_store: ResMut<GizmoConfigStore>) {
     for (_, config, _) in config_store.iter_mut() {
         // change default from 2.
-        config.line_width = 1.;
+        config.line_width = 5.;
         config.render_layers = RenderLayers::layer(GAME_LAYER);
     }
 }
