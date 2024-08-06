@@ -1,7 +1,5 @@
-use crate::asset_loader::SceneAssets;
 use crate::stars::{StarsCamera, GAME_CAMERA_ORDER, GAME_LAYER};
 use crate::{boundary::Boundary, input::CameraMovement, schedule::InGameSet};
-use bevy::color::palettes::tailwind;
 use bevy::render::view::RenderLayers;
 use bevy::{
     color::palettes::css,
@@ -69,7 +67,7 @@ pub fn spawn_camera(
     let clear_color = Color::srgba(0., 0., 0., 0.);
 
     // we know we have one because we spawn the stars camera prior to this system
-    // we're going to change its transform to zero and attach it to the this as a child
+    // we're going to change its transform to zero and attach it to this as a child
     // so it always goes wherever we go
     let (stars_camera_entity, mut stars_camera_transform) =
         q_stars_camera.get_single_mut().unwrap();
@@ -89,6 +87,7 @@ pub fn spawn_camera(
 
                 ..default()
             },
+            // if you want to add a skybox on a level, you can do it here
             // Skybox {
             //     image: scene_assets.cubemap.image_handle.clone(),
             //     brightness: 1000.0,

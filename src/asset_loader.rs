@@ -25,11 +25,11 @@ pub struct SkyboxCubemap {
     pub image_handle: Handle<Image>,
 }
 
-impl SkyboxCubemap {
-    pub fn handle(&self) -> Handle<Image> {
-        self.image_handle.clone()
-    }
-}
+// impl SkyboxCubemap {
+//     pub fn handle(&self) -> Handle<Image> {
+//         self.image_handle.clone()
+//     }
+// }
 
 // all the models are loaded via SceneBundle - the models
 // can have multiple elements and scene makes all that possible

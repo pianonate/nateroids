@@ -1,6 +1,5 @@
 use crate::game_scale::GameScale;
 use crate::state::GameState;
-use bevy::gizmos::config;
 use bevy::{color::palettes::css::GREEN, prelude::*};
 use bevy_inspector_egui::InspectorOptions;
 use std::cell::Cell;
