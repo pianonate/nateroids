@@ -1,9 +1,11 @@
 use std::{f32::consts::PI, ops::Range};
 
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 use bevy_rapier3d::prelude::{Collider, Velocity};
 use rand::Rng;
 
+use crate::stars::GAME_LAYER;
 use crate::{
     asset_loader::SceneAssets,
     boundary::Boundary,
@@ -105,6 +107,7 @@ fn spawn_nateroid(
             },
             ..default()
         })
+        .insert(RenderLayers::layer(GAME_LAYER))
         .id();
 
     name_entity(&mut commands, nateroid, NATEROID_NAME);

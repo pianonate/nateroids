@@ -12,16 +12,20 @@ impl Plugin for GameScalePlugin {
 // centralize scale defaults
 // plus this allows us to use the inspector to dynamically change them
 // to try out different ratios while the game is running
-#[derive(Debug, Reflect, Resource, InspectorOptions)]
+#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
 #[reflect(Resource)]
 pub struct GameScale {
     pub boundary_cell_scalar: f32,
+    pub star_count: usize,
+    pub star_scale: f32,
+    pub star_field_inner_diameter: f32,
+    pub(crate) star_field_outer_diameter: f32,
     pub missile: ColliderConstant,
     pub nateroid: ColliderConstant,
     pub spaceship: ColliderConstant,
 }
 
-#[derive(Debug, Reflect, Resource, InspectorOptions)]
+#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
 #[reflect(Resource)]
 pub struct ColliderConstant {
     pub radius: f32,
@@ -37,6 +41,10 @@ impl Default for GameScale {
         // to match the assets size
         Self {
             boundary_cell_scalar: 110.,
+            star_count: 10000,
+            star_scale: 1.,
+            star_field_inner_diameter: 100.,
+            star_field_outer_diameter: 10000.,
             missile: ColliderConstant {
                 radius: 0.5,
                 scalar: 1.5,

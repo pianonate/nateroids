@@ -1,5 +1,5 @@
 use crate::{
-    boundary::Boundary, camera::AppClearColor, game_scale::GameScale, input::GlobalAction,
+    boundary::Boundary, camera::Appearance, game_scale::GameScale, input::GlobalAction,
     schedule::InGameSet,
 };
 use bevy::prelude::{IntoSystemConfigs, Reflect, Res, ResMut, Resource, *};
@@ -22,7 +22,7 @@ impl Plugin for DebugPlugin {
 
 fn register_debug_resources(world: &mut World) {
     let type_registry = world.resource::<AppTypeRegistry>().0.clone();
-    type_registry.write().register::<AppClearColor>();
+    type_registry.write().register::<Appearance>();
     type_registry.write().register::<Boundary>();
     type_registry.write().register::<DebugMode>();
     type_registry.write().register::<GameScale>();

@@ -1,9 +1,9 @@
+use bevy::render::view::RenderLayers;
 use bevy::{
     color::palettes::basic::{BLUE, GREEN, RED, WHITE},
     prelude::Color::Srgba,
     prelude::*,
 };
-
 use bevy_rapier3d::{prelude::ColliderMassProperties::Mass, prelude::*};
 
 use crate::{
@@ -19,6 +19,7 @@ use crate::{
 
 use crate::boundary::Boundary;
 use crate::game_scale::GameScale;
+use crate::stars::GAME_LAYER;
 use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
@@ -229,6 +230,7 @@ fn spawn_missile(
             },
             ..default()
         })
+        .insert(RenderLayers::layer(GAME_LAYER))
         .id();
 
     name_entity(commands, missile, MISSILE_NAME);
@@ -275,10 +277,12 @@ fn toggle_missile_party(
     }
 }
 
+//todo: move this beast
 fn config_gizmo_line_width(mut config_store: ResMut<GizmoConfigStore>) {
     for (_, config, _) in config_store.iter_mut() {
         // change default from 2.
         config.line_width = 1.;
+        config.render_layers = RenderLayers::layer(GAME_LAYER);
     }
 }
 

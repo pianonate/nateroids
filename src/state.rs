@@ -56,6 +56,7 @@ fn game_state_input_events(
 }
 
 fn transition_to_in_game(mut next_state: ResMut<NextState<GameState>>) {
+    println!("Transitioning to InGame");
     next_state.set(GameState::InGame);
 }
 

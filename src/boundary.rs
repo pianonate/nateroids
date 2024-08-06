@@ -1,5 +1,6 @@
 use crate::game_scale::GameScale;
 use crate::state::GameState;
+use bevy::gizmos::config;
 use bevy::{color::palettes::css::GREEN, prelude::*};
 use bevy_inspector_egui::InspectorOptions;
 use std::cell::Cell;
@@ -22,6 +23,8 @@ fn draw_boundary(mut boundary: ResMut<Boundary>, game_scale: Res<GameScale>, mut
     // the boundary transform is used both for position but also so the fixed camera
     // can be positioned based on the boundary scale
     boundary.transform.scale = game_scale.boundary_cell_scalar * boundary.cell_count.as_vec3();
+
+    // update the longest diagonal so that the camera can be positioned correctly
 
     gizmos
         .grid_3d(

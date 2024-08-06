@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::render::view::visibility::RenderLayers;
 use bevy_rapier3d::prelude::{
     Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
 };
@@ -15,6 +16,7 @@ use crate::{
     utils::name_entity,
 };
 
+use crate::stars::GAME_LAYER;
 use leafwing_input_manager::prelude::*;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
@@ -39,9 +41,9 @@ pub struct SpaceshipPlugin;
 impl Plugin for SpaceshipPlugin {
     // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
+        // we can come into InGame a couple of ways - when we do, spawn a spaceship
+        // either when we exit splash, or when we enter GameOver
         app.add_systems(OnEnter(GameState::InGame), spawn_spaceship)
-            // spawn a new Spaceship if we're in GameOver state
-            .add_systems(OnEnter(GameState::GameOver), spawn_spaceship)
             .add_systems(
                 Update,
                 (
@@ -97,6 +99,7 @@ fn spawn_spaceship(
 
     let spaceship = commands
         .spawn(Spaceship)
+        .insert(RenderLayers::layer(GAME_LAYER))
         .insert(HealthBundle {
             collision_damage: CollisionDamage(SPACESHIP_COLLISION_DAMAGE),
             health: Health(SPACESHIP_HEALTH),
