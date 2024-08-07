@@ -1,15 +1,16 @@
-use crate::{boundary::Boundary, camera::spawn_camera, config::GameConfig};
+use crate::input::GlobalAction;
+use crate::{
+    boundary::Boundary,
+    camera::spawn_camera,
+    config::{CameraOrder, GameConfig, RenderLayer},
+};
 use bevy::{
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
     prelude::*,
     render::view::RenderLayers,
 };
+use leafwing_input_manager::action_state::ActionState;
 use rand::Rng;
-
-const STARS_CAMERA_ORDER: isize = 0;
-const STARS_LAYER: usize = 1;
-pub const GAME_CAMERA_ORDER: isize = 1;
-pub const GAME_LAYER: usize = 0;
 
 const BATCH_SIZE: usize = 100;
 
@@ -53,7 +54,7 @@ impl Default for StarBloom {
 fn setup_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
     let camera3d = Camera3dBundle {
         camera: Camera {
-            order: STARS_CAMERA_ORDER,
+            order: CameraOrder::Stars.into(),
             hdr: true, // 1. HDR is required for bloom
             ..default()
         },
@@ -63,7 +64,7 @@ fn setup_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
 
     commands
         .spawn(camera3d)
-        .insert(RenderLayers::layer(STARS_LAYER))
+        .insert(RenderLayers::layer(RenderLayer::Stars.into()))
         .insert(star_bloom.settings.clone())
         .insert(StarsCamera);
 }
@@ -85,21 +86,21 @@ pub struct StarsCamera;
 fn toggle_stars(
     mut commands: Commands,
     mut camera: Query<(Entity, Option<&mut BloomSettings>), With<StarsCamera>>,
-    keycode: Res<ButtonInput<KeyCode>>,
+    user_input: Res<ActionState<GlobalAction>>,
     star_bloom: Res<StarBloom>,
 ) {
     let current_bloom_settings = camera.single_mut();
 
     match current_bloom_settings {
         (entity, Some(_)) => {
-            if keycode.just_pressed(KeyCode::KeyB) {
-                println!("bloom off");
+            if user_input.just_pressed(&GlobalAction::Stars) {
+                println!("stars off");
                 commands.entity(entity).remove::<BloomSettings>();
             }
         }
         (entity, None) => {
-            if keycode.just_pressed(KeyCode::KeyB) {
-                println!("bloom on");
+            if user_input.just_pressed(&GlobalAction::Stars) {
+                println!("stars on");
                 commands.entity(entity).insert(star_bloom.settings.clone());
             }
         }
@@ -172,7 +173,7 @@ fn spawn_star_tasks(
                     transform,
                     ..default()
                 })
-                .insert(RenderLayers::layer(STARS_LAYER));
+                .insert(RenderLayers::layer(RenderLayer::Stars.into()));
         }
 
         counter.0 += stars_to_spawn;

@@ -1,13 +1,13 @@
-use bevy::prelude::*;
-use bevy::render::view::visibility::RenderLayers;
+use bevy::{prelude::*, render::view::visibility::RenderLayers};
 use bevy_rapier3d::prelude::{
     Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
 };
 
 use crate::{
     asset_loader::SceneAssets,
+    camera::PrimaryCamera,
     collision_detection::{GROUP_ASTEROID, GROUP_SPACESHIP},
-    config::GameConfig,
+    config::{GameConfig, RenderLayer},
     health::{CollisionDamage, Health, HealthBundle},
     input::SpaceshipAction,
     movement::MovingObjectBundle,
@@ -16,8 +16,6 @@ use crate::{
     utils::name_entity,
 };
 
-use crate::camera::PrimaryCamera;
-use crate::stars::GAME_LAYER;
 use leafwing_input_manager::prelude::*;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
@@ -99,7 +97,7 @@ fn spawn_spaceship(
 
     let spaceship = commands
         .spawn(Spaceship)
-        .insert(RenderLayers::layer(GAME_LAYER))
+        .insert(RenderLayers::layer(RenderLayer::Game.into()))
         .insert(HealthBundle {
             collision_damage: CollisionDamage(SPACESHIP_COLLISION_DAMAGE),
             health: Health(SPACESHIP_HEALTH),

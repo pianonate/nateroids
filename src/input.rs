@@ -1,6 +1,6 @@
 use bevy::prelude::KeyCode::{
     ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Escape, KeyA, KeyC, KeyD, KeyM, KeyS, KeyW,
-    ShiftLeft, Space, F2, F3, F4,
+    ShiftLeft, Space, F2, F3, F4, F5,
 };
 use bevy::{prelude::MouseButton::Middle, prelude::*};
 use leafwing_input_manager::prelude::*;
@@ -116,6 +116,7 @@ pub enum GlobalAction {
     Debug,
     Inspector,
     Pause,
+    Stars,
 }
 
 /// Use Debug like this - pull it into a system as follows:
@@ -138,6 +139,7 @@ impl GlobalAction {
         input_map.insert(Self::Diagnostics, F3);
         input_map.insert(Self::Inspector, F4);
         input_map.insert(Self::Pause, Escape);
+        input_map.insert(Self::Stars, F5);
         input_map
     }
 }

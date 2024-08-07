@@ -1,6 +1,7 @@
-use crate::config::BoundaryGizmos;
-use crate::config::GameConfig;
-use crate::state::GameState;
+use crate::{
+    config::{BoundaryGizmos, GameConfig},
+    state::GameState,
+};
 use bevy::{color::palettes::css::GREEN, prelude::*};
 use bevy_inspector_egui::InspectorOptions;
 use std::cell::Cell;

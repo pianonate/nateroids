@@ -5,7 +5,7 @@ use crate::{
     boundary::BoundaryPlugin,
     camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin,
-    config::ConfigPlugin,
+    config::{ConfigPlugin, RenderLayer},
     despawn::DespawnPlugin,
     input::InputPlugin,
     missile::MissilePlugin,
@@ -15,7 +15,7 @@ use crate::{
     schedule::SchedulePlugin,
     spaceship::SpaceshipPlugin,
     splash::SplashPlugin,
-    stars::{StarsPlugin, GAME_LAYER},
+    stars::StarsPlugin,
     state::StatePlugin,
 };
 
@@ -55,8 +55,8 @@ fn main() {
     // todo: #rustquestion
     // cargo fmt outputs my use::crate as a comma delimited list that doesn't split
     // onto individual lines unless one of the use statements pulls in multiple things
-    // so i added GAME_LAYER to force cargo fmt to output this way
-    println!("GAME_LAYER at startup: {:?}", GAME_LAYER);
+    // so i added config::RenderLayer to force cargo fmt to output this way
+    println!("GameLayer: {:?}", RenderLayer::Game);
 
     app.add_plugins(DefaultPlugins)
         .add_plugins(AssetLoaderPlugin)
@@ -65,7 +65,6 @@ fn main() {
         .add_plugins(CollisionDetectionPlugin)
         .add_plugins(ConfigPlugin)
         .add_plugins(DespawnPlugin)
-        // .add_plugins(GameScalePlugin)
         .add_plugins(InputPlugin)
         .add_plugins(MovementPlugin)
         .add_plugins(MissilePlugin)

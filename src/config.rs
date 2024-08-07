@@ -1,6 +1,4 @@
-use crate::stars::GAME_LAYER;
-use bevy::prelude::*;
-use bevy::render::view::RenderLayers;
+use bevy::{prelude::*, render::view::RenderLayers};
 use bevy_inspector_egui::InspectorOptions;
 
 pub struct ConfigPlugin;
@@ -18,7 +16,7 @@ pub struct BoundaryGizmos {}
 
 fn init_gizmo_configs(mut config_store: ResMut<GizmoConfigStore>) {
     for (_, any_config, _) in config_store.iter_mut() {
-        any_config.render_layers = RenderLayers::layer(GAME_LAYER);
+        any_config.render_layers = RenderLayers::layer(RenderLayer::Game.into());
         any_config.line_width = 1.;
     }
 
@@ -38,6 +36,7 @@ fn init_gizmo_configs(mut config_store: ResMut<GizmoConfigStore>) {
 pub struct GameConfig {
     pub boundary_cell_scalar: f32,
     pub missile_sphere_radius: f32,
+    pub splash_timer: f32,
     pub star_count: usize,
     pub star_radius: f32,
     pub star_field_inner_diameter: f32,
@@ -65,6 +64,7 @@ impl Default for GameConfig {
         Self {
             boundary_cell_scalar: 110.,
             missile_sphere_radius: 2.,
+            splash_timer: 2.,
             star_count: 5000,
             star_radius: 5.,
             star_field_inner_diameter: 1000.,
@@ -91,5 +91,57 @@ impl Default for GameConfig {
                 velocity: 40.,
             },
         }
+    }
+}
+
+// todo: is there a better way
+// camera order and render layer are opposite!
+// this is because of some quirk that i couldn't get
+// the PBRs to render unless they were in render layer 0
+// where i needed the game - ideally this would be the fix
+
+// but i also couldn't get the stars to have the bloom effect
+// unless they were in camera order 0
+// so things didn't line up
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CameraOrder {
+    Game,
+    Stars,
+}
+
+impl CameraOrder {
+    pub const fn into_isize(self) -> isize {
+        match self {
+            CameraOrder::Game => 1,
+            CameraOrder::Stars => 0,
+        }
+    }
+}
+
+impl From<CameraOrder> for isize {
+    fn from(layer: CameraOrder) -> Self {
+        layer.into_isize()
+    }
+}
+
+// used for both camera order and render layer
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RenderLayer {
+    Game,
+    Stars,
+}
+
+impl RenderLayer {
+    pub const fn into_usize(self) -> usize {
+        match self {
+            RenderLayer::Game => 0,
+            RenderLayer::Stars => 1,
+        }
+    }
+}
+
+impl From<RenderLayer> for usize {
+    fn from(layer: RenderLayer) -> Self {
+        layer.into_usize()
     }
 }

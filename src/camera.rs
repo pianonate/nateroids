@@ -1,5 +1,10 @@
-use crate::stars::{StarsCamera, GAME_CAMERA_ORDER, GAME_LAYER};
-use crate::{boundary::Boundary, input::CameraMovement, schedule::InGameSet};
+use crate::{
+    boundary::Boundary,
+    config::{CameraOrder, RenderLayer},
+    input::CameraMovement,
+    schedule::InGameSet,
+    stars::StarsCamera,
+};
 use bevy::{
     color::palettes::css,
     //core_pipeline::Skybox,
@@ -89,7 +94,7 @@ pub fn spawn_camera(
         .spawn((
             Camera3dBundle {
                 camera: Camera {
-                    order: GAME_CAMERA_ORDER,
+                    order: CameraOrder::Game.into(),
                     clear_color: ClearColorConfig::Custom(clear_color),
                     ..default()
                 },
@@ -104,7 +109,7 @@ pub fn spawn_camera(
             //     brightness: 1000.0,
             // },
         ))
-        .insert(RenderLayers::layer(GAME_LAYER))
+        .insert(RenderLayers::layer(RenderLayer::Game.into()))
         .insert(InputManagerBundle::with_map(
             CameraMovement::camera_input_map(),
         ))

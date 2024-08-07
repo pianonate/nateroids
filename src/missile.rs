@@ -5,13 +5,12 @@ use crate::{
     asset_loader::SceneAssets,
     boundary::Boundary,
     collision_detection::{GROUP_ASTEROID, GROUP_MISSILE},
-    config::GameConfig,
+    config::{GameConfig, RenderLayer},
     health::{CollisionDamage, Health, HealthBundle},
     input::SpaceshipAction,
     movement::{calculate_teleport_position, MovingObjectBundle, Wrappable},
     schedule::InGameSet,
     spaceship::{ContinuousFire, Spaceship},
-    stars::GAME_LAYER,
     utils::name_entity,
 };
 
@@ -215,7 +214,7 @@ fn spawn_missile(
             },
             ..default()
         })
-        .insert(RenderLayers::layer(GAME_LAYER))
+        .insert(RenderLayers::layer(RenderLayer::Game.into()))
         .id();
 
     name_entity(commands, missile, config.missile.name);
@@ -262,15 +261,6 @@ fn toggle_missile_party(
     }
 }
 
-// //todo: move this beast
-// fn config_gizmo_line_width(mut config_store: ResMut<GizmoConfigStore>) {
-//     for (_, config, _) in config_store.iter_mut() {
-//         // change default from 2.
-//         config.line_width = 5.;
-//         config.render_layers = RenderLayers::layer(GAME_LAYER);
-//     }
-// }
-
 /// fun! with missiles!
 fn missile_party(
     mut q_missile: Query<&mut Missile>,
@@ -290,28 +280,28 @@ fn draw_missile_targets(
     config: &GameConfig,
 ) {
     draw_sphere(
+        config,
         gizmos,
         missile.edge_in_front_of_spaceship,
         Color::from(tailwind::BLUE_600),
-        config,
     );
 
     // Draw sphere at the opposite edge point
     draw_sphere(
+        config,
         gizmos,
         missile.teleported_position,
         Color::from(tailwind::RED_600),
-        config,
     );
 
     // Draw sphere at the last teleport position if it exists
     if let Some(last_teleport_position) = missile.last_teleport_position {
         //  if last_teleport_position.distance(missile.teleported_position) > 1. {
         draw_sphere(
+            config,
             gizmos,
             last_teleport_position,
             Color::from(tailwind::YELLOW_600),
-            config,
         );
         //  }
     }
@@ -322,12 +312,12 @@ fn draw_missile_targets(
         if missile.remaining_distance < current_position.distance(next_boundary) {
             let end_point =
                 current_position + missile.velocity.normalize() * missile.remaining_distance;
-            draw_sphere(gizmos, end_point, Color::from(tailwind::GREEN_600), config);
+            draw_sphere(config, gizmos, end_point, Color::from(tailwind::GREEN_600));
         }
     }
 }
 
-fn draw_sphere(gizmos: &mut Gizmos, position: Vec3, color: Color, config: &GameConfig) {
+fn draw_sphere(config: &GameConfig, gizmos: &mut Gizmos, position: Vec3, color: Color) {
     gizmos
         .sphere(
             position,

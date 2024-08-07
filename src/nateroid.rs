@@ -1,15 +1,12 @@
-use std::{f32::consts::PI, ops::Range};
-
-use bevy::prelude::*;
-use bevy::render::view::RenderLayers;
+use bevy::{prelude::*, render::view::RenderLayers};
 use bevy_rapier3d::prelude::{Collider, Velocity};
 use rand::Rng;
+use std::{f32::consts::PI, ops::Range};
 
-use crate::stars::GAME_LAYER;
 use crate::{
     asset_loader::SceneAssets,
     boundary::Boundary,
-    config::GameConfig,
+    config::{GameConfig, RenderLayer},
     health::{CollisionDamage, Health, HealthBundle},
     movement::MovingObjectBundle,
     schedule::InGameSet,
@@ -106,7 +103,7 @@ fn spawn_nateroid(
             },
             ..default()
         })
-        .insert(RenderLayers::layer(GAME_LAYER))
+        .insert(RenderLayers::layer(RenderLayer::Game.into()))
         .id();
 
     name_entity(&mut commands, nateroid, config.nateroid.name);
