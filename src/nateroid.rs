@@ -9,7 +9,7 @@ use crate::stars::GAME_LAYER;
 use crate::{
     asset_loader::SceneAssets,
     boundary::Boundary,
-    game_scale::GameScale,
+    config::GameConfig,
     health::{CollisionDamage, Health, HealthBundle},
     movement::MovingObjectBundle,
     schedule::InGameSet,
@@ -42,7 +42,7 @@ impl Plugin for Nateroid {
 
 fn spawn_nateroid(
     mut commands: Commands,
-    game_scale: Res<GameScale>,
+    game_scale: Res<GameConfig>,
     mut spawn_timer: ResMut<NateroidSpawnTimer>,
     time: Res<Time>,
     scene_assets: Res<SceneAssets>,

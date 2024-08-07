@@ -1,11 +1,23 @@
 use bevy::prelude::*;
 
 use crate::{
-    asset_loader::AssetLoaderPlugin, boundary::BoundaryPlugin, camera::CameraPlugin,
-    collision_detection::CollisionDetectionPlugin, despawn::DespawnPlugin,
-    game_scale::GameScalePlugin, input::InputPlugin, missile::MissilePlugin,
-    movement::MovementPlugin, nateroid::Nateroid, physics::PhysicsPlugin, schedule::SchedulePlugin,
-    spaceship::SpaceshipPlugin, splash::SplashPlugin, stars::StarsPlugin, state::StatePlugin,
+    asset_loader::AssetLoaderPlugin,
+    boundary::BoundaryPlugin,
+    camera::CameraPlugin,
+    collision_detection::CollisionDetectionPlugin,
+    config::ConfigPlugin,
+    despawn::DespawnPlugin,
+    // game_scale::GameScalePlugin,
+    input::InputPlugin,
+    missile::MissilePlugin,
+    movement::MovementPlugin,
+    nateroid::Nateroid,
+    physics::PhysicsPlugin,
+    schedule::SchedulePlugin,
+    spaceship::SpaceshipPlugin,
+    splash::SplashPlugin,
+    stars::{StarsPlugin, GAME_LAYER},
+    state::StatePlugin,
 };
 
 #[cfg(debug_assertions)]
@@ -23,8 +35,9 @@ mod asset_loader;
 mod boundary;
 mod camera;
 mod collision_detection;
+mod config;
 mod despawn;
-mod game_scale;
+//mod game_scale;
 mod health;
 mod input;
 mod missile;
@@ -41,13 +54,20 @@ mod utils;
 fn main() {
     let mut app = App::new();
 
+    // todo: #rustquestion
+    // cargo fmt outputs my use::crate as a comma delimited list that doesn't split
+    // onto individual lines unless one of the use statements pulls in multiple things
+    // so i added GAME_LAYER to force cargo fmt to output this way
+    println!("GAME_LAYER at startup: {:?}", GAME_LAYER);
+
     app.add_plugins(DefaultPlugins)
         .add_plugins(AssetLoaderPlugin)
         .add_plugins(BoundaryPlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(CollisionDetectionPlugin)
+        .add_plugins(ConfigPlugin)
         .add_plugins(DespawnPlugin)
-        .add_plugins(GameScalePlugin)
+        // .add_plugins(GameScalePlugin)
         .add_plugins(InputPlugin)
         .add_plugins(MovementPlugin)
         .add_plugins(MissilePlugin)

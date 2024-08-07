@@ -194,11 +194,8 @@ fn pan_camera(
     }
 }
 
-// todo: #bevyquestion - can this be fixed?
-// both this and a prior quaternion based  version experience gimbal lock
-// this one seems to react smoother at the lock
-// however i thought that with quaternions, we'd be able to just rotate end over end over end
-// with no lock and i can't figure out how to solve it...tried over and over with the AI but no luck
+// i couldn't get this to work without hitting gimbal lock when consulting with chatGPT 4.o
+// claude Sonnet 3.5 got it right on the first try - holy shit!
 fn orbit_camera(
     mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
     keycode: Res<ButtonInput<KeyCode>>,
@@ -207,36 +204,36 @@ fn orbit_camera(
         let orbit_vector = action_state.axis_pair(&CameraMovement::Orbit);
         let pan_vector = action_state.axis_pair(&CameraMovement::Pan);
 
-        if orbit_vector == Vec2::ZERO || pan_vector != Vec2::ZERO || keycode.pressed(ShiftLeft) {
+        if orbit_vector == Vec2::ZERO
+            || pan_vector != Vec2::ZERO
+            || keycode.pressed(KeyCode::ShiftLeft)
+        {
             return;
         }
 
         let rotation_speed = 0.005;
-        let mut position = camera_transform.translation;
+        // Assuming the target is at the origin - this may change in the future
+        // as the target could be the ship when we move into flying behind the ship
+        let target = Vec3::ZERO;
 
-        // Convert Cartesian to Spherical coordinates
-        let radius = position.length();
-        let mut theta = position.z.atan2(position.x);
-        let mut phi = (position.y / radius).asin();
+        // this will change if we change our up vector to Z for FPSpaceship mode
+        let up = Vec3::Y;
+        let right = camera_transform.right().as_vec3();
 
-        // Update spherical coordinates based on input
-        theta -= -orbit_vector.x * rotation_speed;
-        phi -= -orbit_vector.y * rotation_speed;
+        // Create rotation quaternions
+        let pitch_rotation = Quat::from_axis_angle(right, -orbit_vector.y * rotation_speed);
+        let yaw_rotation = Quat::from_axis_angle(up, -orbit_vector.x * rotation_speed);
 
-        // Clamp phi to avoid gimbal lock
-        phi = phi.clamp(
-            -std::f32::consts::FRAC_PI_2 + 0.01,
-            std::f32::consts::FRAC_PI_2 - 0.01,
-        );
+        // Combine rotations
+        let rotation = yaw_rotation * pitch_rotation;
 
-        // Convert spherical coordinates back to Cartesian coordinates
-        position.x = radius * theta.cos() * phi.cos();
-        position.y = radius * phi.sin();
-        position.z = radius * theta.sin() * phi.cos();
+        // Apply rotation to the camera's position relative to the target
+        let relative_position = camera_transform.translation - target;
+        let new_relative_position = rotation * relative_position;
 
         // Update the camera's position and orientation
-        camera_transform.translation = position;
-        camera_transform.look_at(Vec3::ZERO, Vec3::Y);
+        camera_transform.translation = target + new_relative_position;
+        camera_transform.rotation = rotation * camera_transform.rotation;
 
         elide_dual_axis_data(&mut action_state);
     }

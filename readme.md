@@ -1,7 +1,7 @@
 ## nateroids
 
 created to teach [natepiano](https://youtube.com/natepiano) how to code games, visualizations and
-simulations in bevy using the awesome programming language, rust. i started
+simulations in [bevy](https://bevyengine.org) using the awesome programming language, rust. i started
 with [this tutorial](https://www.youtube.com/@ZymartuGames),
 added [bevy_rapier3d](https://www.rapier.rs/docs/user_guides/bevy_plugin/getting_started_bevy) for physics as well as a
 few other dependencies you can find in cargo.toml. the goal is to make this interesting, playable, beautiful and fun.

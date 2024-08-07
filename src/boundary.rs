@@ -1,4 +1,5 @@
-use crate::game_scale::GameScale;
+use crate::config::BoundaryGizmos;
+use crate::config::GameConfig;
 use crate::state::GameState;
 use bevy::{color::palettes::css::GREEN, prelude::*};
 use bevy_inspector_egui::InspectorOptions;
@@ -16,7 +17,11 @@ impl Plugin for BoundaryPlugin {
     }
 }
 
-fn draw_boundary(mut boundary: ResMut<Boundary>, game_scale: Res<GameScale>, mut gizmos: Gizmos) {
+fn draw_boundary(
+    mut boundary: ResMut<Boundary>,
+    game_scale: Res<GameConfig>,
+    mut gizmos: Gizmos<BoundaryGizmos>,
+) {
     // updating the transform from game_scale so it can be located in one place
     // and also so that it can be dynamically changed with the inspector while the game is running
     // the boundary transform is used both for position but also so the fixed camera
@@ -47,7 +52,7 @@ pub struct Boundary {
 
 impl Default for Boundary {
     fn default() -> Self {
-        let cell_scale = GameScale::default().boundary_cell_scalar * DEFAULT_CELL_COUNT.as_vec3();
+        let cell_scale = GameConfig::default().boundary_cell_scalar * DEFAULT_CELL_COUNT.as_vec3();
         let longest_diagonal =
             (cell_scale.x.powi(2) + cell_scale.y.powi(2) + cell_scale.z.powi(2)).sqrt();
 

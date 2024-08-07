@@ -1,5 +1,5 @@
 use crate::{
-    boundary::Boundary, camera::Appearance, game_scale::GameScale, input::GlobalAction,
+    boundary::Boundary, camera::Appearance, config::GameConfig, input::GlobalAction,
     schedule::InGameSet,
 };
 use bevy::prelude::{IntoSystemConfigs, Reflect, Res, ResMut, Resource, *};
@@ -25,7 +25,7 @@ fn register_debug_resources(world: &mut World) {
     type_registry.write().register::<Appearance>();
     type_registry.write().register::<Boundary>();
     type_registry.write().register::<DebugMode>();
-    type_registry.write().register::<GameScale>();
+    type_registry.write().register::<GameConfig>();
 }
 
 // the default bool is false, which is what we want
