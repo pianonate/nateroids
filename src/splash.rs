@@ -50,7 +50,7 @@ fn splash_screen(mut commands: Commands) {
             style: splash_style,
             ..default()
         },
-        RenderLayers::layer(RenderLayer::Game.layer()),
+        RenderLayers::from_layers(RenderLayer::Game.layers()),
         SplashText,
     ));
 }

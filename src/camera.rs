@@ -96,7 +96,7 @@ pub fn spawn_camera(
             //     brightness: 1000.0,
             // },
         ))
-        .insert(RenderLayers::layer(RenderLayer::Game.layer()))
+        .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
         .insert(InputManagerBundle::with_map(
             CameraMovement::camera_input_map(),
         ))

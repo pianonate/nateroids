@@ -30,7 +30,21 @@ impl Plugin for StarsPlugin {
             // and replace with new ones...
             .insert_resource(StarCounter(0))
             .add_systems(Update, spawn_star_tasks)
-            .add_systems(Update, rotate_sphere);
+            .add_systems(Update, (rotate_sphere, update_bloom_settings));
+    }
+}
+
+fn update_bloom_settings(
+    mut star_bloom: ResMut<StarBloom>,
+    appearance_config: Res<AppearanceConfig>,
+    mut query: Query<&mut BloomSettings, With<StarsCamera>>,
+) {
+    if appearance_config.is_changed() {
+        star_bloom.update_from_config(&appearance_config);
+
+        for mut bloom_settings in query.iter_mut() {
+            *bloom_settings = star_bloom.settings.clone();
+        }
     }
 }
 
@@ -41,14 +55,22 @@ struct StarBloom {
 
 impl Default for StarBloom {
     fn default() -> Self {
+        let config = AppearanceConfig::default();
         let mut bloom_settings = BloomSettings::NATURAL;
-        bloom_settings.intensity = 0.8;
-        bloom_settings.low_frequency_boost = 0.7;
-        bloom_settings.low_frequency_boost_curvature = 1.0;
-        bloom_settings.high_pass_frequency = 1.0;
+        bloom_settings.intensity = config.bloom_intensity;
+        bloom_settings.low_frequency_boost = config.bloom_lf_boost;
+        bloom_settings.high_pass_frequency = config.bloom_high_pass_frequency;
         Self {
             settings: bloom_settings,
         }
+    }
+}
+
+impl StarBloom {
+    fn update_from_config(&mut self, config: &AppearanceConfig) {
+        self.settings.intensity = config.bloom_intensity;
+        self.settings.low_frequency_boost = config.bloom_lf_boost;
+        self.settings.high_pass_frequency = config.bloom_high_pass_frequency;
     }
 }
 
@@ -65,7 +87,7 @@ fn setup_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
 
     commands
         .spawn(camera3d)
-        .insert(RenderLayers::layer(RenderLayer::Stars.layer()))
+        .insert(RenderLayers::from_layers(RenderLayer::Stars.layers()))
         .insert(star_bloom.settings.clone())
         .insert(StarsCamera);
 }
@@ -73,6 +95,9 @@ fn setup_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
 #[derive(Component)]
 struct GameSphere;
 
+// currently we're not displaying this - it's called but it never gets an Ok
+// so it's a no-op
+// keep this if you want to put the bounding sphere back in play...
 fn rotate_sphere(mut query: Query<&mut Transform, With<GameSphere>>) {
     if let Ok(mut transform) = query.get_single_mut() {
         let delta_rotation = Quat::from_rotation_y(0.001);
@@ -174,7 +199,7 @@ fn spawn_star_tasks(
                     transform,
                     ..default()
                 })
-                .insert(RenderLayers::layer(RenderLayer::Stars.layer()));
+                .insert(RenderLayers::from_layers(RenderLayer::Stars.layers()));
         }
 
         counter.0 += stars_to_spawn;

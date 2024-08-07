@@ -1,3 +1,4 @@
+use bevy::render::view::Layer;
 use bevy::{
     color::{
         palettes::{css, tailwind},
@@ -27,7 +28,7 @@ fn init_gizmo_configs(
     appearance_config: Res<AppearanceConfig>,
 ) {
     for (_, any_config, _) in config_store.iter_mut() {
-        any_config.render_layers = RenderLayers::layer(RenderLayer::Game.layer());
+        any_config.render_layers = RenderLayers::from_layers(RenderLayer::Game.layers());
         any_config.line_width = 1.;
     }
 
@@ -43,6 +44,9 @@ fn init_gizmo_configs(
 #[reflect(Resource)]
 pub struct AppearanceConfig {
     pub ambient_light_brightness: f32,
+    pub bloom_intensity: f32,
+    pub bloom_lf_boost: f32,
+    pub bloom_high_pass_frequency: f32,
     pub boundary_color: Color,
     pub boundary_line_width: f32,
     pub boundary_cell_count: UVec3,
@@ -63,8 +67,11 @@ pub struct AppearanceConfig {
 impl Default for AppearanceConfig {
     fn default() -> Self {
         Self {
-            ambient_light_brightness: 4000.,
-            boundary_color: Color::from(tailwind::GREEN_700),
+            ambient_light_brightness: 3000.,
+            bloom_intensity: 0.9,
+            bloom_lf_boost: 0.5,
+            bloom_high_pass_frequency: 0.5,
+            boundary_color: Color::from(tailwind::BLUE_300),
             boundary_line_width: 4.,
             boundary_cell_count: UVec3::new(2, 1, 1),
             boundary_cell_scalar: 110.,
@@ -153,15 +160,19 @@ impl CameraOrder {
 // used for both camera order and render layer
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RenderLayer {
+    Both,
     Game,
     Stars,
 }
 
+// returning the array rather than just one in case we have more complex
+// situations in the future that require overlapping layers
 impl RenderLayer {
-    pub const fn layer(self) -> usize {
+    pub const fn layers(self) -> &'static [Layer] {
         match self {
-            RenderLayer::Game => 0,
-            RenderLayer::Stars => 1,
+            RenderLayer::Both => &[0, 1],
+            RenderLayer::Game => &[0],
+            RenderLayer::Stars => &[1],
         }
     }
 }
