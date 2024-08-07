@@ -59,6 +59,7 @@ pub struct AppearanceConfig {
     pub star_radius: f32,
     pub star_field_inner_diameter: f32,
     pub star_field_outer_diameter: f32,
+    pub zoom_sensitivity: f32,
 }
 
 // centralize appearance defaults
@@ -83,6 +84,7 @@ impl Default for AppearanceConfig {
             star_radius: 5.,
             star_field_inner_diameter: 1000.,
             star_field_outer_diameter: 20000.,
+            zoom_sensitivity: 8.,
         }
     }
 }

@@ -107,6 +107,7 @@ pub fn spawn_camera(
 fn zoom_camera(
     mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
+    config: Res<AppearanceConfig>,
 ) {
     let mut trackpad = false;
 
@@ -141,9 +142,18 @@ fn zoom_camera(
             return;
         }
 
-        let zoom_update = 1. - zoom_delta;
+        // let zoom_update = 1. - zoom_delta;
+        //
+        // transform.translation.z += zoom_update;
+        // Calculate zoom direction based on camera's current orientation
+        let zoom_direction = transform.forward();
 
-        transform.translation.z += zoom_update;
+        // Calculate zoom amount
+        let zoom_speed = config.zoom_sensitivity; // Adjust this value to control zoom sensitivity
+        let zoom_amount = zoom_delta * zoom_speed;
+
+        // Apply zoom
+        transform.translation += zoom_direction * zoom_amount;
 
         println!(
             "zoom_delta {} translation {}",
@@ -196,10 +206,7 @@ fn orbit_camera(
         let orbit_vector = action_state.axis_pair(&CameraMovement::Orbit);
         let pan_vector = action_state.axis_pair(&CameraMovement::Pan);
 
-        if orbit_vector == Vec2::ZERO
-            || pan_vector != Vec2::ZERO
-            || keycode.pressed(ShiftLeft)
-        {
+        if orbit_vector == Vec2::ZERO || pan_vector != Vec2::ZERO || keycode.pressed(ShiftLeft) {
             return;
         }
 
