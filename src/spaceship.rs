@@ -97,7 +97,7 @@ fn spawn_spaceship(
 
     let spaceship = commands
         .spawn(Spaceship)
-        .insert(RenderLayers::layer(RenderLayer::Game.into()))
+        .insert(RenderLayers::layer(RenderLayer::Game.layer()))
         .insert(HealthBundle {
             collision_damage: CollisionDamage(SPACESHIP_COLLISION_DAMAGE),
             health: Health(SPACESHIP_HEALTH),

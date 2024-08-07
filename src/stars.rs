@@ -54,7 +54,7 @@ impl Default for StarBloom {
 fn setup_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
     let camera3d = Camera3dBundle {
         camera: Camera {
-            order: CameraOrder::Stars.into(),
+            order: CameraOrder::Stars.order(),
             hdr: true, // 1. HDR is required for bloom
             ..default()
         },
@@ -64,7 +64,7 @@ fn setup_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
 
     commands
         .spawn(camera3d)
-        .insert(RenderLayers::layer(RenderLayer::Stars.into()))
+        .insert(RenderLayers::layer(RenderLayer::Stars.layer()))
         .insert(star_bloom.settings.clone())
         .insert(StarsCamera);
 }
@@ -173,7 +173,7 @@ fn spawn_star_tasks(
                     transform,
                     ..default()
                 })
-                .insert(RenderLayers::layer(RenderLayer::Stars.into()));
+                .insert(RenderLayers::layer(RenderLayer::Stars.layer()));
         }
 
         counter.0 += stars_to_spawn;

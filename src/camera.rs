@@ -94,7 +94,7 @@ pub fn spawn_camera(
         .spawn((
             Camera3dBundle {
                 camera: Camera {
-                    order: CameraOrder::Game.into(),
+                    order: CameraOrder::Game.order(),
                     clear_color: ClearColorConfig::Custom(clear_color),
                     ..default()
                 },
@@ -109,7 +109,7 @@ pub fn spawn_camera(
             //     brightness: 1000.0,
             // },
         ))
-        .insert(RenderLayers::layer(RenderLayer::Game.into()))
+        .insert(RenderLayers::layer(RenderLayer::Game.layer()))
         .insert(InputManagerBundle::with_map(
             CameraMovement::camera_input_map(),
         ))

@@ -16,7 +16,7 @@ pub struct BoundaryGizmos {}
 
 fn init_gizmo_configs(mut config_store: ResMut<GizmoConfigStore>) {
     for (_, any_config, _) in config_store.iter_mut() {
-        any_config.render_layers = RenderLayers::layer(RenderLayer::Game.into());
+        any_config.render_layers = RenderLayers::layer(RenderLayer::Game.layer());
         any_config.line_width = 1.;
     }
 
@@ -110,17 +110,11 @@ pub enum CameraOrder {
 }
 
 impl CameraOrder {
-    pub const fn into_isize(self) -> isize {
+    pub const fn order(self) -> isize {
         match self {
             CameraOrder::Game => 1,
             CameraOrder::Stars => 0,
         }
-    }
-}
-
-impl From<CameraOrder> for isize {
-    fn from(layer: CameraOrder) -> Self {
-        layer.into_isize()
     }
 }
 
@@ -132,16 +126,10 @@ pub enum RenderLayer {
 }
 
 impl RenderLayer {
-    pub const fn into_usize(self) -> usize {
+    pub const fn layer(self) -> usize {
         match self {
             RenderLayer::Game => 0,
             RenderLayer::Stars => 1,
         }
-    }
-}
-
-impl From<RenderLayer> for usize {
-    fn from(layer: RenderLayer) -> Self {
-        layer.into_usize()
     }
 }

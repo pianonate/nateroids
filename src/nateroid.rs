@@ -103,7 +103,7 @@ fn spawn_nateroid(
             },
             ..default()
         })
-        .insert(RenderLayers::layer(RenderLayer::Game.into()))
+        .insert(RenderLayers::layer(RenderLayer::Game.layer()))
         .id();
 
     name_entity(&mut commands, nateroid, config.nateroid.name);

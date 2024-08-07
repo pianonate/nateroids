@@ -214,7 +214,7 @@ fn spawn_missile(
             },
             ..default()
         })
-        .insert(RenderLayers::layer(RenderLayer::Game.into()))
+        .insert(RenderLayers::layer(RenderLayer::Game.layer()))
         .id();
 
     name_entity(commands, missile, config.missile.name);
