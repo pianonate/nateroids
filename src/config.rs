@@ -30,7 +30,7 @@ fn init_gizmo_configs(
 ) {
     for (_, any_config, _) in config_store.iter_mut() {
         any_config.render_layers = RenderLayers::from_layers(RenderLayer::Game.layers());
-        any_config.line_width = 1.;
+        any_config.line_width = 2.;
     }
 
     // so we can avoid an error of borrowing the mutable config_store twice
@@ -55,7 +55,7 @@ pub struct AppearanceConfig {
     pub clear_color: Color,
     pub clear_color_darkening_factor: f32,
     pub missile_forward_spawn_distance: f32,
-    pub missile_sphere_radius: f32,
+    pub missile_circle_radius: f32,
     pub splash_timer: f32,
     pub star_count: usize,
     pub star_radius: f32,
@@ -82,7 +82,7 @@ impl Default for AppearanceConfig {
             clear_color: Srgba(css::MIDNIGHT_BLUE),
             clear_color_darkening_factor: 0.019,
             missile_forward_spawn_distance: 5.6,
-            missile_sphere_radius: 2.,
+            missile_circle_radius: 7.,
             splash_timer: 2.,
             star_count: 5000,
             star_radius: 5.,

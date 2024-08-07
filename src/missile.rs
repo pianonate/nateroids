@@ -44,7 +44,7 @@ impl Plugin for MissilePlugin {
                 .chain()
                 .in_set(InGameSet::EntityUpdates),
         )
-        .insert_resource(MissilePartyEnabled(false));
+        .insert_resource(MissilePartyEnabled(true));
     }
 }
 
@@ -57,8 +57,8 @@ struct MissileSpawnTimer {
 #[derive(Copy, Clone, Component, Debug)]
 pub struct Missile {
     velocity: Vec3,
-    pub(crate) total_distance: f32,
-    pub(crate) traveled_distance: f32,
+    pub total_distance: f32,
+    pub traveled_distance: f32,
     remaining_distance: f32,
     last_position: Vec3,
     last_teleport_position: Option<Vec3>, // Add this field
@@ -272,38 +272,77 @@ fn draw_missile_targets(
     let current_position = missile.last_position;
 
     if let Some(next_boundary) = boundary.find_edge_point(current_position, missile.velocity) {
-        if missile.remaining_distance < current_position.distance(next_boundary) {
-            let end_point =
-                current_position + missile.velocity.normalize() * missile.remaining_distance;
-            draw_sphere(config, gizmos, end_point, Color::from(tailwind::GREEN_600));
-        } else {
-            draw_sphere(
-                config,
-                gizmos,
-                next_boundary,
-                Color::from(tailwind::BLUE_600),
-            );
-        }
+        let (position, normal, color, remaining_distance) =
+            if missile.remaining_distance < current_position.distance(next_boundary) {
+                let end_point =
+                    current_position + missile.velocity.normalize() * missile.remaining_distance;
+                let circle_normal = Dir3::new(-missile.velocity.normalize()).unwrap_or(Dir3::NEG_Z);
+                (
+                    end_point,
+                    circle_normal,
+                    Color::from(tailwind::GREEN_600),
+                    missile.remaining_distance,
+                )
+            } else {
+                let boundary_normal = boundary.get_normal_for_position(next_boundary);
+                let distance = current_position.distance(next_boundary);
+                (
+                    next_boundary,
+                    boundary_normal,
+                    Color::from(tailwind::BLUE_600),
+                    distance,
+                )
+            };
+
+        draw_variable_size_circle(config, gizmos, position, normal, color, remaining_distance);
     }
 
     // Draw sphere at the last teleport position if it exists
     if let Some(last_teleport_position) = missile.last_teleport_position {
-        draw_sphere(
+        let teleport_normal = boundary.get_normal_for_position(last_teleport_position);
+        draw_fixed_size_circle(
             config,
             gizmos,
             last_teleport_position,
+            teleport_normal,
             Color::from(tailwind::YELLOW_600),
+            None, // Use the default radius for teleport circles
         );
     }
 }
 
-fn draw_sphere(config: &AppearanceConfig, gizmos: &mut Gizmos, position: Vec3, color: Color) {
-    gizmos
-        .sphere(
-            position,
-            Quat::IDENTITY,
-            config.missile_sphere_radius,
-            color,
-        )
-        .resolution(16);
+fn draw_variable_size_circle(
+    config: &AppearanceConfig,
+    gizmos: &mut Gizmos,
+    position: Vec3,
+    normal: Dir3,
+    color: Color,
+    remaining_distance: f32,
+) {
+    let min_radius = config.missile_circle_radius * 0.3; // Minimum radius to ensure visibility
+    let max_radius = config.missile_circle_radius; // Maximum radius (current fixed radius)
+
+    // Define a distance threshold where the circle starts to shrink
+    let shrink_threshold = 25.; // Adjust this value as needed
+
+    let radius = if remaining_distance > shrink_threshold {
+        max_radius
+    } else {
+        let scale_factor = (remaining_distance / shrink_threshold).clamp(0.0, 1.0);
+        min_radius + (max_radius - min_radius) * scale_factor
+    };
+
+    draw_fixed_size_circle(config, gizmos, position, normal, color, Some(radius));
+}
+
+fn draw_fixed_size_circle(
+    config: &AppearanceConfig,
+    gizmos: &mut Gizmos,
+    position: Vec3,
+    normal: Dir3,
+    color: Color,
+    custom_radius: Option<f32>,
+) {
+    let radius = custom_radius.unwrap_or(config.missile_circle_radius);
+    gizmos.circle(position, normal, radius, color);
 }

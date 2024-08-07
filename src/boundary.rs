@@ -70,7 +70,6 @@ impl Default for Boundary {
     }
 }
 
-//impl Boundary {
 /// Finds the intersection point of a ray (defined by an origin and direction) with the edges of a viewable area.
 ///
 /// # Parameters
@@ -86,7 +85,32 @@ impl Default for Boundary {
 /// - It iterates over these axes, updating the minimum intersection distance (`t_min`) if a valid intersection is found.
 /// - Finally, it returns the intersection point corresponding to the minimum distance, or `None` if no valid intersection is found.
 impl Boundary {
-    pub(crate) fn find_edge_point(&self, origin: Vec3, velocity: Vec3) -> Option<Vec3> {
+    pub fn get_normal_for_position(&self, position: Vec3) -> Dir3 {
+        let half_size = self.transform.scale / 2.0;
+        let boundary_min = self.transform.translation - half_size;
+        let boundary_max = self.transform.translation + half_size;
+
+        let epsilon = 0.001; // Small value to account for floating-point imprecision
+
+        if (position.x - boundary_min.x).abs() < epsilon {
+            Dir3::NEG_X
+        } else if (position.x - boundary_max.x).abs() < epsilon {
+            Dir3::X
+        } else if (position.y - boundary_min.y).abs() < epsilon {
+            Dir3::NEG_Y
+        } else if (position.y - boundary_max.y).abs() < epsilon {
+            Dir3::Y
+        } else if (position.z - boundary_min.z).abs() < epsilon {
+            Dir3::NEG_Z
+        } else if (position.z - boundary_max.z).abs() < epsilon {
+            Dir3::Z
+        } else {
+            // Default to Y if not on a boundary face
+            Dir3::Y
+        }
+    }
+
+    pub fn find_edge_point(&self, origin: Vec3, velocity: Vec3) -> Option<Vec3> {
         let boundary_min = self.transform.translation - self.transform.scale / 2.0;
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;
 
