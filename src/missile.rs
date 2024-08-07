@@ -322,12 +322,7 @@ fn draw_missile_targets(
         if missile.remaining_distance < current_position.distance(next_boundary) {
             let end_point =
                 current_position + missile.velocity.normalize() * missile.remaining_distance;
-            draw_sphere(
-                gizmos,
-                end_point,
-                Color::from(tailwind::GREEN_600),
-                config,
-            );
+            draw_sphere(gizmos, end_point, Color::from(tailwind::GREEN_600), config);
         }
     }
 }
