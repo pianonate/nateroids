@@ -1,5 +1,7 @@
 use crate::{
-    boundary::Boundary, camera::Appearance, config::GameConfig, input::GlobalAction,
+    boundary::Boundary,
+    config::{AppearanceConfig, ColliderConfig},
+    input::GlobalAction,
     schedule::InGameSet,
 };
 use bevy::prelude::{IntoSystemConfigs, Reflect, Res, ResMut, Resource, *};
@@ -22,10 +24,10 @@ impl Plugin for DebugPlugin {
 
 fn register_debug_resources(world: &mut World) {
     let type_registry = world.resource::<AppTypeRegistry>().0.clone();
-    type_registry.write().register::<Appearance>();
+    type_registry.write().register::<AppearanceConfig>();
     type_registry.write().register::<Boundary>();
     type_registry.write().register::<DebugMode>();
-    type_registry.write().register::<GameConfig>();
+    type_registry.write().register::<ColliderConfig>();
 }
 
 // the default bool is false, which is what we want

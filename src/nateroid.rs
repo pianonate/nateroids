@@ -6,7 +6,7 @@ use std::{f32::consts::PI, ops::Range};
 use crate::{
     asset_loader::SceneAssets,
     boundary::Boundary,
-    config::{GameConfig, RenderLayer},
+    config::{ColliderConfig, RenderLayer},
     health::{CollisionDamage, Health, HealthBundle},
     movement::MovingObjectBundle,
     schedule::InGameSet,
@@ -38,7 +38,7 @@ impl Plugin for Nateroid {
 
 fn spawn_nateroid(
     mut commands: Commands,
-    config: Res<GameConfig>,
+    config: Res<ColliderConfig>,
     mut spawn_timer: ResMut<NateroidSpawnTimer>,
     time: Res<Time>,
     scene_assets: Res<SceneAssets>,
@@ -103,7 +103,7 @@ fn spawn_nateroid(
             },
             ..default()
         })
-        .insert(RenderLayers::layer(RenderLayer::Game.layer()))
+        .insert(RenderLayers::layer(RenderLayer::Stars.layer()))
         .id();
 
     name_entity(&mut commands, nateroid, config.nateroid.name);

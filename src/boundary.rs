@@ -1,13 +1,10 @@
 use crate::{
-    config::{BoundaryGizmos, GameConfig},
+    config::{AppearanceConfig, BoundaryGizmos},
     state::GameState,
 };
-use bevy::{color::palettes::css::GREEN, prelude::*};
+use bevy::prelude::*;
 use bevy_inspector_egui::InspectorOptions;
 use std::cell::Cell;
-
-const DEFAULT_CELL_COUNT: UVec3 = UVec3::new(2, 1, 1);
-const DEFAULT_CELL_COLOR: Srgba = GREEN;
 
 pub struct BoundaryPlugin;
 
@@ -20,7 +17,7 @@ impl Plugin for BoundaryPlugin {
 
 fn draw_boundary(
     mut boundary: ResMut<Boundary>,
-    config: Res<GameConfig>,
+    config: Res<AppearanceConfig>,
     mut gizmos: Gizmos<BoundaryGizmos>,
 ) {
     // updating the transform from config so it can be located in one place
@@ -37,7 +34,7 @@ fn draw_boundary(
             Quat::IDENTITY,
             boundary.cell_count,
             Vec3::splat(config.boundary_cell_scalar),
-            DEFAULT_CELL_COLOR,
+            config.boundary_color,
         )
         .outer_edges();
 }
@@ -53,14 +50,16 @@ pub struct Boundary {
 
 impl Default for Boundary {
     fn default() -> Self {
-        let cell_scale = GameConfig::default().boundary_cell_scalar * DEFAULT_CELL_COUNT.as_vec3();
+        let config = AppearanceConfig::default();
+
+        let cell_scale = config.boundary_cell_scalar * config.boundary_cell_count.as_vec3();
         let longest_diagonal =
             (cell_scale.x.powi(2) + cell_scale.y.powi(2) + cell_scale.z.powi(2)).sqrt();
 
         let max_missile_distance = cell_scale.x.max(cell_scale.y).max(cell_scale.z);
 
         Self {
-            cell_count: DEFAULT_CELL_COUNT,
+            cell_count: config.boundary_cell_count,
             longest_diagonal,
             max_missile_distance,
             transform: Transform {

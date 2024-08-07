@@ -1,3 +1,4 @@
+use crate::config::AppearanceConfig;
 use crate::{
     boundary::Boundary,
     config::{CameraOrder, RenderLayer},
@@ -6,41 +7,27 @@ use crate::{
     stars::StarsCamera,
 };
 use bevy::{
-    color::palettes::css,
     //core_pipeline::Skybox,
     input::mouse::{MouseScrollUnit, MouseWheel},
-    prelude::{Color::Srgba, KeyCode::ShiftLeft, *},
+    prelude::{KeyCode::ShiftLeft, *},
     render::view::RenderLayers,
 };
 use leafwing_input_manager::prelude::*;
-
-const DEFAULT_CLEAR_COLOR_DARKENING_FACTOR: f32 = 0.019;
-const DEFAULT_CLEAR_COLOR: Color = Srgba(css::MIDNIGHT_BLUE);
-const DEFAULT_AMBIENT_LIGHT_BRIGHTNESS: f32 = 1_000.;
-
-#[derive(Resource, Reflect, Debug, Default)]
-#[reflect(Resource)]
-pub struct Appearance {
-    color: Color,
-    darkening_factor: f32,
-    ambient_light_brightness: f32,
-}
 
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Appearance {
-            color: DEFAULT_CLEAR_COLOR,
-            darkening_factor: DEFAULT_CLEAR_COLOR_DARKENING_FACTOR,
-            ambient_light_brightness: DEFAULT_AMBIENT_LIGHT_BRIGHTNESS,
-        })
-        .insert_resource(ClearColor(
-            DEFAULT_CLEAR_COLOR.darker(DEFAULT_CLEAR_COLOR_DARKENING_FACTOR),
+        let appearance = AppearanceConfig::default();
+
+        app.insert_resource(ClearColor(
+            appearance
+                .clear_color
+                .darker(appearance.clear_color_darkening_factor),
         ))
         .insert_resource(AmbientLight {
             color: default(),
-            brightness: 0.2,
+            brightness: appearance.ambient_light_brightness,
         })
         .add_systems(Startup, spawn_camera)
         .add_systems(
@@ -62,13 +49,13 @@ impl Plugin for CameraPlugin {
 // this allows us to use Inspector reflection to manually update ClearColor to different values
 // while the game is running from the ui_for_resources provided by bevy_inspector_egui
 fn update_clear_color(
-    app_clear_color: Res<Appearance>,
+    app_clear_color: Res<AppearanceConfig>,
     mut clear_color: ResMut<ClearColor>,
     mut ambient_light: ResMut<AmbientLight>,
 ) {
     clear_color.0 = app_clear_color
-        .color
-        .darker(app_clear_color.darkening_factor);
+        .clear_color
+        .darker(app_clear_color.clear_color_darkening_factor);
 
     ambient_light.brightness = app_clear_color.ambient_light_brightness;
 }
@@ -180,7 +167,7 @@ fn pan_camera(
         // MouseButton::Middle and KeyCode::ShiftLeft don't really work
         // but if ShiftLeft is on then Orbit will have the axis_pair
         // and we didn't consume it in orbit if ShiftLeft was turned on
-        // hacky, hacky - but if LeafWing ever gets more sophisticated then this can go away
+        // hacky, hacky - but if LeafWing ever gets more sophisticated, this can go away
         let pan_vector = if keycode.pressed(ShiftLeft) {
             action_state.axis_pair(&CameraMovement::Orbit)
         } else {
@@ -211,7 +198,7 @@ fn orbit_camera(
 
         if orbit_vector == Vec2::ZERO
             || pan_vector != Vec2::ZERO
-            || keycode.pressed(KeyCode::ShiftLeft)
+            || keycode.pressed(ShiftLeft)
         {
             return;
         }

@@ -7,7 +7,7 @@ use crate::{
     asset_loader::SceneAssets,
     camera::PrimaryCamera,
     collision_detection::{GROUP_ASTEROID, GROUP_SPACESHIP},
-    config::{GameConfig, RenderLayer},
+    config::{ColliderConfig, RenderLayer},
     health::{CollisionDamage, Health, HealthBundle},
     input::SpaceshipAction,
     movement::MovingObjectBundle,
@@ -85,7 +85,7 @@ fn toggle_continuous_fire(
 
 fn spawn_spaceship(
     mut commands: Commands,
-    config: Res<GameConfig>,
+    config: Res<ColliderConfig>,
     scene_assets: Res<SceneAssets>,
     //  q_camera: Query<Entity, With<PrimaryCamera>>,
 ) {
@@ -134,7 +134,7 @@ fn spaceship_movement_controls(
     mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
     q_camera: Query<&Transform, (With<PrimaryCamera>, Without<Spaceship>)>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
-    config: Res<GameConfig>,
+    config: Res<ColliderConfig>,
     time: Res<Time>,
 ) {
     if let Ok(camera_transform) = q_camera.get_single() {

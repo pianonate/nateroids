@@ -5,7 +5,7 @@ use crate::{
     asset_loader::SceneAssets,
     boundary::Boundary,
     collision_detection::{GROUP_ASTEROID, GROUP_MISSILE},
-    config::{GameConfig, RenderLayer},
+    config::{ColliderConfig, RenderLayer},
     health::{CollisionDamage, Health, HealthBundle},
     input::SpaceshipAction,
     movement::{calculate_teleport_position, MovingObjectBundle, Wrappable},
@@ -14,6 +14,7 @@ use crate::{
     utils::name_entity,
 };
 
+use crate::config::AppearanceConfig;
 use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
@@ -73,7 +74,7 @@ impl Missile {
     pub fn new(
         spaceship_transform: &Transform,
         spaceship_velocity: &Velocity,
-        config: &Res<GameConfig>,
+        config: &Res<ColliderConfig>,
         boundary: &Res<Boundary>,
     ) -> Self {
         let forward = -spaceship_transform.forward().with_z(0.0);
@@ -149,7 +150,7 @@ fn should_fire(
 #[allow(clippy::too_many_arguments)]
 fn fire_missile(
     mut commands: Commands,
-    config: Res<GameConfig>,
+    config: Res<ColliderConfig>,
     spawn_timer: ResMut<MissileSpawnTimer>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(&Transform, &Velocity, Option<&ContinuousFire>), With<Spaceship>>,
@@ -183,7 +184,7 @@ fn fire_missile(
 
 fn spawn_missile(
     commands: &mut Commands,
-    config: Res<GameConfig>,
+    config: Res<ColliderConfig>,
     scene_assets: Res<SceneAssets>,
     spaceship_transform: &Transform,
     spaceship_velocity: &Velocity,
@@ -257,6 +258,7 @@ fn toggle_missile_party(
     if let Ok(spaceship_action) = q_input_map.get_single() {
         if spaceship_action.just_pressed(&SpaceshipAction::MissileParty) {
             missile_party_enabled.0 = !missile_party_enabled.0;
+            println!("missile party: {:?}", missile_party_enabled.0);
         }
     }
 }
@@ -266,7 +268,7 @@ fn missile_party(
     mut q_missile: Query<&mut Missile>,
     mut gizmos: Gizmos,
     boundary: Res<Boundary>,
-    config: Res<GameConfig>,
+    config: Res<AppearanceConfig>,
 ) {
     for missile in q_missile.iter_mut() {
         draw_missile_targets(&mut gizmos, &missile, &boundary, &config);
@@ -277,7 +279,7 @@ fn draw_missile_targets(
     gizmos: &mut Gizmos,
     missile: &Missile,
     boundary: &Res<Boundary>,
-    config: &GameConfig,
+    config: &AppearanceConfig,
 ) {
     draw_sphere(
         config,
@@ -317,7 +319,7 @@ fn draw_missile_targets(
     }
 }
 
-fn draw_sphere(config: &GameConfig, gizmos: &mut Gizmos, position: Vec3, color: Color) {
+fn draw_sphere(config: &AppearanceConfig, gizmos: &mut Gizmos, position: Vec3, color: Color) {
     gizmos
         .sphere(
             position,

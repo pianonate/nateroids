@@ -1,8 +1,9 @@
+use crate::config::AppearanceConfig;
 use crate::input::GlobalAction;
 use crate::{
     boundary::Boundary,
     camera::spawn_camera,
-    config::{CameraOrder, GameConfig, RenderLayer},
+    config::{CameraOrder, RenderLayer},
 };
 use bevy::{
     core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping},
@@ -118,7 +119,7 @@ struct StarCounter(usize);
 #[allow(clippy::too_many_arguments)]
 fn spawn_star_tasks(
     mut commands: Commands,
-    config: Res<GameConfig>,
+    config: Res<AppearanceConfig>,
     boundary: Res<Boundary>,
     time: Res<Time>,
     mut timer: ResMut<StarSpawnTimer>,

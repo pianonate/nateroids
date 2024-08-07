@@ -1,5 +1,5 @@
 use crate::{
-    config::{GameConfig, RenderLayer},
+    config::{AppearanceConfig, RenderLayer},
     state::GameState,
 };
 use bevy::prelude::*;
@@ -18,7 +18,7 @@ struct SplashTimer {
 impl Plugin for SplashPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SplashTimer {
-            timer: Timer::from_seconds(GameConfig::default().splash_timer, TimerMode::Once),
+            timer: Timer::from_seconds(AppearanceConfig::default().splash_timer, TimerMode::Once),
         })
         .add_systems(Startup, splash_screen)
         .add_systems(Update, run_splash.run_if(in_state(GameState::Splash)));
