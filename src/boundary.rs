@@ -41,6 +41,7 @@ fn draw_boundary(mut boundary: ResMut<Boundary>, game_scale: Res<GameScale>, mut
 pub struct Boundary {
     pub cell_count: UVec3,
     pub longest_diagonal: f32,
+    pub max_missile_distance: f32,
     pub transform: Transform,
 }
 
@@ -50,9 +51,12 @@ impl Default for Boundary {
         let longest_diagonal =
             (cell_scale.x.powi(2) + cell_scale.y.powi(2) + cell_scale.z.powi(2)).sqrt();
 
+        let max_missile_distance = cell_scale.x.max(cell_scale.y).max(cell_scale.z);
+
         Self {
             cell_count: DEFAULT_CELL_COUNT,
             longest_diagonal,
+            max_missile_distance,
             transform: Transform {
                 translation: Vec3::ZERO,
                 scale: cell_scale,

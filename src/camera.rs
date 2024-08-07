@@ -1,10 +1,11 @@
 use crate::stars::{StarsCamera, GAME_CAMERA_ORDER, GAME_LAYER};
 use crate::{boundary::Boundary, input::CameraMovement, schedule::InGameSet};
-use bevy::render::view::RenderLayers;
 use bevy::{
     color::palettes::css,
     //core_pipeline::Skybox,
-    prelude::{Color::Srgba, *},
+    input::mouse::{MouseScrollUnit, MouseWheel},
+    prelude::{Color::Srgba, KeyCode::ShiftLeft, *},
+    render::view::RenderLayers,
 };
 use leafwing_input_manager::prelude::*;
 
@@ -37,7 +38,18 @@ impl Plugin for CameraPlugin {
             brightness: 0.2,
         })
         .add_systems(Startup, spawn_camera)
-        .add_systems(Update, zoom_camera.in_set(InGameSet::UserInput))
+        .add_systems(
+            Update,
+            (
+                // order matters because we hack around the input manager
+                // that doesn't yet support trackpads
+                zoom_camera,
+                orbit_camera,
+                pan_camera,
+            )
+                .chain()
+                .in_set(InGameSet::UserInput),
+        )
         .add_systems(Update, update_clear_color.in_set(InGameSet::EntityUpdates));
     }
 }
@@ -81,20 +93,8 @@ pub fn spawn_camera(
                     clear_color: ClearColorConfig::Custom(clear_color),
                     ..default()
                 },
-                projection: PerspectiveProjection {
-                    fov: std::f32::consts::FRAC_PI_3, // Adjust the field of view here
-                    near: 1.,
-                    far: 10000.0,
-                    ..Default::default()
-                }
-                .into(),
-
-                transform: Transform::from_xyz(
-                    0.0,
-                    0.0,
-                    boundary.transform.scale.z * std::f32::consts::FRAC_PI_3,
-                )
-                .looking_at(Vec3::ZERO, Vec3::Y),
+                transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.)
+                    .looking_at(Vec3::ZERO, Vec3::Y),
 
                 ..default()
             },
@@ -113,11 +113,36 @@ pub fn spawn_camera(
 }
 
 fn zoom_camera(
-    mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<PrimaryCamera>>,
+    mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
+    mut mouse_wheel_events: EventReader<MouseWheel>,
 ) {
-    if let Ok((mut transform, action_state)) = query.get_single_mut() {
-        // Here, we use the `action_value` method to extract the total net amount that the mouse wheel has travelled
-        // Up and right axis movements are always positive by default
+    let mut trackpad = false;
+
+    // hack to determine if the input was from a mouse or a trackpad
+    for event in mouse_wheel_events.read() {
+        trackpad = match event.unit {
+            MouseScrollUnit::Line => false,
+            MouseScrollUnit::Pixel => true,
+        };
+    }
+
+    if let Ok((mut transform, mut action_state)) = query.get_single_mut() {
+        // leafwing doesn't yet allow us to distinguish between mouse input and trackpad input
+        // zo zoom and orbit both end up with dual_axis data and axis data,
+        // with the trackpad hack above, we know this is a trackpad, so let's get rid of the
+        // axis data that would have come from the mouse - just for cleanliness and as a reminder
+        // to get rid of this shite in the future
+        if trackpad {
+            if let Some(axis_data) = action_state.axis_data_mut(&CameraMovement::Zoom) {
+                // println!("eliding axis data in zoom {:?}", axis_data);
+                axis_data.value = 0.0;
+                axis_data.update_value = 0.0;
+                axis_data.fixed_update_value = 0.0;
+            }
+            return;
+        }
+
+        //use the `action_value` method to extract the total net amount that the mouse wheel has travelled
         let zoom_delta = action_state.value(&CameraMovement::Zoom);
 
         if zoom_delta == 0.0 {
@@ -132,5 +157,104 @@ fn zoom_camera(
             "zoom_delta {} translation {}",
             zoom_delta, transform.translation.z
         );
+
+        elide_dual_axis_data(&mut action_state);
+    }
+}
+
+// To achieve consistent panning behavior regardless of the camera’s rotation, we need to ensure
+// that the panning movement is relative to the camera’s current orientation. In Blender,
+// panning always moves the view in the screen space direction, which means it accounts
+// for the camera’s rotation. let's do the same here - it's easier to parse
+fn pan_camera(
+    mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<PrimaryCamera>>,
+    keycode: Res<ButtonInput<KeyCode>>,
+) {
+    if let Ok((mut camera_transform, action_state)) = query.get_single_mut() {
+        // work around for the fact that the ButtonlikeChord of
+        // MouseButton::Middle and KeyCode::ShiftLeft don't really work
+        // but if ShiftLeft is on then Orbit will have the axis_pair
+        // and we didn't consume it in orbit if ShiftLeft was turned on
+        // hacky, hacky - but if LeafWing ever gets more sophisticated then this can go away
+        let pan_vector = if keycode.pressed(ShiftLeft) {
+            action_state.axis_pair(&CameraMovement::Orbit)
+        } else {
+            action_state.axis_pair(&CameraMovement::Pan)
+        };
+
+        if pan_vector == Vec2::ZERO {
+            return;
+        }
+
+        let right = camera_transform.rotation * Vec3::X;
+        let up = camera_transform.rotation * Vec3::Y;
+
+        camera_transform.translation += right * -pan_vector.x;
+        camera_transform.translation += up * pan_vector.y;
+    }
+}
+
+// todo: #bevyquestion - can this be fixed?
+// both this and a prior quaternion based  version experience gimbal lock
+// this one seems to react smoother at the lock
+// however i thought that with quaternions, we'd be able to just rotate end over end over end
+// with no lock and i can't figure out how to solve it...tried over and over with the AI but no luck
+fn orbit_camera(
+    mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
+    keycode: Res<ButtonInput<KeyCode>>,
+) {
+    if let Ok((mut camera_transform, mut action_state)) = query.get_single_mut() {
+        let orbit_vector = action_state.axis_pair(&CameraMovement::Orbit);
+        let pan_vector = action_state.axis_pair(&CameraMovement::Pan);
+
+        if orbit_vector == Vec2::ZERO || pan_vector != Vec2::ZERO || keycode.pressed(ShiftLeft) {
+            return;
+        }
+
+        let rotation_speed = 0.005;
+        let mut position = camera_transform.translation;
+
+        // Convert Cartesian to Spherical coordinates
+        let radius = position.length();
+        let mut theta = position.z.atan2(position.x);
+        let mut phi = (position.y / radius).asin();
+
+        // Update spherical coordinates based on input
+        theta -= -orbit_vector.x * rotation_speed;
+        phi -= -orbit_vector.y * rotation_speed;
+
+        // Clamp phi to avoid gimbal lock
+        phi = phi.clamp(
+            -std::f32::consts::FRAC_PI_2 + 0.01,
+            std::f32::consts::FRAC_PI_2 - 0.01,
+        );
+
+        // Convert spherical coordinates back to Cartesian coordinates
+        position.x = radius * theta.cos() * phi.cos();
+        position.y = radius * phi.sin();
+        position.z = radius * theta.sin() * phi.cos();
+
+        // Update the camera's position and orientation
+        camera_transform.translation = position;
+        camera_transform.look_at(Vec3::ZERO, Vec3::Y);
+
+        elide_dual_axis_data(&mut action_state);
+    }
+}
+
+// todo: #bevyquestion - is there another way?
+// clear out dual_axis data because orbit goes first and it always contains an orbit data value
+// i can't figure out how to consume it
+// this is necessary because otherwise the dual_axis_data shows up on zoom and on pan
+// and i can't get the Chords I want without this - a fix would be if
+// support for distinguishing between a touch pad scroll and a mouse scroll was added
+fn elide_dual_axis_data(action_state: &mut Mut<ActionState<CameraMovement>>) {
+    // so we definitely are using the mouse wheel so get rid of any dual_axis shite
+    if let Some(dual_axis_data) = action_state.dual_axis_data_mut(&CameraMovement::Orbit) {
+        //     println!("eliding orbit data in zoom {:?}", dual_axis_data);
+
+        dual_axis_data.pair = Vec2::ZERO;
+        dual_axis_data.update_pair = Vec2::ZERO;
+        dual_axis_data.fixed_update_pair = Vec2::ZERO;
     }
 }

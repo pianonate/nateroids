@@ -1,9 +1,8 @@
 use bevy::prelude::KeyCode::{
-    ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ControlLeft, Escape, KeyA, KeyC, KeyD, KeyM, KeyS,
-    KeyW, Space, F2, F3, F4,
+    ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Escape, KeyA, KeyC, KeyD, KeyM, KeyS, KeyW,
+    ShiftLeft, Space, F2, F3, F4,
 };
-use bevy::prelude::*;
-
+use bevy::{prelude::MouseButton::Middle, prelude::*};
 use leafwing_input_manager::prelude::*;
 
 pub struct InputPlugin;
@@ -28,25 +27,46 @@ impl Plugin for InputPlugin {
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
 pub enum CameraMovement {
+    Orbit,
+    Pan,
     Zoom,
 }
 
 impl CameraMovement {
     pub fn camera_input_map() -> InputMap<Self> {
-        let mut input_map = InputMap::default();
+        let pan_chord = ButtonlikeChord::new([ShiftLeft]).with(Middle);
 
-        input_map.insert_axis(
-            CameraMovement::Zoom,
-            AxislikeChord::new(ControlLeft, MouseScrollAxis::Y.with_bounds(-50.5, 50.5)),
-        );
-
-        input_map
+        // this is my attempt to setup camera controls for a PanOrbit-style camera
+        // a la the way blender works - it's a pain in the ass and it only works so so
+        // todo: you could publish this as a crate if you wrap it up nicely with the Camera
+        //       it might be something blender fans would like
+        InputMap::default()
+            // Orbit:  mouse wheel pressed with mouse move
+            .with_dual_axis(
+                CameraMovement::Orbit,
+                DualAxislikeChord::new(Middle, MouseMove::default()),
+            )
+            // Orbit: scrolling on the trackpad
+            .with_dual_axis(CameraMovement::Orbit, MouseScroll::default())
+            // Pan: LeftShift plus scrolling on the trackpad
+            .with_dual_axis(
+                CameraMovement::Pan,
+                DualAxislikeChord::new(ShiftLeft, MouseScroll::default()),
+            )
+            .with_dual_axis(
+                CameraMovement::Pan,
+                DualAxislikeChord::new(pan_chord, MouseScroll::default()),
+            )
+            // zoom: Mouse Scroll Wheel - Y axis
+            .with_axis(CameraMovement::Zoom, MouseScrollAxis::Y)
     }
 }
 
 impl Actionlike for CameraMovement {
     fn input_control_kind(&self) -> InputControlKind {
         match self {
+            CameraMovement::Orbit => InputControlKind::DualAxis,
+            CameraMovement::Pan => InputControlKind::DualAxis,
             CameraMovement::Zoom => InputControlKind::Axis,
         }
     }

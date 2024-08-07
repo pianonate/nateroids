@@ -16,6 +16,7 @@ use crate::{
     utils::name_entity,
 };
 
+use crate::camera::PrimaryCamera;
 use crate::stars::GAME_LAYER;
 use leafwing_input_manager::prelude::*;
 
@@ -134,66 +135,76 @@ fn spawn_spaceship(
 
 fn spaceship_movement_controls(
     mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
+    q_camera: Query<&Transform, (With<PrimaryCamera>, Without<Spaceship>)>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     game_scale: Res<GameScale>,
     time: Res<Time>,
 ) {
-    // we can use this because there is only exactly one spaceship - so we're not looping over the query
-    if let Ok((mut transform, mut velocity)) = q_spaceship.get_single_mut() {
-        // dynamically update from inspector while game is running
-        transform.scale = Vec3::splat(game_scale.spaceship.scalar);
+    if let Ok(camera_transform) = q_camera.get_single() {
+        // we can use this because there is only exactly one spaceship - so we're not looping over the query
+        if let Ok((mut spaceship_transform, mut velocity)) = q_spaceship.get_single_mut() {
+            // dynamically update from inspector while game is running
+            spaceship_transform.scale = Vec3::splat(game_scale.spaceship.scalar);
 
-        let spaceship_action = q_input_map.single();
+            let spaceship_action = q_input_map.single();
 
-        let mut rotation = 0.0;
-        let delta_seconds = time.delta_seconds();
+            let mut rotation = 0.0;
+            let delta_seconds = time.delta_seconds();
 
-        if spaceship_action.pressed(&SpaceshipAction::TurnRight) {
-            // right
-            velocity.angvel.z = 0.0;
-            rotation = -SPACESHIP_ROTATION_SPEED * delta_seconds;
-        } else if spaceship_action.pressed(&SpaceshipAction::TurnLeft) {
-            // left
-            velocity.angvel.z = 0.0;
-            rotation = SPACESHIP_ROTATION_SPEED * delta_seconds;
+            if spaceship_action.pressed(&SpaceshipAction::TurnRight) {
+                // right
+                velocity.angvel.z = 0.0;
+                rotation = SPACESHIP_ROTATION_SPEED * delta_seconds;
+            } else if spaceship_action.pressed(&SpaceshipAction::TurnLeft) {
+                // left
+                velocity.angvel.z = 0.0;
+                rotation = -SPACESHIP_ROTATION_SPEED * delta_seconds;
+            }
+
+            let camera_forward = camera_transform.forward();
+            let facing_opposite = camera_forward.dot(Vec3::new(0.0, 0.0, -1.0)) > 0.0;
+
+            if facing_opposite {
+                rotation = -rotation;
+            }
+
+            // rotate around the z-axis
+            spaceship_transform.rotate_z(rotation);
+
+            let max_speed = game_scale.spaceship.velocity;
+
+            if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
+                // down
+                apply_acceleration(
+                    &mut velocity,
+                    -spaceship_transform.forward().as_vec3(),
+                    SPACESHIP_ACCELERATION,
+                    max_speed,
+                    delta_seconds,
+                );
+            } else if spaceship_action.pressed(&SpaceshipAction::Decelerate) {
+                // up
+                apply_acceleration(
+                    &mut velocity,
+                    -spaceship_transform.forward().as_vec3(),
+                    -SPACESHIP_ACCELERATION,
+                    max_speed,
+                    delta_seconds,
+                );
+            }
+
+            /* let mut roll = 0.0;
+
+               if keyboard_input.pressed(ShiftLeft) {
+                roll = -SPACESHIP_ROLL_SPEED * time.delta_seconds();
+            } else if keyboard_input.pressed(ControlLeft) {
+                roll = SPACESHIP_ROLL_SPEED * time.delta_seconds();
+            }*/
+
+            // rotate around the local z-axis
+            // the rotation is relative to the current rotation
+            // transform.rotate_local_z(roll);
         }
-
-        // rotate around the z-axis
-        transform.rotate_z(rotation);
-
-        let max_speed = game_scale.spaceship.velocity;
-
-        if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
-            // down
-            apply_acceleration(
-                &mut velocity,
-                -transform.forward().as_vec3(),
-                SPACESHIP_ACCELERATION,
-                max_speed,
-                delta_seconds,
-            );
-        } else if spaceship_action.pressed(&SpaceshipAction::Decelerate) {
-            // up
-            apply_acceleration(
-                &mut velocity,
-                -transform.forward().as_vec3(),
-                -SPACESHIP_ACCELERATION,
-                max_speed,
-                delta_seconds,
-            );
-        }
-
-        /* let mut roll = 0.0;
-
-           if keyboard_input.pressed(ShiftLeft) {
-            roll = -SPACESHIP_ROLL_SPEED * time.delta_seconds();
-        } else if keyboard_input.pressed(ControlLeft) {
-            roll = SPACESHIP_ROLL_SPEED * time.delta_seconds();
-        }*/
-
-        // rotate around the local z-axis
-        // the rotation is relative to the current rotation
-        // transform.rotate_local_z(roll);
     }
 }
 

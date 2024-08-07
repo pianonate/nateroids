@@ -42,7 +42,7 @@ impl Default for GameScale {
         Self {
             boundary_cell_scalar: 110.,
             star_count: 5000,
-            star_radius: 10.,
+            star_radius: 5.,
             star_field_inner_diameter: 1000.,
             star_field_outer_diameter: 20000.,
             missile: ColliderConstant {

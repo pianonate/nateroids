@@ -1,9 +1,4 @@
-use bevy::render::view::RenderLayers;
-use bevy::{
-    color::palettes::basic::{BLUE, GREEN, RED, WHITE},
-    prelude::Color::Srgba,
-    prelude::*,
-};
+use bevy::{color::palettes::tailwind, prelude::*, render::view::RenderLayers};
 use bevy_rapier3d::{prelude::ColliderMassProperties::Mass, prelude::*};
 
 use crate::{
@@ -63,7 +58,6 @@ struct MissileSpawnTimer {
 // todo: #rustquestion - how can i make it so that new has to be used and DrawDirection isn't constructed directly - i still need the fields visible
 #[derive(Copy, Clone, Component, Debug)]
 pub struct Missile {
-    direction: Vec3,
     velocity: Vec3,
     pub(crate) total_distance: f32,
     pub(crate) traveled_distance: f32,
@@ -107,17 +101,14 @@ impl Missile {
         // Find the initial edge point where the missile hits the boundary
         if let Some(calculated_edge_point) = boundary.find_edge_point(origin, velocity) {
             edge_in_front_of_spaceship = calculated_edge_point;
-            println!("Initial edge point: {:?}", edge_in_front_of_spaceship);
 
             teleported_position =
                 calculate_teleport_position(edge_in_front_of_spaceship, &boundary.transform);
-            println!("Teleported position: {:?}", teleported_position);
 
-            total_distance = boundary.longest_diagonal;
+            total_distance = boundary.max_missile_distance;
         }
 
         Missile {
-            direction,
             velocity,
             total_distance,
             traveled_distance: 0.,
@@ -287,38 +278,35 @@ fn config_gizmo_line_width(mut config_store: ResMut<GizmoConfigStore>) {
 }
 
 /// fun! with missiles!
-fn missile_party(
-    mut q_missile: Query<&mut Missile>,
-    mut gizmos: Gizmos,
-    boundary: Res<Boundary>,
-    game_scale: Res<GameScale>,
-) {
+fn missile_party(mut q_missile: Query<&mut Missile>, mut gizmos: Gizmos, boundary: Res<Boundary>) {
     for missile in q_missile.iter_mut() {
-        let current_position = missile.last_position;
-        let direction = missile.direction;
-
-        draw_missile_perpendicular(
-            &mut gizmos,
-            &missile,
-            current_position,
-            direction,
-            &game_scale,
-        );
         draw_missile_ray(&mut gizmos, &missile, &boundary);
     }
 }
 
 fn draw_missile_ray(gizmos: &mut Gizmos, missile: &Missile, boundary: &Res<Boundary>) {
-    draw_sphere(gizmos, missile.edge_in_front_of_spaceship, Srgba(BLUE));
+    draw_sphere(
+        gizmos,
+        missile.edge_in_front_of_spaceship,
+        Color::from(tailwind::BLUE_600),
+    );
 
     // Draw sphere at the opposite edge point
-    draw_sphere(gizmos, missile.teleported_position, Srgba(RED));
+    draw_sphere(
+        gizmos,
+        missile.teleported_position,
+        Color::from(tailwind::RED_600),
+    );
 
     // Draw sphere at the last teleport position if it exists
     if let Some(last_teleport_position) = missile.last_teleport_position {
-        if last_teleport_position.distance(missile.teleported_position) > 1. {
-            draw_sphere(gizmos, last_teleport_position, Srgba(WHITE));
-        }
+        //  if last_teleport_position.distance(missile.teleported_position) > 1. {
+        draw_sphere(
+            gizmos,
+            last_teleport_position,
+            Color::from(tailwind::YELLOW_600),
+        );
+        //  }
     }
 
     let current_position = missile.last_position;
@@ -327,7 +315,7 @@ fn draw_missile_ray(gizmos: &mut Gizmos, missile: &Missile, boundary: &Res<Bound
         if missile.remaining_distance < current_position.distance(next_boundary) {
             let end_point =
                 current_position + missile.velocity.normalize() * missile.remaining_distance;
-            draw_sphere(gizmos, end_point, Srgba(GREEN));
+            draw_sphere(gizmos, end_point, Color::from(tailwind::GREEN_600));
         }
     }
 }
@@ -336,34 +324,4 @@ fn draw_sphere(gizmos: &mut Gizmos, position: Vec3, color: Color) {
     gizmos
         .sphere(position, Quat::IDENTITY, 1., color)
         .resolution(16);
-}
-
-fn draw_missile_perpendicular(
-    gizmos: &mut Gizmos,
-    missile: &Missile,
-    current_position: Vec3,
-    direction: Vec3,
-    game_scale: &Res<GameScale>,
-) {
-    let distance_traveled_ratio = 1.0 - missile.traveled_distance / missile.total_distance;
-    let perpendicular_length = game_scale.boundary_cell_scalar * distance_traveled_ratio;
-
-    let (p1, p2) =
-        calculate_perpendicular_points(current_position, direction, perpendicular_length);
-    gizmos.line_gradient(p1, p2, BLUE, RED);
-}
-
-/// only used to help draw some groovy things to highlight what a missile is doing
-fn calculate_perpendicular_points(origin: Vec3, direction: Vec3, distance: f32) -> (Vec3, Vec3) {
-    // Ensure the direction vector is normalized
-    let direction = direction.normalize();
-
-    // Calculate the perpendicular direction in the xz plane
-    let perpendicular = Vec3::new(-direction.y, direction.x, 0.0).normalize();
-
-    // Calculate the two points 100.0 units away in the perpendicular direction
-    let point1 = origin + perpendicular * distance;
-    let point2 = origin - perpendicular * distance;
-
-    (point1, point2)
 }
