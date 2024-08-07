@@ -1,13 +1,11 @@
-use crate::config::AppearanceConfig;
 use crate::{
     boundary::Boundary,
-    config::{CameraOrder, RenderLayer},
+    config::{AppearanceConfig, CameraOrder, OrientationConfig, RenderLayer},
     input::CameraMovement,
     schedule::InGameSet,
     stars::StarsCamera,
 };
 use bevy::{
-    //core_pipeline::Skybox,
     input::mouse::{MouseScrollUnit, MouseWheel},
     prelude::{KeyCode::ShiftLeft, *},
     render::view::RenderLayers,
@@ -35,6 +33,7 @@ impl Plugin for CameraPlugin {
             (
                 // order matters because we hack around the input manager
                 // that doesn't yet support trackpads
+                home_camera,
                 zoom_camera,
                 orbit_camera,
                 pan_camera,
@@ -63,45 +62,65 @@ fn update_clear_color(
 #[derive(Component, Debug)]
 pub struct PrimaryCamera;
 
+fn home_camera(
+    orientation: Res<OrientationConfig>,
+    mut camera_transform: Query<
+        (&mut Transform, &ActionState<CameraMovement>),
+        With<PrimaryCamera>,
+    >,
+) {
+    if let Ok((mut transform, action_state)) = camera_transform.get_single_mut() {
+        if action_state.just_pressed(&CameraMovement::Home) {
+            *transform = orientation.locus;
+        }
+    }
+}
+
 pub fn spawn_camera(
-    mut commands: Commands,
     boundary: Res<Boundary>,
-    mut q_stars_camera: Query<(Entity, &mut Transform), With<StarsCamera>>,
+    mut commands: Commands,
+    mut orientation: ResMut<OrientationConfig>,
+    mut q_stars_camera: Query<Entity, With<StarsCamera>>,
 ) {
     let clear_color = Color::srgba(0., 0., 0., 0.);
 
     // we know we have one because we spawn the stars camera prior to this system
-    // we're going to change its transform to zero and attach it to this as a child
-    // so it always goes wherever we go
-    let (stars_camera_entity, mut stars_camera_transform) =
-        q_stars_camera.get_single_mut().unwrap();
-    stars_camera_transform.translation = Vec3::ZERO;
+    // we're going to attach it to the primary as a child so it always has the same
+    // view as the primary camera but can show the stars with bloom while the primary
+    // shows everything else
+    let stars_camera_entity = q_stars_camera
+        .get_single_mut()
+        .expect("why in god's name is there no star's camera?");
+
+    let primary_camera = Camera3dBundle {
+        camera: Camera {
+            order: CameraOrder::Game.order(),
+            clear_color: ClearColorConfig::Custom(clear_color),
+            ..default()
+        },
+        transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.)
+            .looking_at(orientation.nexus, orientation.axis_mundi),
+
+        ..default()
+    };
+
+    orientation.locus = primary_camera.transform;
 
     commands
-        .spawn((
-            Camera3dBundle {
-                camera: Camera {
-                    order: CameraOrder::Game.order(),
-                    clear_color: ClearColorConfig::Custom(clear_color),
-                    ..default()
-                },
-                transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.)
-                    .looking_at(Vec3::ZERO, Vec3::Y),
-
-                ..default()
-            },
-            // if you want to add a skybox on a level, you can do it here
-            // Skybox {
-            //     image: scene_assets.cubemap.image_handle.clone(),
-            //     brightness: 1000.0,
-            // },
-        ))
+        .spawn(primary_camera)
         .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
         .insert(InputManagerBundle::with_map(
             CameraMovement::camera_input_map(),
         ))
         .add_child(stars_camera_entity)
         .insert(PrimaryCamera);
+
+    // don't forget to use bevy::core_pipeline::Skybox
+    // if you want to add a skybox on a level, you insert it below
+    // .insert(Skybox {
+    //     image: scene_assets.cubemap.image_handle.clone(),
+    //     brightness: 1000.0,
+    // }),
 }
 
 fn zoom_camera(
@@ -173,6 +192,7 @@ fn should_zoom(
 fn pan_camera(
     mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<PrimaryCamera>>,
     keycode: Res<ButtonInput<KeyCode>>,
+    orientation: Res<OrientationConfig>,
 ) {
     if let Ok((mut camera_transform, action_state)) = query.get_single_mut() {
         let pan_vector = match should_pan(keycode, action_state) {
@@ -182,8 +202,8 @@ fn pan_camera(
 
         // To achieve consistent panning behavior regardless of the camera’s rotation,
         // we need to ensure that the panning movement is relative to the camera’s current orientation.
-        let right = camera_transform.rotation * Vec3::X;
-        let up = camera_transform.rotation * Vec3::Y;
+        let right = camera_transform.rotation * orientation.axis_orbis;
+        let up = camera_transform.rotation * orientation.axis_mundi;
 
         camera_transform.translation += right * -pan_vector.x;
         camera_transform.translation += up * pan_vector.y;
@@ -218,6 +238,7 @@ fn should_pan(
 fn orbit_camera(
     mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
     keycode: Res<ButtonInput<KeyCode>>,
+    orientation: Res<OrientationConfig>,
 ) {
     if let Ok((mut camera_transform, mut action_state)) = query.get_single_mut() {
         let orbit_vector = match should_orbit(keycode, &mut action_state) {
@@ -228,10 +249,10 @@ fn orbit_camera(
         let rotation_speed = 0.005;
         // Assuming the target is at the origin - this may change in the future
         // as the target could be the ship when we move into flying behind the ship
-        let target = Vec3::ZERO;
+        let target = orientation.nexus;
 
         // this will change if we change our up vector to Z for FPSpaceship mode
-        let up = Vec3::Y;
+        let up = orientation.axis_mundi;
         let right = camera_transform.right().as_vec3();
 
         // Create rotation quaternions

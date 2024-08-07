@@ -1,6 +1,6 @@
 use bevy::prelude::KeyCode::{
-    ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Escape, KeyA, KeyC, KeyD, KeyM, KeyS, KeyW,
-    ShiftLeft, Space, F2, F3, F4, F5,
+    ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Escape, Home, KeyA, KeyC, KeyD, KeyM, KeyS, KeyW,
+    ShiftLeft, Space, F2, F3, F4, F5, F6,
 };
 use bevy::{prelude::MouseButton::Middle, prelude::*};
 use leafwing_input_manager::prelude::*;
@@ -27,6 +27,7 @@ impl Plugin for InputPlugin {
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
 pub enum CameraMovement {
+    Home,
     Orbit,
     Pan,
     Zoom,
@@ -42,6 +43,8 @@ impl CameraMovement {
         //       it might be something blender fans would like
         InputMap::default()
             // Orbit:  mouse wheel pressed with mouse move
+            .with(CameraMovement::Home, Home)
+            .with(CameraMovement::Home, F6)
             .with_dual_axis(
                 CameraMovement::Orbit,
                 DualAxislikeChord::new(Middle, MouseMove::default()),
@@ -65,6 +68,7 @@ impl CameraMovement {
 impl Actionlike for CameraMovement {
     fn input_control_kind(&self) -> InputControlKind {
         match self {
+            CameraMovement::Home => InputControlKind::Button,
             CameraMovement::Orbit => InputControlKind::DualAxis,
             CameraMovement::Pan => InputControlKind::DualAxis,
             CameraMovement::Zoom => InputControlKind::Axis,

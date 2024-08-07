@@ -1,11 +1,12 @@
 use bevy::prelude::*;
 
 use crate::{
+    // comment to force cargo fmt to output these with a newline
     asset_loader::AssetLoaderPlugin,
     boundary::BoundaryPlugin,
     camera::CameraPlugin,
     collision_detection::CollisionDetectionPlugin,
-    config::{ConfigPlugin, RenderLayer},
+    config::ConfigPlugin,
     despawn::DespawnPlugin,
     input::InputPlugin,
     missile::MissilePlugin,
@@ -51,12 +52,6 @@ mod utils;
 
 fn main() {
     let mut app = App::new();
-
-    // todo: #rustquestion
-    // cargo fmt outputs my use::crate as a comma delimited list that doesn't split
-    // onto individual lines unless one of the use statements pulls in multiple things
-    // so i added config::RenderLayer to force cargo fmt to output this way
-    println!("GameLayer: {:?}", RenderLayer::Game);
 
     app.add_plugins(DefaultPlugins)
         .add_plugins(AssetLoaderPlugin)

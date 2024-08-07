@@ -8,7 +8,7 @@ use crate::{
     config::{ColliderConfig, RenderLayer},
     health::{CollisionDamage, Health, HealthBundle},
     input::SpaceshipAction,
-    movement::{calculate_teleport_position, MovingObjectBundle, Wrappable},
+    movement::{MovingObjectBundle, Wrappable},
     schedule::InGameSet,
     spaceship::{ContinuousFire, Spaceship},
     utils::name_entity,
@@ -20,7 +20,6 @@ use leafwing_input_manager::prelude::*;
 pub struct MissilePlugin;
 
 const MISSILE_COLLISION_DAMAGE: f32 = 50.0;
-const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.6;
 const MISSILE_HEALTH: f32 = 1.0;
 const MISSILE_MASS: f32 = 0.001;
 const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
@@ -63,8 +62,6 @@ pub struct Missile {
     remaining_distance: f32,
     last_position: Vec3,
     last_teleport_position: Option<Vec3>, // Add this field
-    edge_in_front_of_spaceship: Vec3,
-    teleported_position: Vec3,
 }
 
 // rust learnings:
@@ -74,15 +71,13 @@ impl Missile {
     pub fn new(
         spaceship_transform: &Transform,
         spaceship_velocity: &Velocity,
-        config: &Res<ColliderConfig>,
         boundary: &Res<Boundary>,
+        collider_config: &Res<ColliderConfig>,
+        appearance_config: Res<AppearanceConfig>,
     ) -> Self {
         let forward = -spaceship_transform.forward().with_z(0.0);
 
-        let missile_velocity = forward * config.missile.velocity;
-
-        // clamp it to 2d for now...
-        //missile_velocity.z = 0.0;
+        let missile_velocity = forward * collider_config.missile.velocity;
 
         // add spaceship velocity so that the missile fires in the direction the spaceship
         // is going - without it, they only have the missile velocity and if the spaceship
@@ -90,32 +85,16 @@ impl Missile {
         let velocity = spaceship_velocity.linvel + missile_velocity;
 
         let direction = forward;
-        let origin = spaceship_transform.translation + direction * MISSILE_FORWARD_SPAWN_SCALAR;
-
-        let mut total_distance = 0.0;
-        let mut edge_in_front_of_spaceship = origin;
-        let mut teleported_position = origin;
-
-        // Change the call to find_edge_point to pass initial_velocity
-        // Find the initial edge point where the missile hits the boundary
-        if let Some(calculated_edge_point) = boundary.find_edge_point(origin, velocity) {
-            edge_in_front_of_spaceship = calculated_edge_point;
-
-            teleported_position =
-                calculate_teleport_position(edge_in_front_of_spaceship, &boundary.transform);
-
-            total_distance = boundary.max_missile_distance;
-        }
+        let origin = spaceship_transform.translation
+            + direction * appearance_config.missile_forward_spawn_distance;
 
         Missile {
             velocity,
-            total_distance,
+            total_distance: boundary.max_missile_distance,
             traveled_distance: 0.,
             remaining_distance: 0.,
             last_position: origin,
             last_teleport_position: None,
-            edge_in_front_of_spaceship,
-            teleported_position,
         }
     }
 }
@@ -150,7 +129,8 @@ fn should_fire(
 #[allow(clippy::too_many_arguments)]
 fn fire_missile(
     mut commands: Commands,
-    config: Res<ColliderConfig>,
+    appearance_config: Res<AppearanceConfig>,
+    collider_config: Res<ColliderConfig>,
     spawn_timer: ResMut<MissileSpawnTimer>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(&Transform, &Velocity, Option<&ContinuousFire>), With<Spaceship>>,
@@ -158,7 +138,7 @@ fn fire_missile(
     time: Res<Time>,
     boundary: Res<Boundary>,
 ) {
-    if !config.missile.spawnable {
+    if !collider_config.missile.spawnable {
         return;
     }
 
@@ -174,7 +154,8 @@ fn fire_missile(
     // extracted for readability
     spawn_missile(
         &mut commands,
-        config,
+        appearance_config,
+        collider_config,
         scene_assets,
         spaceship_transform,
         spaceship_velocity,
@@ -184,14 +165,21 @@ fn fire_missile(
 
 fn spawn_missile(
     commands: &mut Commands,
-    config: Res<ColliderConfig>,
+    appearance_config: Res<AppearanceConfig>,
+    collider_config: Res<ColliderConfig>,
     scene_assets: Res<SceneAssets>,
     spaceship_transform: &Transform,
     spaceship_velocity: &Velocity,
     boundary: Res<Boundary>,
 ) {
     // boundary is used to set the total distance this missile can travel
-    let missile = Missile::new(spaceship_transform, spaceship_velocity, &config, &boundary);
+    let missile = Missile::new(
+        spaceship_transform,
+        spaceship_velocity,
+        &boundary,
+        &collider_config,
+        appearance_config,
+    );
 
     let missile = commands
         .spawn(missile)
@@ -200,13 +188,13 @@ fn spawn_missile(
             health: Health(MISSILE_HEALTH),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(config.missile.radius),
+            collider: Collider::ball(collider_config.missile.radius),
             collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
             mass: Mass(MISSILE_MASS),
             model: SceneBundle {
                 scene: scene_assets.missiles.clone(),
                 transform: Transform::from_translation(missile.last_position)
-                    .with_scale(Vec3::splat(config.missile.scalar)),
+                    .with_scale(Vec3::splat(collider_config.missile.scalar)),
                 ..default()
             },
             velocity: Velocity {
@@ -218,7 +206,7 @@ fn spawn_missile(
         .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
         .id();
 
-    name_entity(commands, missile, config.missile.name);
+    name_entity(commands, missile, collider_config.missile.name);
 }
 
 /// we update missile movement so that it can be despawned after it has traveled its total distance
@@ -281,33 +269,6 @@ fn draw_missile_targets(
     boundary: &Res<Boundary>,
     config: &AppearanceConfig,
 ) {
-    draw_sphere(
-        config,
-        gizmos,
-        missile.edge_in_front_of_spaceship,
-        Color::from(tailwind::BLUE_600),
-    );
-
-    // Draw sphere at the opposite edge point
-    draw_sphere(
-        config,
-        gizmos,
-        missile.teleported_position,
-        Color::from(tailwind::RED_600),
-    );
-
-    // Draw sphere at the last teleport position if it exists
-    if let Some(last_teleport_position) = missile.last_teleport_position {
-        //  if last_teleport_position.distance(missile.teleported_position) > 1. {
-        draw_sphere(
-            config,
-            gizmos,
-            last_teleport_position,
-            Color::from(tailwind::YELLOW_600),
-        );
-        //  }
-    }
-
     let current_position = missile.last_position;
 
     if let Some(next_boundary) = boundary.find_edge_point(current_position, missile.velocity) {
@@ -315,7 +276,24 @@ fn draw_missile_targets(
             let end_point =
                 current_position + missile.velocity.normalize() * missile.remaining_distance;
             draw_sphere(config, gizmos, end_point, Color::from(tailwind::GREEN_600));
+        } else {
+            draw_sphere(
+                config,
+                gizmos,
+                next_boundary,
+                Color::from(tailwind::BLUE_600),
+            );
         }
+    }
+
+    // Draw sphere at the last teleport position if it exists
+    if let Some(last_teleport_position) = missile.last_teleport_position {
+        draw_sphere(
+            config,
+            gizmos,
+            last_teleport_position,
+            Color::from(tailwind::YELLOW_600),
+        );
     }
 }
 

@@ -63,7 +63,6 @@ impl Default for Boundary {
             longest_diagonal,
             max_missile_distance,
             transform: Transform {
-                translation: Vec3::ZERO,
                 scale: cell_scale,
                 ..Default::default()
             },

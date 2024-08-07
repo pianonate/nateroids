@@ -15,6 +15,7 @@ impl Plugin for ConfigPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<AppearanceConfig>()
             .init_resource::<ColliderConfig>()
+            .init_resource::<OrientationConfig>()
             .init_gizmo_group::<BoundaryGizmos>()
             .add_systems(Startup, init_gizmo_configs);
     }
@@ -53,6 +54,7 @@ pub struct AppearanceConfig {
     pub boundary_cell_scalar: f32,
     pub clear_color: Color,
     pub clear_color_darkening_factor: f32,
+    pub missile_forward_spawn_distance: f32,
     pub missile_sphere_radius: f32,
     pub splash_timer: f32,
     pub star_count: usize,
@@ -79,6 +81,7 @@ impl Default for AppearanceConfig {
             boundary_cell_scalar: 110.,
             clear_color: Srgba(css::MIDNIGHT_BLUE),
             clear_color_darkening_factor: 0.019,
+            missile_forward_spawn_distance: 5.6,
             missile_sphere_radius: 2.,
             splash_timer: 2.,
             star_count: 5000,
@@ -136,6 +139,44 @@ impl Default for ColliderConfig {
                 spawnable: true,
                 velocity: 40.,
             },
+        }
+    }
+}
+// centralize orientation defaults for a quick change-up
+// Y-axis (vertical): Axis Mundi
+// This represents the central axis of the world, connecting the heavens, earth, and underworld.
+//
+// X-axis (horizontal):
+// Axis Orbis: Latin for "axis of the circle" or "axis of the world"
+// This could represent the east-west movement of the sun or the horizon line.
+//
+// Z-axis (depth):
+// Axis Profundus: Latin for "deep axis" or "profound axis"
+// This could represent the concept of depth or the path between the observer and the horizon.
+//
+// nexus is the center of the game - It suggests a central point where all game elements connect
+// or interact, which fits well with the concept of a game's core or hub.
+//
+// locus is the home position of the camera - It implies a specific, fixed point of reference,
+// which aligns well with the idea of a camera's home or default position.
+#[derive(Resource, Reflect, Debug)]
+#[reflect(Resource)]
+pub struct OrientationConfig {
+    pub axis_mundi: Vec3,
+    pub axis_orbis: Vec3,
+    pub axis_profundus: Vec3,
+    pub locus: Transform,
+    pub nexus: Vec3,
+}
+
+impl Default for OrientationConfig {
+    fn default() -> Self {
+        Self {
+            axis_mundi: Vec3::Y,
+            axis_orbis: Vec3::X,
+            axis_profundus: Vec3::Z,
+            locus: Transform::default(),
+            nexus: Vec3::ZERO,
         }
     }
 }
