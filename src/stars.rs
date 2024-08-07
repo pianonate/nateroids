@@ -13,8 +13,6 @@ use bevy::{
 use leafwing_input_manager::action_state::ActionState;
 use rand::Rng;
 
-const BATCH_SIZE: usize = 100;
-
 pub struct StarsPlugin;
 
 impl Plugin for StarsPlugin {
@@ -157,7 +155,7 @@ fn spawn_star_tasks(
         let inner_sphere_radius = longest_diagonal + config.star_field_inner_diameter;
         let outer_sphere_radius = inner_sphere_radius + config.star_field_outer_diameter;
 
-        let stars_to_spawn = (config.star_count - counter.0).min(BATCH_SIZE);
+        let stars_to_spawn = (config.star_count - counter.0).min(config.star_spawn_batch_size);
 
         for _ in 0..stars_to_spawn {
             let mut rng = rand::thread_rng();
