@@ -32,20 +32,6 @@ impl Plugin for StarsPlugin {
     }
 }
 
-fn update_bloom_settings(
-    mut star_bloom: ResMut<StarBloom>,
-    appearance_config: Res<AppearanceConfig>,
-    mut query: Query<&mut BloomSettings, With<StarsCamera>>,
-) {
-    if appearance_config.is_changed() {
-        star_bloom.update_from_config(&appearance_config);
-
-        for mut bloom_settings in query.iter_mut() {
-            *bloom_settings = star_bloom.settings.clone();
-        }
-    }
-}
-
 #[derive(Resource, Clone)]
 struct StarBloom {
     settings: BloomSettings,
@@ -56,7 +42,7 @@ impl Default for StarBloom {
         let config = AppearanceConfig::default();
         let mut bloom_settings = BloomSettings::NATURAL;
         bloom_settings.intensity = config.bloom_intensity;
-        bloom_settings.low_frequency_boost = config.bloom_lf_boost;
+        bloom_settings.low_frequency_boost = config.bloom_low_frequency_boost;
         bloom_settings.high_pass_frequency = config.bloom_high_pass_frequency;
         Self {
             settings: bloom_settings,
@@ -64,11 +50,30 @@ impl Default for StarBloom {
     }
 }
 
+// allows Appearance settings to propagate back to StarBloom.settings so
+// that on changes we can apply a clone of those settings back to
+// the camera
 impl StarBloom {
     fn update_from_config(&mut self, config: &AppearanceConfig) {
         self.settings.intensity = config.bloom_intensity;
-        self.settings.low_frequency_boost = config.bloom_lf_boost;
+        self.settings.low_frequency_boost = config.bloom_low_frequency_boost;
         self.settings.high_pass_frequency = config.bloom_high_pass_frequency;
+    }
+}
+
+// if Appearance changes (ignore the fact that anything can change - that's fine)
+// then propagate bloom settings back to the resource, and then clone it
+// back onto the camera
+fn update_bloom_settings(
+    mut star_bloom: ResMut<StarBloom>,
+    appearance_config: Res<AppearanceConfig>,
+    mut query: Query<&mut BloomSettings, With<StarsCamera>>,
+) {
+    if appearance_config.is_changed() {
+        star_bloom.update_from_config(&appearance_config);
+        for mut bloom_settings in query.iter_mut() {
+            *bloom_settings = star_bloom.settings.clone();
+        }
     }
 }
 

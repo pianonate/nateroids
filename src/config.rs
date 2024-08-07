@@ -45,7 +45,7 @@ fn init_gizmo_configs(
 pub struct AppearanceConfig {
     pub ambient_light_brightness: f32,
     pub bloom_intensity: f32,
-    pub bloom_lf_boost: f32,
+    pub bloom_low_frequency_boost: f32,
     pub bloom_high_pass_frequency: f32,
     pub boundary_color: Color,
     pub boundary_line_width: f32,
@@ -71,7 +71,7 @@ impl Default for AppearanceConfig {
         Self {
             ambient_light_brightness: 3000.,
             bloom_intensity: 0.9,
-            bloom_lf_boost: 0.5,
+            bloom_low_frequency_boost: 0.5,
             bloom_high_pass_frequency: 0.5,
             boundary_color: Color::from(tailwind::BLUE_300),
             boundary_line_width: 4.,

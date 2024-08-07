@@ -109,42 +109,12 @@ fn zoom_camera(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     config: Res<AppearanceConfig>,
 ) {
-    let mut trackpad = false;
-
-    // hack to determine if the input was from a mouse or a trackpad
-    for event in mouse_wheel_events.read() {
-        trackpad = match event.unit {
-            MouseScrollUnit::Line => false,
-            MouseScrollUnit::Pixel => true,
-        };
-    }
-
     if let Ok((mut transform, mut action_state)) = query.get_single_mut() {
-        // leafwing doesn't yet allow us to distinguish between mouse input and trackpad input
-        // zo zoom and orbit both end up with dual_axis data and axis data,
-        // with the trackpad hack above, we know this is a trackpad, so let's get rid of the
-        // axis data that would have come from the mouse - just for cleanliness and as a reminder
-        // to get rid of this shite in the future
-        if trackpad {
-            if let Some(axis_data) = action_state.axis_data_mut(&CameraMovement::Zoom) {
-                // println!("eliding axis data in zoom {:?}", axis_data);
-                axis_data.value = 0.0;
-                axis_data.update_value = 0.0;
-                axis_data.fixed_update_value = 0.0;
-            }
-            return;
-        }
+        let zoom_delta = match should_zoom(&mut mouse_wheel_events, &mut action_state) {
+            Some(value) => value,
+            None => return,
+        };
 
-        //use the `action_value` method to extract the total net amount that the mouse wheel has travelled
-        let zoom_delta = action_state.value(&CameraMovement::Zoom);
-
-        if zoom_delta == 0.0 {
-            return;
-        }
-
-        // let zoom_update = 1. - zoom_delta;
-        //
-        // transform.translation.z += zoom_update;
         // Calculate zoom direction based on camera's current orientation
         let zoom_direction = transform.forward();
 
@@ -155,45 +125,92 @@ fn zoom_camera(
         // Apply zoom
         transform.translation += zoom_direction * zoom_amount;
 
-        println!(
-            "zoom_delta {} translation {}",
-            zoom_delta, transform.translation.z
-        );
-
+        // cleanup any dual_axis propagating from orbit so that Pan doesn't see it
         elide_dual_axis_data(&mut action_state);
     }
 }
 
-// To achieve consistent panning behavior regardless of the camera’s rotation, we need to ensure
-// that the panning movement is relative to the camera’s current orientation. In Blender,
-// panning always moves the view in the screen space direction, which means it accounts
-// for the camera’s rotation. let's do the same here - it's easier to parse
+// does a lot of stuff! determines if we're mouse or trackpad (where zooming is not allowed in order to match blender behavior)
+// it also cleans up after what i consider to be a leafwing issue. extracts the zoom amount and then returns an Option of it
+fn should_zoom(
+    mouse_wheel_events: &mut EventReader<MouseWheel>,
+    action_state: &mut Mut<ActionState<CameraMovement>>,
+) -> Option<f32> {
+    let mut trackpad = false;
+
+    // hack to determine if the input was from a mouse or a trackpad
+    for event in mouse_wheel_events.read() {
+        trackpad = match event.unit {
+            MouseScrollUnit::Line => false,
+            MouseScrollUnit::Pixel => true,
+        };
+    }
+
+    // leafwing doesn't yet allow us to distinguish between mouse input and trackpad input
+    // thus zoom and orbit both end up with dual_axis data and axis data,
+    // with the trackpad hack above, we know this is a trackpad, so let's get rid of the
+    // axis data that would have come from the mouse - just for cleanliness and as a reminder
+    // to get rid of this shite in the future
+    if trackpad {
+        if let Some(axis_data) = action_state.axis_data_mut(&CameraMovement::Zoom) {
+            // println!("eliding axis data in zoom {:?}", axis_data);
+            axis_data.value = 0.0;
+            axis_data.update_value = 0.0;
+            axis_data.fixed_update_value = 0.0;
+        }
+        return None;
+    }
+
+    //use the `action_value` method to extract the total net amount that the mouse wheel has travelled
+    let zoom_delta = action_state.value(&CameraMovement::Zoom);
+
+    if zoom_delta == 0.0 {
+        return None;
+    }
+    Some(zoom_delta)
+}
+
 fn pan_camera(
     mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<PrimaryCamera>>,
     keycode: Res<ButtonInput<KeyCode>>,
 ) {
     if let Ok((mut camera_transform, action_state)) = query.get_single_mut() {
-        // work around for the fact that the ButtonlikeChord of
-        // MouseButton::Middle and KeyCode::ShiftLeft don't really work
-        // but if ShiftLeft is on then Orbit will have the axis_pair
-        // and we didn't consume it in orbit if ShiftLeft was turned on
-        // hacky, hacky - but if LeafWing ever gets more sophisticated, this can go away
-        let pan_vector = if keycode.pressed(ShiftLeft) {
-            action_state.axis_pair(&CameraMovement::Orbit)
-        } else {
-            action_state.axis_pair(&CameraMovement::Pan)
+        let pan_vector = match should_pan(keycode, action_state) {
+            Some(value) => value,
+            None => return,
         };
 
-        if pan_vector == Vec2::ZERO {
-            return;
-        }
-
+        // To achieve consistent panning behavior regardless of the camera’s rotation,
+        // we need to ensure that the panning movement is relative to the camera’s current orientation.
         let right = camera_transform.rotation * Vec3::X;
         let up = camera_transform.rotation * Vec3::Y;
 
         camera_transform.translation += right * -pan_vector.x;
         camera_transform.translation += up * pan_vector.y;
     }
+}
+
+// this code allows us to pan with mouse button pressed + ShiftLeft, just like Blender
+// the following is a workaround for the fact that the ButtonlikeChord of
+// MouseButton::Middle and KeyCode::ShiftLeft doesn't actually work
+// but if ShiftLeft _is_ on then &CameraMovement::Orbit  will have the axis_pair
+// needed for panning and we _didn't_ consume it in orbit if ShiftLeft was pressed
+// hacky, hacky - but if LeafWing ever gets more sophisticated, ShiftLeft as a sentinel,
+// and the following can go away and we can just get it from &CameraMovement::Pan
+fn should_pan(
+    keycode: Res<ButtonInput<KeyCode>>,
+    action_state: &ActionState<CameraMovement>,
+) -> Option<Vec2> {
+    let pan_vector = if keycode.pressed(ShiftLeft) {
+        action_state.axis_pair(&CameraMovement::Orbit)
+    } else {
+        action_state.axis_pair(&CameraMovement::Pan)
+    };
+
+    if pan_vector == Vec2::ZERO {
+        return None;
+    }
+    Some(pan_vector)
 }
 
 // i couldn't get this to work without hitting gimbal lock when consulting with chatGPT 4.o
@@ -203,12 +220,10 @@ fn orbit_camera(
     keycode: Res<ButtonInput<KeyCode>>,
 ) {
     if let Ok((mut camera_transform, mut action_state)) = query.get_single_mut() {
-        let orbit_vector = action_state.axis_pair(&CameraMovement::Orbit);
-        let pan_vector = action_state.axis_pair(&CameraMovement::Pan);
-
-        if orbit_vector == Vec2::ZERO || pan_vector != Vec2::ZERO || keycode.pressed(ShiftLeft) {
-            return;
-        }
+        let orbit_vector = match should_orbit(keycode, &mut action_state) {
+            Some(value) => value,
+            None => return,
+        };
 
         let rotation_speed = 0.005;
         // Assuming the target is at the origin - this may change in the future
@@ -236,6 +251,22 @@ fn orbit_camera(
 
         elide_dual_axis_data(&mut action_state);
     }
+}
+
+// we're using a sentinel of ShiftLeft because we want the combination of ShiftLeft, MouseWheelMiddle to allow the
+// mouse to pan. however orbit ends up with that data in the orbit_vector right now so we have to treat it as a sentinel
+// if Pan has any data, orbit will also - but Pan will be the victor so we need to let that through as Pan is sequenced after this
+fn should_orbit(
+    keycode: Res<ButtonInput<KeyCode>>,
+    action_state: &mut Mut<ActionState<CameraMovement>>,
+) -> Option<Vec2> {
+    let orbit_vector = action_state.axis_pair(&CameraMovement::Orbit);
+    let pan_vector = action_state.axis_pair(&CameraMovement::Pan);
+
+    if orbit_vector == Vec2::ZERO || pan_vector != Vec2::ZERO || keycode.pressed(ShiftLeft) {
+        return None;
+    }
+    Some(orbit_vector)
 }
 
 // todo: #bevyquestion - is there another way?
