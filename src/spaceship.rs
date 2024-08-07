@@ -24,7 +24,6 @@ const SPACESHIP_ACCELERATION: f32 = 20.0;
 const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
 const SPACESHIP_HEALTH: f32 = 100.0;
 // const SPACESHIP_MAX_SPEED: f32 = 40.0;
-const SPACESHIP_NAME: &str = "Spaceship";
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
 const SPACESHIP_ROTATION_SPEED: f32 = 3.0;
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0);
@@ -88,11 +87,11 @@ fn toggle_continuous_fire(
 
 fn spawn_spaceship(
     mut commands: Commands,
-    game_scale: Res<GameConfig>,
+    config: Res<GameConfig>,
     scene_assets: Res<SceneAssets>,
     //  q_camera: Query<Entity, With<PrimaryCamera>>,
 ) {
-    if !game_scale.spaceship.spawnable {
+    if !config.spaceship.spawnable {
         return;
     }
 
@@ -106,7 +105,7 @@ fn spawn_spaceship(
             health: Health(SPACESHIP_HEALTH),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(game_scale.spaceship.radius),
+            collider: Collider::ball(config.spaceship.radius),
             collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Z
                 | LockedAxes::ROTATION_LOCKED_X
@@ -116,7 +115,7 @@ fn spawn_spaceship(
                 scene: scene_assets.spaceship.clone(),
                 transform: Transform {
                     translation: STARTING_TRANSLATION,
-                    scale: Vec3::splat(game_scale.spaceship.scalar),
+                    scale: Vec3::splat(config.spaceship.scalar),
                     rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2),
                 },
                 ..default()
@@ -130,21 +129,21 @@ fn spawn_spaceship(
     //     commands.entity(spaceship).add_child(camera);
     // }
 
-    name_entity(&mut commands, spaceship, SPACESHIP_NAME);
+    name_entity(&mut commands, spaceship, config.spaceship.name);
 }
 
 fn spaceship_movement_controls(
     mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
     q_camera: Query<&Transform, (With<PrimaryCamera>, Without<Spaceship>)>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
-    game_scale: Res<GameConfig>,
+    config: Res<GameConfig>,
     time: Res<Time>,
 ) {
     if let Ok(camera_transform) = q_camera.get_single() {
         // we can use this because there is only exactly one spaceship - so we're not looping over the query
         if let Ok((mut spaceship_transform, mut velocity)) = q_spaceship.get_single_mut() {
             // dynamically update from inspector while game is running
-            spaceship_transform.scale = Vec3::splat(game_scale.spaceship.scalar);
+            spaceship_transform.scale = Vec3::splat(config.spaceship.scalar);
 
             let spaceship_action = q_input_map.single();
 
@@ -171,7 +170,7 @@ fn spaceship_movement_controls(
             // rotate around the z-axis
             spaceship_transform.rotate_z(rotation);
 
-            let max_speed = game_scale.spaceship.velocity;
+            let max_speed = config.spaceship.velocity;
 
             if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
                 // down

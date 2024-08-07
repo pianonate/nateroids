@@ -50,6 +50,7 @@ pub struct GameConfig {
 #[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
 #[reflect(Resource)]
 pub struct ColliderConstant {
+    pub name: &'static str,
     pub radius: f32,
     pub scalar: f32,
     pub spawnable: bool,
@@ -69,18 +70,21 @@ impl Default for GameConfig {
             star_field_inner_diameter: 1000.,
             star_field_outer_diameter: 20000.,
             missile: ColliderConstant {
+                name: "missile",
                 radius: 0.5,
                 scalar: 1.5,
                 spawnable: true,
                 velocity: 75.,
             },
             nateroid: ColliderConstant {
+                name: "nateroid",
                 radius: 2.3,
                 scalar: 2.,
                 spawnable: true,
                 velocity: 30.,
             },
             spaceship: ColliderConstant {
+                name: "spaceship",
                 radius: 6.25,
                 scalar: 0.8,
                 spawnable: true,

@@ -50,12 +50,7 @@ impl Default for StarBloom {
     }
 }
 
-fn setup_camera(
-    mut commands: Commands,
-    star_bloom: Res<StarBloom>,
-    // game_scale: Res<GameScale>,
-    // scene_assets: Res<SceneAssets>,
-) {
+fn setup_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
     let camera3d = Camera3dBundle {
         camera: Camera {
             order: STARS_CAMERA_ORDER,
@@ -71,18 +66,6 @@ fn setup_camera(
         .insert(RenderLayers::layer(STARS_LAYER))
         .insert(star_bloom.settings.clone())
         .insert(StarsCamera);
-
-    // commands
-    //     .spawn(SceneBundle {
-    //         scene: scene_assets.sphere.clone(),
-    //         transform: Transform::from_translation(Vec3::ZERO)
-    //             .with_scale(Vec3::splat(game_scale.star_field_inner_diameter))
-    //             .with_rotation(Quat::from_rotation_x(0.3))
-    //             .with_rotation(Quat::from_rotation_z(-0.3)),
-    //         ..default()
-    //     })
-    //     .insert(GameSphere)
-    //     .insert(RenderLayers::layer(STARS_LAYER));
 }
 
 #[derive(Component)]
@@ -134,7 +117,7 @@ struct StarCounter(usize);
 #[allow(clippy::too_many_arguments)]
 fn spawn_star_tasks(
     mut commands: Commands,
-    game_scale: Res<GameConfig>,
+    config: Res<GameConfig>,
     boundary: Res<Boundary>,
     time: Res<Time>,
     mut timer: ResMut<StarSpawnTimer>,
@@ -142,14 +125,12 @@ fn spawn_star_tasks(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    if timer.0.tick(time.delta()).just_finished() && counter.0 < game_scale.star_count {
+    if timer.0.tick(time.delta()).just_finished() && counter.0 < config.star_count {
         let longest_diagonal = boundary.longest_diagonal;
-        let inner_sphere_radius = longest_diagonal + game_scale.star_field_inner_diameter;
-        let outer_sphere_radius = inner_sphere_radius + game_scale.star_field_outer_diameter;
+        let inner_sphere_radius = longest_diagonal + config.star_field_inner_diameter;
+        let outer_sphere_radius = inner_sphere_radius + config.star_field_outer_diameter;
 
-        let game_scale = game_scale.clone(); // Clone the game_scale resource
-
-        let stars_to_spawn = (game_scale.star_count - counter.0).min(BATCH_SIZE);
+        let stars_to_spawn = (config.star_count - counter.0).min(BATCH_SIZE);
 
         for _ in 0..stars_to_spawn {
             let mut rng = rand::thread_rng();
@@ -179,9 +160,9 @@ fn spawn_star_tasks(
                 ..default()
             });
 
-            let min = game_scale.star_radius / 10.;
+            let min = config.star_radius / 10.;
 
-            let radius = rng.gen_range(min..game_scale.star_radius);
+            let radius = rng.gen_range(min..config.star_radius);
             let star_mesh_handle = meshes.add(Sphere::new(radius).mesh());
 
             commands

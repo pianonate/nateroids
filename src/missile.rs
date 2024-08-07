@@ -23,7 +23,6 @@ const MISSILE_COLLISION_DAMAGE: f32 = 50.0;
 const MISSILE_FORWARD_SPAWN_SCALAR: f32 = 3.6;
 const MISSILE_HEALTH: f32 = 1.0;
 const MISSILE_MASS: f32 = 0.001;
-const MISSILE_NAME: &str = "Missile";
 const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
 
 impl Plugin for MissilePlugin {
@@ -75,12 +74,12 @@ impl Missile {
     pub fn new(
         spaceship_transform: &Transform,
         spaceship_velocity: &Velocity,
-        game_scale: &Res<GameConfig>,
+        config: &Res<GameConfig>,
         boundary: &Res<Boundary>,
     ) -> Self {
         let forward = -spaceship_transform.forward().with_z(0.0);
 
-        let missile_velocity = forward * game_scale.missile.velocity;
+        let missile_velocity = forward * config.missile.velocity;
 
         // clamp it to 2d for now...
         //missile_velocity.z = 0.0;
@@ -151,7 +150,7 @@ fn should_fire(
 #[allow(clippy::too_many_arguments)]
 fn fire_missile(
     mut commands: Commands,
-    game_scale: Res<GameConfig>,
+    config: Res<GameConfig>,
     spawn_timer: ResMut<MissileSpawnTimer>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(&Transform, &Velocity, Option<&ContinuousFire>), With<Spaceship>>,
@@ -159,7 +158,7 @@ fn fire_missile(
     time: Res<Time>,
     boundary: Res<Boundary>,
 ) {
-    if !game_scale.missile.spawnable {
+    if !config.missile.spawnable {
         return;
     }
 
@@ -175,7 +174,7 @@ fn fire_missile(
     // extracted for readability
     spawn_missile(
         &mut commands,
-        game_scale,
+        config,
         scene_assets,
         spaceship_transform,
         spaceship_velocity,
@@ -185,19 +184,14 @@ fn fire_missile(
 
 fn spawn_missile(
     commands: &mut Commands,
-    game_scale: Res<GameConfig>,
+    config: Res<GameConfig>,
     scene_assets: Res<SceneAssets>,
     spaceship_transform: &Transform,
     spaceship_velocity: &Velocity,
     boundary: Res<Boundary>,
 ) {
     // boundary is used to set the total distance this missile can travel
-    let missile = Missile::new(
-        spaceship_transform,
-        spaceship_velocity,
-        &game_scale,
-        &boundary,
-    );
+    let missile = Missile::new(spaceship_transform, spaceship_velocity, &config, &boundary);
 
     let missile = commands
         .spawn(missile)
@@ -206,13 +200,13 @@ fn spawn_missile(
             health: Health(MISSILE_HEALTH),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(game_scale.missile.radius),
+            collider: Collider::ball(config.missile.radius),
             collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
             mass: Mass(MISSILE_MASS),
             model: SceneBundle {
                 scene: scene_assets.missiles.clone(),
                 transform: Transform::from_translation(missile.last_position)
-                    .with_scale(Vec3::splat(game_scale.missile.scalar)),
+                    .with_scale(Vec3::splat(config.missile.scalar)),
                 ..default()
             },
             velocity: Velocity {
@@ -224,7 +218,7 @@ fn spawn_missile(
         .insert(RenderLayers::layer(GAME_LAYER))
         .id();
 
-    name_entity(commands, missile, MISSILE_NAME);
+    name_entity(commands, missile, config.missile.name);
 }
 
 /// we update missile movement so that it can be despawned after it has traveled its total distance
@@ -282,10 +276,10 @@ fn missile_party(
     mut q_missile: Query<&mut Missile>,
     mut gizmos: Gizmos,
     boundary: Res<Boundary>,
-    game_scale: Res<GameConfig>,
+    config: Res<GameConfig>,
 ) {
     for missile in q_missile.iter_mut() {
-        draw_missile_targets(&mut gizmos, &missile, &boundary, &game_scale);
+        draw_missile_targets(&mut gizmos, &missile, &boundary, &config);
     }
 }
 
@@ -293,13 +287,13 @@ fn draw_missile_targets(
     gizmos: &mut Gizmos,
     missile: &Missile,
     boundary: &Res<Boundary>,
-    game_scale: &GameConfig,
+    config: &GameConfig,
 ) {
     draw_sphere(
         gizmos,
         missile.edge_in_front_of_spaceship,
         Color::from(tailwind::BLUE_600),
-        game_scale,
+        config,
     );
 
     // Draw sphere at the opposite edge point
@@ -307,7 +301,7 @@ fn draw_missile_targets(
         gizmos,
         missile.teleported_position,
         Color::from(tailwind::RED_600),
-        game_scale,
+        config,
     );
 
     // Draw sphere at the last teleport position if it exists
@@ -317,7 +311,7 @@ fn draw_missile_targets(
             gizmos,
             last_teleport_position,
             Color::from(tailwind::YELLOW_600),
-            game_scale,
+            config,
         );
         //  }
     }
@@ -332,18 +326,18 @@ fn draw_missile_targets(
                 gizmos,
                 end_point,
                 Color::from(tailwind::GREEN_600),
-                game_scale,
+                config,
             );
         }
     }
 }
 
-fn draw_sphere(gizmos: &mut Gizmos, position: Vec3, color: Color, game_scale: &GameConfig) {
+fn draw_sphere(gizmos: &mut Gizmos, position: Vec3, color: Color, config: &GameConfig) {
     gizmos
         .sphere(
             position,
             Quat::IDENTITY,
-            game_scale.missile_sphere_radius,
+            config.missile_sphere_radius,
             color,
         )
         .resolution(16);

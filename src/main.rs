@@ -7,7 +7,6 @@ use crate::{
     collision_detection::CollisionDetectionPlugin,
     config::ConfigPlugin,
     despawn::DespawnPlugin,
-    // game_scale::GameScalePlugin,
     input::InputPlugin,
     missile::MissilePlugin,
     movement::MovementPlugin,
@@ -37,7 +36,6 @@ mod camera;
 mod collision_detection;
 mod config;
 mod despawn;
-//mod game_scale;
 mod health;
 mod input;
 mod missile;

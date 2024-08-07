@@ -24,7 +24,6 @@ pub struct NateroidSpawnTimer {
 const ANGULAR_VELOCITY_RANGE: Range<f32> = -4.0..4.0;
 const NATEROID_COLLISION_DAMAGE: f32 = 10.0;
 const NATEROID_HEALTH: f32 = 50.0;
-const NATEROID_NAME: &str = "Nateroid";
 const ROTATION_RANGE: Range<f32> = 0.0..2.0 * PI;
 const SPAWN_TIMER_SECONDS: f32 = 2.;
 
@@ -42,13 +41,13 @@ impl Plugin for Nateroid {
 
 fn spawn_nateroid(
     mut commands: Commands,
-    game_scale: Res<GameConfig>,
+    config: Res<GameConfig>,
     mut spawn_timer: ResMut<NateroidSpawnTimer>,
     time: Res<Time>,
     scene_assets: Res<SceneAssets>,
     boundary: Res<Boundary>,
 ) {
-    if !game_scale.nateroid.spawnable {
+    if !config.nateroid.spawnable {
         return;
     }
 
@@ -71,7 +70,7 @@ fn spawn_nateroid(
         //rng.gen_range(boundary_min.z..boundary_max.z),
     );
 
-    let velocity = game_scale.nateroid.velocity;
+    let velocity = config.nateroid.velocity;
     let random_velocity = random_vec3(-velocity..velocity, -velocity..velocity, 0.0..0.0);
     let random_angular_velocity = random_vec3(
         ANGULAR_VELOCITY_RANGE,
@@ -86,7 +85,7 @@ fn spawn_nateroid(
     transform.rotate_local_y(rng.gen_range(ROTATION_RANGE));
     transform.rotate_local_z(rng.gen_range(ROTATION_RANGE));
 
-    transform.scale = Vec3::splat(game_scale.nateroid.scalar);
+    transform.scale = Vec3::splat(config.nateroid.scalar);
 
     let nateroid = commands
         .spawn(Nateroid)
@@ -95,7 +94,7 @@ fn spawn_nateroid(
             health: Health(NATEROID_HEALTH),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(game_scale.nateroid.radius),
+            collider: Collider::ball(config.nateroid.radius),
             model: SceneBundle {
                 scene: scene_assets.nateroid.clone(),
                 transform,
@@ -110,7 +109,7 @@ fn spawn_nateroid(
         .insert(RenderLayers::layer(GAME_LAYER))
         .id();
 
-    name_entity(&mut commands, nateroid, NATEROID_NAME);
+    name_entity(&mut commands, nateroid, config.nateroid.name);
 }
 
 fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {

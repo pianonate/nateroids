@@ -19,14 +19,14 @@ impl Plugin for BoundaryPlugin {
 
 fn draw_boundary(
     mut boundary: ResMut<Boundary>,
-    game_scale: Res<GameConfig>,
+    config: Res<GameConfig>,
     mut gizmos: Gizmos<BoundaryGizmos>,
 ) {
-    // updating the transform from game_scale so it can be located in one place
+    // updating the transform from config so it can be located in one place
     // and also so that it can be dynamically changed with the inspector while the game is running
     // the boundary transform is used both for position but also so the fixed camera
     // can be positioned based on the boundary scale
-    boundary.transform.scale = game_scale.boundary_cell_scalar * boundary.cell_count.as_vec3();
+    boundary.transform.scale = config.boundary_cell_scalar * boundary.cell_count.as_vec3();
 
     // update the longest diagonal so that the camera can be positioned correctly
 
@@ -35,7 +35,7 @@ fn draw_boundary(
             boundary.transform.translation,
             Quat::IDENTITY,
             boundary.cell_count,
-            Vec3::splat(game_scale.boundary_cell_scalar),
+            Vec3::splat(config.boundary_cell_scalar),
             DEFAULT_CELL_COLOR,
         )
         .outer_edges();
