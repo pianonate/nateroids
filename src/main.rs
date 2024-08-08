@@ -16,6 +16,7 @@ use crate::{
     schedule::SchedulePlugin,
     spaceship::SpaceshipPlugin,
     splash::SplashPlugin,
+    star_twinkling::StarTwinklingPlugin,
     stars::StarsPlugin,
     state::StatePlugin,
 };
@@ -46,6 +47,7 @@ mod physics;
 mod schedule;
 mod spaceship;
 mod splash;
+mod star_twinkling;
 mod stars;
 mod state;
 mod utils;
@@ -69,6 +71,7 @@ fn main() {
         .add_plugins(SpaceshipPlugin)
         .add_plugins(SplashPlugin)
         .add_plugins(StarsPlugin)
+        .add_plugins(StarTwinklingPlugin)
         .add_plugins(StatePlugin);
 
     #[cfg(debug_assertions)]

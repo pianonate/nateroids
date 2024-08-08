@@ -280,7 +280,7 @@ fn draw_missile_targets(
                 (
                     end_point,
                     circle_normal,
-                    Color::from(tailwind::GREEN_600),
+                    Color::from(tailwind::GREEN_800),
                     missile.remaining_distance,
                 )
             } else {

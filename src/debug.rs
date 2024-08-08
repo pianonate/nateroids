@@ -1,6 +1,6 @@
 use crate::{
     boundary::Boundary,
-    config::{AppearanceConfig, ColliderConfig},
+    config::{AppearanceConfig, ColliderConfig, StarConfig},
     input::GlobalAction,
     schedule::InGameSet,
 };
@@ -28,6 +28,7 @@ fn register_debug_resources(world: &mut World) {
     type_registry.write().register::<Boundary>();
     type_registry.write().register::<DebugMode>();
     type_registry.write().register::<ColliderConfig>();
+    type_registry.write().register::<StarConfig>();
 }
 
 // the default bool is false, which is what we want

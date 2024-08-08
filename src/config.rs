@@ -57,11 +57,6 @@ pub struct AppearanceConfig {
     pub missile_forward_spawn_distance: f32,
     pub missile_circle_radius: f32,
     pub splash_timer: f32,
-    pub star_count: usize,
-    pub star_radius: f32,
-    pub star_field_inner_diameter: f32,
-    pub star_field_outer_diameter: f32,
-    pub star_spawn_batch_size: usize,
     pub zoom_sensitivity: f32,
 }
 
@@ -84,11 +79,6 @@ impl Default for AppearanceConfig {
             missile_forward_spawn_distance: 5.6,
             missile_circle_radius: 7.,
             splash_timer: 2.,
-            star_count: 5000,
-            star_radius: 5.,
-            star_field_inner_diameter: 1000.,
-            star_field_outer_diameter: 20000.,
-            star_spawn_batch_size: 50,
             zoom_sensitivity: 8.,
         }
     }
@@ -177,6 +167,40 @@ impl Default for OrientationConfig {
             axis_profundus: Vec3::Z,
             locus: Transform::default(),
             nexus: Vec3::ZERO,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
+#[reflect(Resource)]
+pub struct StarConfig {
+    pub min_duration: f32,
+    pub max_duration: f32,
+    pub min_intensity: f32,
+    pub max_intensity: f32,
+    pub star_count: usize,
+    pub star_radius: f32,
+    pub star_field_inner_diameter: f32,
+    pub star_field_outer_diameter: f32,
+    pub star_spawn_batch_size: usize,
+    pub twinkle_chance: f32,
+    pub twinkle_sample_rate: f32,
+}
+
+impl Default for StarConfig {
+    fn default() -> Self {
+        Self {
+            min_duration: 0.2,
+            max_duration: 2.,
+            min_intensity: 10.0,
+            max_intensity: 40.,
+            star_count: 5000,
+            star_radius: 5.,
+            star_field_inner_diameter: 1000.,
+            star_field_outer_diameter: 20000.,
+            star_spawn_batch_size: 50,
+            twinkle_chance: 0.01, // 1% chance per update
+            twinkle_sample_rate: 0.006,
         }
     }
 }

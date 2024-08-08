@@ -1,4 +1,4 @@
-use crate::config::AppearanceConfig;
+use crate::config::{AppearanceConfig, StarConfig};
 use crate::input::GlobalAction;
 use crate::{
     boundary::Boundary,
@@ -142,12 +142,15 @@ struct StarSpawnTimer(Timer);
 #[derive(Resource)]
 struct StarCounter(usize);
 
+#[derive(Component)]
+pub struct Stars;
+
 // generate BATCH_SIZE stars at a time until you get to the desired number of stars
 // this will fill them in as the program starts and looks cooler that way
 #[allow(clippy::too_many_arguments)]
 fn spawn_star_tasks(
     mut commands: Commands,
-    config: Res<AppearanceConfig>,
+    config: Res<StarConfig>,
     boundary: Res<Boundary>,
     time: Res<Time>,
     mut timer: ResMut<StarSpawnTimer>,
@@ -202,6 +205,7 @@ fn spawn_star_tasks(
                     transform,
                     ..default()
                 })
+                .insert(Stars)
                 .insert(RenderLayers::from_layers(RenderLayer::Stars.layers()));
         }
 

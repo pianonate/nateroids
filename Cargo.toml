@@ -19,6 +19,7 @@ iyes_perf_ui = "0.3.0"
 #
 bevy-inspector-egui = "0.25.1"
 egui_dock = "0.13"
+rayon = "1.5"
 
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
