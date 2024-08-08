@@ -104,7 +104,7 @@ fn start_twinkling(
 
     // this takes about 70-80K ns in dev and in release it's many times faster
     // which becomes negligible - so for now, i guess live with it -
-    // still don't understand why it's so slow 
+    // still don't understand why it's so slow
     // it's more like 500K if we use the iter directly and randomize as
     // the destructuring in the loop eats up 90% of the loop time
     // this pre-filtering avoids that cost - i don't know what is the difference
@@ -144,7 +144,7 @@ fn start_twinkling(
 
     timing.outside_loop_time = outer_loop_time.elapsed().as_nanos();
     timing.start_twinkling_elapsed = start.elapsed().as_nanos();
-  //  println!("{:?}", timing);
+    //  println!("{:?}", timing);
 }
 
 fn update_twinkling(
