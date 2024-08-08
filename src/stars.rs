@@ -1,4 +1,5 @@
 use crate::config::{AppearanceConfig, StarConfig};
+use crate::despawn::despawn;
 use crate::input::GlobalAction;
 use crate::{
     boundary::Boundary,
@@ -11,22 +12,28 @@ use bevy::{
     render::view::RenderLayers,
 };
 use leafwing_input_manager::action_state::ActionState;
-use rand::Rng;
+use rand::prelude::SliceRandom;
+use rand::{thread_rng, Rng};
 
 pub struct StarsPlugin;
 
 impl Plugin for StarsPlugin {
     fn build(&self, app: &mut App) {
+        let star_config = StarConfig::default();
+
         app.add_systems(Startup, setup_camera.before(spawn_camera))
             .add_systems(Update, toggle_stars)
             .init_resource::<StarBloom>()
             .insert_resource(StarSpawnTimer(Timer::from_seconds(
-                0.05,
+                star_config.spawn_timer_duration,
                 TimerMode::Repeating,
             )))
-            // replace with a vector of stars or handles or something and then despawn the oldest
-            // and replace with new ones...
-            .add_systems(Update, spawn_star_tasks)
+            .insert_resource(StarReplaceTimer(Timer::from_seconds(
+                star_config.replace_timer_duration,
+                TimerMode::Repeating,
+            )))
+            // this can run while paused or splashing for now
+            .add_systems(Update, (spawn_star_tasks, replace_stars))
             .add_systems(Update, (rotate_sphere, update_bloom_settings));
     }
 }
@@ -138,74 +145,134 @@ fn toggle_stars(
 #[derive(Resource)]
 struct StarSpawnTimer(Timer);
 
+#[derive(Resource)]
+struct StarReplaceTimer(Timer);
+
 #[derive(Component)]
 pub struct Stars;
+
+#[allow(clippy::too_many_arguments)]
+fn replace_stars(
+    mut commands: Commands,
+    star_config: Res<StarConfig>,
+    mut timer: ResMut<StarReplaceTimer>,
+    time: Res<Time>,
+    stars: Query<Entity, With<Stars>>,
+    boundary: Res<Boundary>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    if timer.0.tick(time.delta()).just_finished() && star_config.star_count == stars.iter().count()
+    {
+        let stars_to_spawn = star_config.replace_batch_size;
+
+        // Collect all star entities into a vector
+        let mut all_stars: Vec<Entity> = stars.iter().collect();
+
+        // Shuffle the vector randomly
+        all_stars.shuffle(&mut thread_rng());
+
+        // Take the first `stars_to_spawn` stars from the shuffled vector
+        for &entity in all_stars.iter().take(stars_to_spawn) {
+            despawn(&mut commands, entity);
+
+            spawn_star(
+                &mut commands,
+                &star_config,
+                &boundary,
+                &mut meshes,
+                &mut materials,
+                1,
+            );
+        }
+    }
+}
 
 // generate BATCH_SIZE stars at a time until you get to the desired number of stars
 // this will fill them in as the program starts and looks cooler that way
 #[allow(clippy::too_many_arguments)]
 fn spawn_star_tasks(
     mut commands: Commands,
-    config: Res<StarConfig>,
-    boundary: Res<Boundary>,
+    star_config: Res<StarConfig>,
+    mut timer: ResMut<StarSpawnTimer>,
     time: Res<Time>,
     mut spawned_count: Local<usize>,
-    mut timer: ResMut<StarSpawnTimer>,
+    boundary: Res<Boundary>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    if timer.0.tick(time.delta()).just_finished() && *spawned_count < config.star_count {
-        let longest_diagonal = boundary.longest_diagonal;
-        let inner_sphere_radius = longest_diagonal + config.star_field_inner_diameter;
-        let outer_sphere_radius = inner_sphere_radius + config.star_field_outer_diameter;
+    if timer.0.tick(time.delta()).just_finished() && *spawned_count < star_config.star_count {
+        let stars_to_spawn =
+            (star_config.star_count - *spawned_count).min(star_config.startup_batch_size);
+        // println!("stars_to_spawn {}", stars_to_spawn);
 
-        let stars_to_spawn = (config.star_count - *spawned_count).min(config.star_spawn_batch_size);
-
-        for _ in 0..stars_to_spawn {
-            let mut rng = rand::thread_rng();
-            let point = {
-                let u: f32 = rng.gen_range(0.0..1.0);
-                let v: f32 = rng.gen_range(0.0..1.0);
-                let theta = u * std::f32::consts::PI * 2.0;
-                let phi = (2.0 * v - 1.0).acos();
-                let r = rng.gen_range(inner_sphere_radius..outer_sphere_radius);
-
-                let x = r * theta.cos() * phi.sin();
-                let y = r * theta.sin() * phi.sin();
-                let z = r * phi.cos();
-
-                Vec3::new(x, y, z)
-            };
-
-            // Increase the likelihood of generating higher values for R, G, B
-            let emissive_r = rng.gen_range(8.0..15.0);
-            let emissive_g = rng.gen_range(8.0..15.0);
-            let emissive_b = rng.gen_range(8.0..15.0);
-            let emissive_a = rng.gen_range(8.0..15.0);
-
-            let transform = Transform::from_translation(point);
-
-            let material = materials.add(StandardMaterial {
-                emissive: LinearRgba::new(emissive_r, emissive_g, emissive_b, emissive_a),
-                ..default()
-            });
-
-            let min = config.star_radius / 10.;
-
-            let radius = rng.gen_range(min..config.star_radius);
-            let star_mesh_handle = meshes.add(Sphere::new(radius).mesh());
-
-            commands
-                .spawn(PbrBundle {
-                    mesh: star_mesh_handle.clone(),
-                    material,
-                    transform,
-                    ..default()
-                })
-                .insert(Stars)
-                .insert(RenderLayers::from_layers(RenderLayer::Stars.layers()));
-        }
+        spawn_star(
+            &mut commands,
+            &star_config,
+            &boundary,
+            &mut meshes,
+            &mut materials,
+            stars_to_spawn,
+        );
 
         *spawned_count += stars_to_spawn;
+    }
+}
+
+fn spawn_star(
+    commands: &mut Commands,
+    star_config: &Res<StarConfig>,
+    boundary: &Res<Boundary>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    stars_to_spawn: usize,
+) {
+    let longest_diagonal = boundary.longest_diagonal;
+    let inner_sphere_radius = longest_diagonal + star_config.star_field_inner_diameter;
+    let outer_sphere_radius = inner_sphere_radius + star_config.star_field_outer_diameter;
+
+    for _ in 0..stars_to_spawn {
+        let mut rng = rand::thread_rng();
+        let point = {
+            let u: f32 = rng.gen_range(0.0..1.0);
+            let v: f32 = rng.gen_range(0.0..1.0);
+            let theta = u * std::f32::consts::PI * 2.0;
+            let phi = (2.0 * v - 1.0).acos();
+            let r = rng.gen_range(inner_sphere_radius..outer_sphere_radius);
+
+            let x = r * theta.cos() * phi.sin();
+            let y = r * theta.sin() * phi.sin();
+            let z = r * phi.cos();
+
+            Vec3::new(x, y, z)
+        };
+
+        // Increase the likelihood of generating higher values for R, G, B
+        let emissive_r = rng.gen_range(8.0..15.0);
+        let emissive_g = rng.gen_range(8.0..15.0);
+        let emissive_b = rng.gen_range(8.0..15.0);
+        let emissive_a = rng.gen_range(8.0..15.0);
+
+        let transform = Transform::from_translation(point);
+
+        let material = materials.add(StandardMaterial {
+            emissive: LinearRgba::new(emissive_r, emissive_g, emissive_b, emissive_a),
+            ..default()
+        });
+
+        let min = star_config.star_radius / 10.;
+
+        let radius = rng.gen_range(min..star_config.star_radius);
+        let star_mesh_handle = meshes.add(Sphere::new(radius).mesh());
+
+        commands
+            .spawn(PbrBundle {
+                mesh: star_mesh_handle.clone(),
+                material,
+                transform,
+                ..default()
+            })
+            .insert(Stars)
+            .insert(RenderLayers::from_layers(RenderLayer::Stars.layers()));
     }
 }

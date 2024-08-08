@@ -78,7 +78,7 @@ fn extract_elements_at_indices<T: Clone>(vec: &[T], indices: &[usize]) -> Vec<T>
 fn start_twinkling(
     mut commands: Commands,
     config: Res<StarConfig>,
-    mut stars: Query<(Entity, &Handle<StandardMaterial>), (With<Stars>, Without<Twinkling>)>,
+    stars: Query<(Entity, &Handle<StandardMaterial>), (With<Stars>, Without<Twinkling>)>,
     materials: Res<Assets<StandardMaterial>>,
     mut start_timer: ResMut<StartTwinklingTimer>,
     time: Res<Time>,
@@ -144,7 +144,7 @@ fn start_twinkling(
 
     timing.outside_loop_time = outer_loop_time.elapsed().as_nanos();
     timing.start_twinkling_elapsed = start.elapsed().as_nanos();
-    //  println!("{:?}", timing);
+    // println!("{:?}", timing);
 }
 
 fn update_twinkling(

@@ -22,7 +22,7 @@ fn despawn_missiles(mut commands: Commands, query: Query<(Entity, &Missile)>) {
     }
 }
 
-fn despawn(commands: &mut Commands, entity: Entity) {
+pub fn despawn(commands: &mut Commands, entity: Entity) {
     commands.entity(entity).despawn_recursive();
 }
 

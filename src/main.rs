@@ -22,11 +22,15 @@ use crate::{
 };
 
 #[cfg(debug_assertions)]
-use crate::{debug::DebugPlugin, diagnostic::DiagnosticPlugin, inspector::InspectorPlugin};
+use crate::{debug::DebugPlugin, inspector::InspectorPlugin};
+
+//#[cfg(debug_assertions)]
+use crate::diagnostic::DiagnosticPlugin;
 
 #[cfg(debug_assertions)]
 mod debug;
-#[cfg(debug_assertions)]
+
+// #[cfg(debug_assertions)]
 mod diagnostic;
 #[cfg(debug_assertions)]
 mod inspector;
@@ -75,9 +79,10 @@ fn main() {
         .add_plugins(StatePlugin);
 
     #[cfg(debug_assertions)]
-    app.add_plugins(InspectorPlugin)
-        .add_plugins(DebugPlugin)
-        .add_plugins(DiagnosticPlugin);
+    app.add_plugins(InspectorPlugin).add_plugins(DebugPlugin);
+
+    // #[cfg(debug_assertions)]
+    app.add_plugins(DiagnosticPlugin);
 
     app.run();
 }
