@@ -174,33 +174,34 @@ impl Default for OrientationConfig {
 #[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
 #[reflect(Resource)]
 pub struct StarConfig {
-    pub min_duration: f32,
-    pub max_duration: f32,
-    pub min_intensity: f32,
-    pub max_intensity: f32,
     pub star_count: usize,
     pub star_radius: f32,
     pub star_field_inner_diameter: f32,
     pub star_field_outer_diameter: f32,
     pub star_spawn_batch_size: usize,
     pub twinkle_chance: f32,
-    pub twinkle_sample_rate: f32,
+    pub twinkle_duration_min: f32,
+    pub twinkle_duration_max: f32,
+    pub twinkle_intensity_min: f32,
+    pub twinkle_intensity_max: f32,
+    pub twinkle_per_update: usize,
 }
 
+//
 impl Default for StarConfig {
     fn default() -> Self {
         Self {
-            min_duration: 0.2,
-            max_duration: 2.,
-            min_intensity: 10.0,
-            max_intensity: 40.,
             star_count: 5000,
             star_radius: 5.,
             star_field_inner_diameter: 1000.,
             star_field_outer_diameter: 20000.,
             star_spawn_batch_size: 50,
-            twinkle_chance: 0.01, // 1% chance per update
-            twinkle_sample_rate: 0.006,
+            twinkle_chance: 0.4, // percentage of stars to evaluate
+            twinkle_duration_max: 2.,
+            twinkle_duration_min: 0.2,
+            twinkle_intensity_min: 10.0,
+            twinkle_intensity_max: 40.,
+            twinkle_per_update: 1, // stars to look at each update
         }
     }
 }

@@ -34,12 +34,11 @@ fn start_twinkling(
     let mut stars_vec: Vec<_> = stars.iter().collect();
     stars_vec.shuffle(&mut rng);
 
-    let take_count = (star_config.star_count as f32 * twinkle_config.twinkle_sample_rate) as usize;
-    let min_intensity = twinkle_config.min_intensity;
-    let max_intensity = twinkle_config.max_intensity;
+    let min_intensity = twinkle_config.twinkle_intensity_min;
+    let max_intensity = twinkle_config.twinkle_intensity_max;
 
     // Take the first 50 elements from the shuffled vector
-    for (entity, material_handle) in stars_vec.into_iter().take(take_count) {
+    for (entity, material_handle) in stars_vec.into_iter().take(star_config.twinkle_per_update) {
         if rng.gen::<f32>() < twinkle_config.twinkle_chance {
             if let Some(material) = materials.get(material_handle) {
                 let original_emissive = Vec4::new(
@@ -50,8 +49,9 @@ fn start_twinkling(
                 );
                 let intensity = rng.gen_range(min_intensity..max_intensity);
                 let target_emissive = original_emissive * intensity;
-                let duration =
-                    rng.gen_range(twinkle_config.min_duration..twinkle_config.max_duration);
+                let duration = rng.gen_range(
+                    twinkle_config.twinkle_duration_min..twinkle_config.twinkle_duration_max,
+                );
 
                 commands.entity(entity).insert(Twinkling {
                     original_emissive,
@@ -69,7 +69,7 @@ fn update_twinkling(
     mut stars: Query<(Entity, &Handle<StandardMaterial>, &mut Twinkling)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let mut star_count = 0;
+    //let mut star_count = 0;
     for (entity, material_handle, mut twinkling) in stars.iter_mut() {
         twinkling.timer.tick(time.delta());
 
@@ -100,8 +100,8 @@ fn update_twinkling(
             commands.entity(entity).remove::<Twinkling>();
         }
 
-        star_count += 1;
+        // star_count += 1;
     }
 
-    println!("twinklers: {}", star_count)
+    // println!("twinklers: {}", star_count)
 }

@@ -185,11 +185,12 @@ fn spawn_star_tasks(
             let emissive_r = rng.gen_range(8.0..15.0);
             let emissive_g = rng.gen_range(8.0..15.0);
             let emissive_b = rng.gen_range(8.0..15.0);
+            let emissive_a = rng.gen_range(8.0..15.0);
 
             let transform = Transform::from_translation(point);
 
             let material = materials.add(StandardMaterial {
-                emissive: LinearRgba::rgb(emissive_r, emissive_g, emissive_b),
+                emissive: LinearRgba::new(emissive_r, emissive_g, emissive_b, emissive_a),
                 ..default()
             });
 
