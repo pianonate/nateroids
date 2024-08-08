@@ -191,29 +191,29 @@ pub struct StarConfig {
     pub star_field_inner_diameter: f32,
     pub star_field_outer_diameter: f32,
     pub star_spawn_batch_size: usize,
-    pub twinkle_chance: f32,
+    pub start_twinkling_delay: f32,
     pub twinkle_duration_min: f32,
     pub twinkle_duration_max: f32,
     pub twinkle_intensity_min: f32,
     pub twinkle_intensity_max: f32,
-    pub twinkle_per_update: usize,
+    pub twinkle_choose_multiple_count: usize,
 }
 
 //
 impl Default for StarConfig {
     fn default() -> Self {
         Self {
-            star_count: 5000,
+            star_count: 2000,
             star_radius: 5.,
             star_field_inner_diameter: 1000.,
-            star_field_outer_diameter: 20000.,
+            star_field_outer_diameter: 10000.,
             star_spawn_batch_size: 50,
-            twinkle_chance: 0.4, // percentage of stars to evaluate
+            start_twinkling_delay: 1.,
             twinkle_duration_max: 2.,
             twinkle_duration_min: 0.2,
             twinkle_intensity_min: 10.0,
             twinkle_intensity_max: 40.,
-            twinkle_per_update: 1, // stars to look at each update
+            twinkle_choose_multiple_count: 50, // stars to look at each update
         }
     }
 }
