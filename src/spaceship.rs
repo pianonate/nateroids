@@ -183,8 +183,8 @@ fn spaceship_movement_controls(
                 // up
                 apply_acceleration(
                     &mut velocity,
-                    -spaceship_transform.forward().as_vec3(),
-                    -SPACESHIP_ACCELERATION,
+                    spaceship_transform.forward().as_vec3(),
+                    SPACESHIP_ACCELERATION,
                     max_speed,
                     delta_seconds,
                 );

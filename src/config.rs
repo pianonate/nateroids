@@ -113,7 +113,7 @@ impl Default for ColliderConfig {
                 radius: 0.5,
                 scalar: 1.5,
                 spawnable: true,
-                velocity: 75.,
+                velocity: 85.,
             },
             nateroid: ColliderConstant {
                 name: "nateroid",
@@ -127,7 +127,7 @@ impl Default for ColliderConfig {
                 radius: 6.25,
                 scalar: 0.8,
                 spawnable: true,
-                velocity: 40.,
+                velocity: 60.,
             },
         }
     }
