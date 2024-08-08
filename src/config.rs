@@ -96,8 +96,11 @@ pub struct ColliderConfig {
 #[reflect(Resource)]
 pub struct ColliderConstant {
     pub name: &'static str,
+    pub damage: f32,
+    pub health: f32,
     pub radius: f32,
     pub scalar: f32,
+    pub spawn_timer_seconds: Option<f32>,
     pub spawnable: bool,
     pub velocity: f32,
 }
@@ -110,22 +113,31 @@ impl Default for ColliderConfig {
         Self {
             missile: ColliderConstant {
                 name: "missile",
+                damage: 50.,
+                health: 1.,
                 radius: 0.5,
                 scalar: 1.5,
+                spawn_timer_seconds: Some(1.0 / 20.0),
                 spawnable: true,
                 velocity: 85.,
             },
             nateroid: ColliderConstant {
                 name: "nateroid",
+                damage: 10.,
+                health: 50.,
                 radius: 2.3,
                 scalar: 2.,
+                spawn_timer_seconds: Some(2.),
                 spawnable: true,
                 velocity: 30.,
             },
             spaceship: ColliderConstant {
                 name: "spaceship",
+                damage: 100.,
+                health: 100.,
                 radius: 6.25,
                 scalar: 0.8,
+                spawn_timer_seconds: None,
                 spawnable: true,
                 velocity: 60.,
             },

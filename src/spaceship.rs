@@ -19,8 +19,6 @@ use crate::{
 use leafwing_input_manager::prelude::*;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
-const SPACESHIP_COLLISION_DAMAGE: f32 = 100.0;
-const SPACESHIP_HEALTH: f32 = 100.0;
 // const SPACESHIP_MAX_SPEED: f32 = 40.0;
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
 const SPACESHIP_ROTATION_SPEED: f32 = 3.0;
@@ -85,11 +83,11 @@ fn toggle_continuous_fire(
 
 fn spawn_spaceship(
     mut commands: Commands,
-    config: Res<ColliderConfig>,
+    collider_config: Res<ColliderConfig>,
     scene_assets: Res<SceneAssets>,
     //  q_camera: Query<Entity, With<PrimaryCamera>>,
 ) {
-    if !config.spaceship.spawnable {
+    if !collider_config.spaceship.spawnable {
         return;
     }
 
@@ -99,11 +97,11 @@ fn spawn_spaceship(
         .spawn(Spaceship)
         .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
         .insert(HealthBundle {
-            collision_damage: CollisionDamage(SPACESHIP_COLLISION_DAMAGE),
-            health: Health(SPACESHIP_HEALTH),
+            collision_damage: CollisionDamage(collider_config.spaceship.damage),
+            health: Health(collider_config.spaceship.health),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(config.spaceship.radius),
+            collider: Collider::ball(collider_config.spaceship.radius),
             collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Z
                 | LockedAxes::ROTATION_LOCKED_X
@@ -113,7 +111,7 @@ fn spawn_spaceship(
                 scene: scene_assets.spaceship.clone(),
                 transform: Transform {
                     translation: STARTING_TRANSLATION,
-                    scale: Vec3::splat(config.spaceship.scalar),
+                    scale: Vec3::splat(collider_config.spaceship.scalar),
                     rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2),
                 },
                 ..default()
@@ -127,7 +125,7 @@ fn spawn_spaceship(
     //     commands.entity(spaceship).add_child(camera);
     // }
 
-    name_entity(&mut commands, spaceship, config.spaceship.name);
+    name_entity(&mut commands, spaceship, collider_config.spaceship.name);
 }
 
 fn spaceship_movement_controls(

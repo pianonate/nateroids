@@ -1,8 +1,3 @@
-use bevy::{prelude::*, render::view::RenderLayers};
-use bevy_rapier3d::prelude::{Collider, Velocity};
-use rand::Rng;
-use std::{f32::consts::PI, ops::Range};
-
 use crate::{
     asset_loader::SceneAssets,
     boundary::Boundary,
@@ -12,6 +7,10 @@ use crate::{
     schedule::InGameSet,
     utils::name_entity,
 };
+use bevy::{prelude::*, render::view::RenderLayers};
+use bevy_rapier3d::prelude::{Collider, Velocity};
+use rand::Rng;
+use std::{f32::consts::PI, ops::Range};
 
 #[derive(Resource, Debug)]
 pub struct NateroidSpawnTimer {
@@ -19,18 +18,19 @@ pub struct NateroidSpawnTimer {
 }
 
 const ANGULAR_VELOCITY_RANGE: Range<f32> = -4.0..4.0;
-const NATEROID_COLLISION_DAMAGE: f32 = 10.0;
-const NATEROID_HEALTH: f32 = 50.0;
 const ROTATION_RANGE: Range<f32> = 0.0..2.0 * PI;
-const SPAWN_TIMER_SECONDS: f32 = 2.;
 
 #[derive(Component, Debug)]
 pub struct Nateroid;
 
 impl Plugin for Nateroid {
     fn build(&self, app: &mut App) {
+        let spawn_timer_seconds = ColliderConfig::default()
+            .nateroid
+            .spawn_timer_seconds
+            .expect("you haven't broken the nateroid spawn timer seconds have you?");
         app.insert_resource(NateroidSpawnTimer {
-            timer: Timer::from_seconds(SPAWN_TIMER_SECONDS, TimerMode::Repeating),
+            timer: Timer::from_seconds(spawn_timer_seconds, TimerMode::Repeating),
         })
         .add_systems(Update, spawn_nateroid.in_set(InGameSet::EntityUpdates));
     }
@@ -38,13 +38,13 @@ impl Plugin for Nateroid {
 
 fn spawn_nateroid(
     mut commands: Commands,
-    config: Res<ColliderConfig>,
+    collider_config: Res<ColliderConfig>,
     mut spawn_timer: ResMut<NateroidSpawnTimer>,
     time: Res<Time>,
     scene_assets: Res<SceneAssets>,
     boundary: Res<Boundary>,
 ) {
-    if !config.nateroid.spawnable {
+    if !collider_config.nateroid.spawnable {
         return;
     }
 
@@ -67,7 +67,7 @@ fn spawn_nateroid(
         //rng.gen_range(boundary_min.z..boundary_max.z),
     );
 
-    let velocity = config.nateroid.velocity;
+    let velocity = collider_config.nateroid.velocity;
     let random_velocity = random_vec3(-velocity..velocity, -velocity..velocity, 0.0..0.0);
     let random_angular_velocity = random_vec3(
         ANGULAR_VELOCITY_RANGE,
@@ -82,21 +82,23 @@ fn spawn_nateroid(
     transform.rotate_local_y(rng.gen_range(ROTATION_RANGE));
     transform.rotate_local_z(rng.gen_range(ROTATION_RANGE));
 
-    transform.scale = Vec3::splat(config.nateroid.scalar);
+    transform.scale = Vec3::splat(collider_config.nateroid.scalar);
+
+    let nateroid_model = SceneBundle {
+        scene: scene_assets.nateroid.clone(),
+        transform,
+        ..default()
+    };
 
     let nateroid = commands
         .spawn(Nateroid)
         .insert(HealthBundle {
-            collision_damage: CollisionDamage(NATEROID_COLLISION_DAMAGE),
-            health: Health(NATEROID_HEALTH),
+            collision_damage: CollisionDamage(collider_config.nateroid.damage),
+            health: Health(collider_config.nateroid.health),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(config.nateroid.radius),
-            model: SceneBundle {
-                scene: scene_assets.nateroid.clone(),
-                transform,
-                ..default()
-            },
+            collider: Collider::ball(collider_config.nateroid.radius),
+            model: nateroid_model,
             velocity: Velocity {
                 linvel: random_velocity,
                 angvel: random_angular_velocity,
@@ -106,7 +108,7 @@ fn spawn_nateroid(
         .insert(RenderLayers::from_layers(RenderLayer::Both.layers()))
         .id();
 
-    name_entity(&mut commands, nateroid, config.nateroid.name);
+    name_entity(&mut commands, nateroid, collider_config.nateroid.name);
 }
 
 fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {

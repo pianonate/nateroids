@@ -26,7 +26,6 @@ impl Plugin for StarsPlugin {
             )))
             // replace with a vector of stars or handles or something and then despawn the oldest
             // and replace with new ones...
-            .insert_resource(StarCounter(0))
             .add_systems(Update, spawn_star_tasks)
             .add_systems(Update, (rotate_sphere, update_bloom_settings));
     }
@@ -139,9 +138,6 @@ fn toggle_stars(
 #[derive(Resource)]
 struct StarSpawnTimer(Timer);
 
-#[derive(Resource)]
-struct StarCounter(usize);
-
 #[derive(Component)]
 pub struct Stars;
 
@@ -153,17 +149,17 @@ fn spawn_star_tasks(
     config: Res<StarConfig>,
     boundary: Res<Boundary>,
     time: Res<Time>,
+    mut spawned_count: Local<usize>,
     mut timer: ResMut<StarSpawnTimer>,
-    mut counter: ResMut<StarCounter>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    if timer.0.tick(time.delta()).just_finished() && counter.0 < config.star_count {
+    if timer.0.tick(time.delta()).just_finished() && *spawned_count < config.star_count {
         let longest_diagonal = boundary.longest_diagonal;
         let inner_sphere_radius = longest_diagonal + config.star_field_inner_diameter;
         let outer_sphere_radius = inner_sphere_radius + config.star_field_outer_diameter;
 
-        let stars_to_spawn = (config.star_count - counter.0).min(config.star_spawn_batch_size);
+        let stars_to_spawn = (config.star_count - *spawned_count).min(config.star_spawn_batch_size);
 
         for _ in 0..stars_to_spawn {
             let mut rng = rand::thread_rng();
@@ -210,6 +206,6 @@ fn spawn_star_tasks(
                 .insert(RenderLayers::from_layers(RenderLayer::Stars.layers()));
         }
 
-        counter.0 += stars_to_spawn;
+        *spawned_count += stars_to_spawn;
     }
 }

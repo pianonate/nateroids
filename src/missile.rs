@@ -19,16 +19,17 @@ use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
 
-const MISSILE_COLLISION_DAMAGE: f32 = 50.0;
-const MISSILE_HEALTH: f32 = 1.0;
 const MISSILE_MASS: f32 = 0.001;
-const MISSILE_SPAWN_TIMER_SECONDS: f32 = 1.0 / 20.0;
 
 impl Plugin for MissilePlugin {
-    // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
+        let spawn_timer_seconds = ColliderConfig::default()
+            .missile
+            .spawn_timer_seconds
+            .expect("you haven't broken the missile spawn timer seconds have you?");
+
         app.insert_resource(MissileSpawnTimer {
-            timer: Timer::from_seconds(MISSILE_SPAWN_TIMER_SECONDS, TimerMode::Repeating),
+            timer: Timer::from_seconds(spawn_timer_seconds, TimerMode::Repeating),
         })
         //.add_systems(Startup, config_gizmo_line_width)
         .add_systems(Update, fire_missile.in_set(InGameSet::UserInput))
@@ -184,8 +185,8 @@ fn spawn_missile(
     let missile = commands
         .spawn(missile)
         .insert(HealthBundle {
-            collision_damage: CollisionDamage(MISSILE_COLLISION_DAMAGE),
-            health: Health(MISSILE_HEALTH),
+            collision_damage: CollisionDamage(collider_config.missile.damage),
+            health: Health(collider_config.missile.health),
         })
         .insert(MovingObjectBundle {
             collider: Collider::ball(collider_config.missile.radius),

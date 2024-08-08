@@ -4,6 +4,7 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy::render::view::RenderLayers;
+use bevy::text::TextSettings;
 
 pub(crate) struct SplashPlugin;
 
@@ -19,6 +20,11 @@ impl Plugin for SplashPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SplashTimer {
             timer: Timer::from_seconds(AppearanceConfig::default().splash_timer, TimerMode::Once),
+        })
+        // not sure why i need this but it prevents a runtime warning
+        .insert_resource(TextSettings {
+            allow_dynamic_font_size: true,
+            ..Default::default()
         })
         .add_systems(Startup, splash_screen)
         .add_systems(Update, run_splash.run_if(in_state(GameState::Splash)));
