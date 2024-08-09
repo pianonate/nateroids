@@ -1,3 +1,4 @@
+use bevy::ecs::system::SystemParam;
 use bevy::{color::palettes::tailwind, prelude::*, render::view::RenderLayers};
 use bevy_rapier3d::{prelude::ColliderMassProperties::Mass, prelude::*};
 
@@ -65,20 +66,15 @@ pub struct Missile {
     last_teleport_position: Option<Vec3>, // Add this field
 }
 
-// rust learnings:
-// boundary declared as reference because it is moved into find_edge_point so it would only be able
-// to be called once if it wasn't a reference
 impl Missile {
-    pub fn new(
+    fn new(
         spaceship_transform: &Transform,
         spaceship_velocity: &Velocity,
-        boundary: &Res<Boundary>,
-        collider_config: &Res<ColliderConfig>,
-        appearance_config: Res<AppearanceConfig>,
+        res: &FireResources,
     ) -> Self {
         let forward = -spaceship_transform.forward().with_z(0.0);
 
-        let missile_velocity = forward * collider_config.missile.velocity;
+        let missile_velocity = forward * res.collider_config.missile.velocity;
 
         // add spaceship velocity so that the missile fires in the direction the spaceship
         // is going - without it, they only have the missile velocity and if the spaceship
@@ -87,11 +83,11 @@ impl Missile {
 
         let direction = forward;
         let origin = spaceship_transform.translation
-            + direction * appearance_config.missile_forward_spawn_distance;
+            + direction * res.appearance_config.missile_forward_spawn_distance;
 
         Missile {
             velocity,
-            total_distance: boundary.max_missile_distance,
+            total_distance: res.boundary.max_missile_distance,
             traveled_distance: 0.,
             remaining_distance: 0.,
             last_position: origin,
@@ -122,24 +118,27 @@ fn should_fire(
     }
 }
 
-// todo: #bevyquestion - how could i reduce the number of arguments here?
+#[derive(SystemParam)]
+struct FireResources<'w> {
+    appearance_config: Res<'w, AppearanceConfig>,
+    boundary: Res<'w, Boundary>,
+    collider_config: Res<'w, ColliderConfig>,
+    scene_assets: Res<'w, SceneAssets>,
+}
+
 // todo: #bevyquestion - in an object oriented world i think of attaching fire as a method to
 //                       the spaceship - but there's a lot of missile logic so i have it setup in missile
 //                       so should i have a simple fire method in method in spaceship that in turn calls this
 //                       fn or is having it here fine?
-#[allow(clippy::too_many_arguments)]
 fn fire_missile(
     mut commands: Commands,
-    appearance_config: Res<AppearanceConfig>,
-    collider_config: Res<ColliderConfig>,
     spawn_timer: ResMut<MissileSpawnTimer>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(&Transform, &Velocity, Option<&ContinuousFire>), With<Spaceship>>,
-    scene_assets: Res<SceneAssets>,
     time: Res<Time>,
-    boundary: Res<Boundary>,
+    res: FireResources,
 ) {
-    if !collider_config.missile.spawnable {
+    if !res.collider_config.missile.spawnable {
         return;
     }
 
@@ -153,49 +152,32 @@ fn fire_missile(
     }
 
     // extracted for readability
-    spawn_missile(
-        &mut commands,
-        appearance_config,
-        collider_config,
-        scene_assets,
-        spaceship_transform,
-        spaceship_velocity,
-        boundary,
-    );
+    spawn_missile(&mut commands, spaceship_transform, spaceship_velocity, res);
 }
 
 fn spawn_missile(
     commands: &mut Commands,
-    appearance_config: Res<AppearanceConfig>,
-    collider_config: Res<ColliderConfig>,
-    scene_assets: Res<SceneAssets>,
     spaceship_transform: &Transform,
     spaceship_velocity: &Velocity,
-    boundary: Res<Boundary>,
+    res: FireResources,
 ) {
     // boundary is used to set the total distance this missile can travel
-    let missile = Missile::new(
-        spaceship_transform,
-        spaceship_velocity,
-        &boundary,
-        &collider_config,
-        appearance_config,
-    );
+    let missile = Missile::new(spaceship_transform, spaceship_velocity, &res);
 
     let missile = commands
         .spawn(missile)
         .insert(HealthBundle {
-            collision_damage: CollisionDamage(collider_config.missile.damage),
-            health: Health(collider_config.missile.health),
+            collision_damage: CollisionDamage(res.collider_config.missile.damage),
+            health: Health(res.collider_config.missile.health),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(collider_config.missile.radius),
+            collider: Collider::ball(res.collider_config.missile.radius),
             collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
             mass: Mass(MISSILE_MASS),
             model: SceneBundle {
-                scene: scene_assets.missiles.clone(),
+                scene: res.scene_assets.missiles.clone(),
                 transform: Transform::from_translation(missile.last_position)
-                    .with_scale(Vec3::splat(collider_config.missile.scalar)),
+                    .with_scale(Vec3::splat(res.collider_config.missile.scalar)),
                 ..default()
             },
             velocity: Velocity {
@@ -207,7 +189,7 @@ fn spawn_missile(
         .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
         .id();
 
-    name_entity(commands, missile, collider_config.missile.name);
+    name_entity(commands, missile, res.collider_config.missile.name);
 }
 
 /// we update missile movement so that it can be despawned after it has traveled its total distance
