@@ -1,14 +1,31 @@
-use bevy::{prelude::*, render::view::visibility::RenderLayers};
+use bevy::{
+    prelude::*,
+    render::view::visibility::RenderLayers,
+};
 use bevy_rapier3d::prelude::{
-    Collider, ColliderMassProperties::Mass, CollisionGroups, LockedAxes, Velocity,
+    Collider,
+    ColliderMassProperties::Mass,
+    CollisionGroups,
+    LockedAxes,
+    Velocity,
 };
 
 use crate::{
     asset_loader::SceneAssets,
     camera::PrimaryCamera,
-    collision_detection::{GROUP_ASTEROID, GROUP_SPACESHIP},
-    config::{ColliderConfig, RenderLayer},
-    health::{CollisionDamage, Health, HealthBundle},
+    collision_detection::{
+        GROUP_ASTEROID,
+        GROUP_SPACESHIP,
+    },
+    config::{
+        ColliderConfig,
+        RenderLayer,
+    },
+    health::{
+        CollisionDamage,
+        Health,
+        HealthBundle,
+    },
     input::SpaceshipAction,
     movement::MovingObjectBundle,
     schedule::InGameSet,
@@ -16,30 +33,31 @@ use crate::{
     utils::name_entity,
 };
 
+use crate::boundary::WallApproachVisual;
 use leafwing_input_manager::prelude::*;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
 // const SPACESHIP_MAX_SPEED: f32 = 40.0;
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
 const SPACESHIP_ROTATION_SPEED: f32 = 3.0;
-const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0);
+const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0,);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug,)]
 pub struct Spaceship;
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug,)]
 pub struct SpaceshipShield;
 
-#[derive(Component, Default)]
+#[derive(Component, Default,)]
 pub struct ContinuousFire;
 
 pub struct SpaceshipPlugin;
 impl Plugin for SpaceshipPlugin {
     // make sure this is done after asset_loader has run
-    fn build(&self, app: &mut App) {
+    fn build(&self, app: &mut App,) {
         // we can come into InGame a couple of ways - when we do, spawn a spaceship
         // either when we exit splash, or when we enter GameOver
-        app.add_systems(OnEnter(GameState::InGame), spawn_spaceship)
+        app.add_systems(OnEnter(GameState::InGame,), spawn_spaceship,)
             .add_systems(
                 Update,
                 (
@@ -48,10 +66,13 @@ impl Plugin for SpaceshipPlugin {
                     toggle_continuous_fire,
                 )
                     .chain()
-                    .in_set(InGameSet::UserInput),
+                    .in_set(InGameSet::UserInput,),
             )
             // check if spaceship is destroyed...this will change the GameState
-            .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
+            .add_systems(
+                Update,
+                spaceship_destroyed.in_set(InGameSet::EntityUpdates,),
+            );
     }
 }
 
@@ -62,20 +83,20 @@ fn toggle_continuous_fire(
     q_spaceship: Query<
         (
             Entity,
-            &ActionState<SpaceshipAction>,
-            Option<&ContinuousFire>,
+            &ActionState<SpaceshipAction,>,
+            Option<&ContinuousFire,>,
         ),
-        With<Spaceship>,
+        With<Spaceship,>,
     >,
 ) {
-    if let Ok((entity, spaceship_action, continuous)) = q_spaceship.get_single() {
-        if spaceship_action.just_pressed(&SpaceshipAction::ContinuousFire) {
+    if let Ok((entity, spaceship_action, continuous,),) = q_spaceship.get_single() {
+        if spaceship_action.just_pressed(&SpaceshipAction::ContinuousFire,) {
             if continuous.is_some() {
                 println!("removing continuous");
-                commands.entity(entity).remove::<ContinuousFire>();
+                commands.entity(entity,).remove::<ContinuousFire>();
             } else {
                 println!("adding continuous");
-                commands.entity(entity).insert(ContinuousFire);
+                commands.entity(entity,).insert(ContinuousFire,);
             }
         }
     }
@@ -83,92 +104,94 @@ fn toggle_continuous_fire(
 
 fn spawn_spaceship(
     mut commands: Commands,
-    collider_config: Res<ColliderConfig>,
-    scene_assets: Res<SceneAssets>,
+    collider_config: Res<ColliderConfig,>,
+    scene_assets: Res<SceneAssets,>,
     //  q_camera: Query<Entity, With<PrimaryCamera>>,
 ) {
     if !collider_config.spaceship.spawnable {
         return;
     }
 
-    let spaceship_input = InputManagerBundle::with_map(SpaceshipAction::spaceship_input_map());
+    let spaceship_input = InputManagerBundle::with_map(SpaceshipAction::spaceship_input_map(),);
 
     let spaceship = commands
-        .spawn(Spaceship)
-        .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
+        .spawn(Spaceship,)
+        .insert(RenderLayers::from_layers(RenderLayer::Game.layers(),),)
         .insert(HealthBundle {
-            collision_damage: CollisionDamage(collider_config.spaceship.damage),
-            health: Health(collider_config.spaceship.health),
-        })
+            collision_damage: CollisionDamage(collider_config.spaceship.damage,),
+            health:           Health(collider_config.spaceship.health,),
+        },)
         .insert(MovingObjectBundle {
-            collider: Collider::ball(collider_config.spaceship.radius),
-            collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
+            collider: Collider::ball(collider_config.spaceship.radius,),
+            collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID,),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Z
                 | LockedAxes::ROTATION_LOCKED_X
                 | LockedAxes::ROTATION_LOCKED_Y,
-            mass: Mass(3.0),
+            mass: Mass(3.0,),
             model: SceneBundle {
                 scene: scene_assets.spaceship.clone(),
                 transform: Transform {
                     translation: STARTING_TRANSLATION,
-                    scale: Vec3::splat(collider_config.spaceship.scalar),
-                    rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2),
+                    scale:       Vec3::splat(collider_config.spaceship.scalar,),
+                    rotation:    Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2,),
                 },
                 ..default()
             },
             ..default()
-        })
-        .insert(spaceship_input)
+        },)
+        .insert(spaceship_input,)
+        .insert(WallApproachVisual::default(),)
         .id();
 
     // if let Ok(camera) = q_camera.get_single() {
     //     commands.entity(spaceship).add_child(camera);
     // }
 
-    name_entity(&mut commands, spaceship, collider_config.spaceship.name);
+    name_entity(&mut commands, spaceship, collider_config.spaceship.name,);
 }
 
 fn spaceship_movement_controls(
-    mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
-    q_camera: Query<&Transform, (With<PrimaryCamera>, Without<Spaceship>)>,
-    q_input_map: Query<&ActionState<SpaceshipAction>>,
-    config: Res<ColliderConfig>,
-    time: Res<Time>,
+    mut q_spaceship: Query<(&mut Transform, &mut Velocity,), With<Spaceship,>,>,
+    q_camera: Query<&Transform, (With<PrimaryCamera,>, Without<Spaceship,>,),>,
+    q_input_map: Query<&ActionState<SpaceshipAction,>,>,
+    config: Res<ColliderConfig,>,
+    time: Res<Time,>,
 ) {
-    if let Ok(camera_transform) = q_camera.get_single() {
-        // we can use this because there is only exactly one spaceship - so we're not looping over the query
-        if let Ok((mut spaceship_transform, mut velocity)) = q_spaceship.get_single_mut() {
+    if let Ok(camera_transform,) = q_camera.get_single() {
+        // we can use this because there is only exactly one spaceship - so we're not
+        // looping over the query
+        if let Ok((mut spaceship_transform, mut velocity,),) = q_spaceship.get_single_mut() {
             // dynamically update from inspector while game is running
-            spaceship_transform.scale = Vec3::splat(config.spaceship.scalar);
+            spaceship_transform.scale = Vec3::splat(config.spaceship.scalar,);
 
             let spaceship_action = q_input_map.single();
 
             let mut rotation = 0.0;
             let delta_seconds = time.delta_seconds();
 
-            if spaceship_action.pressed(&SpaceshipAction::TurnRight) {
+            if spaceship_action.pressed(&SpaceshipAction::TurnRight,) {
                 // right
                 velocity.angvel.z = 0.0;
                 rotation = SPACESHIP_ROTATION_SPEED * delta_seconds;
-            } else if spaceship_action.pressed(&SpaceshipAction::TurnLeft) {
+            } else if spaceship_action.pressed(&SpaceshipAction::TurnLeft,) {
                 // left
                 velocity.angvel.z = 0.0;
                 rotation = -SPACESHIP_ROTATION_SPEED * delta_seconds;
             }
 
             let camera_forward = camera_transform.forward();
-            let facing_opposite = camera_forward.dot(Vec3::new(0.0, 0.0, -1.0)) > 0.0;
+            let facing_opposite = camera_forward.dot(Vec3::new(0.0, 0.0, -1.0,),) > 0.0;
 
             if facing_opposite {
                 rotation = -rotation;
             }
 
             // rotate around the z-axis
-            spaceship_transform.rotate_z(rotation);
+            spaceship_transform.rotate_z(rotation,);
 
             let max_speed = config.spaceship.velocity;
 
-            if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
+            if spaceship_action.pressed(&SpaceshipAction::Accelerate,) {
                 // down
                 apply_acceleration(
                     &mut velocity,
@@ -177,7 +200,7 @@ fn spaceship_movement_controls(
                     max_speed,
                     delta_seconds,
                 );
-            } else if spaceship_action.pressed(&SpaceshipAction::Decelerate) {
+            } else if spaceship_action.pressed(&SpaceshipAction::Decelerate,) {
                 // up
                 apply_acceleration(
                     &mut velocity,
@@ -226,25 +249,26 @@ fn apply_acceleration(
 
 fn spaceship_shield_controls(
     mut commands: Commands,
-    query: Query<Entity, With<Spaceship>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
+    query: Query<Entity, With<Spaceship,>,>,
+    keyboard_input: Res<ButtonInput<KeyCode,>,>,
 ) {
-    let Ok(spaceship) = query.get_single() else {
+    let Ok(spaceship,) = query.get_single() else {
         return;
     };
 
-    if keyboard_input.pressed(KeyCode::Tab) {
-        commands.entity(spaceship).insert(SpaceshipShield);
+    if keyboard_input.pressed(KeyCode::Tab,) {
+        commands.entity(spaceship,).insert(SpaceshipShield,);
     }
 }
 
 // check if spaceship exists or not - query
-// if get_single() (there should only be one - returns an error then the spaceship doesn't exist
+// if get_single() (there should only be one - returns an error then the
+// spaceship doesn't exist
 fn spaceship_destroyed(
-    mut next_state: ResMut<NextState<GameState>>,
-    query: Query<(), With<Spaceship>>,
+    mut next_state: ResMut<NextState<GameState,>,>,
+    query: Query<(), With<Spaceship,>,>,
 ) {
     if query.get_single().is_err() {
-        next_state.set(GameState::GameOver);
+        next_state.set(GameState::GameOver,);
     }
 }

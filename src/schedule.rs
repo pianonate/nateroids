@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::state::GameState;
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet,)]
 pub enum InGameSet {
     UserInput,
     EntityUpdates,
@@ -13,7 +13,7 @@ pub enum InGameSet {
 pub struct SchedulePlugin;
 
 impl Plugin for SchedulePlugin {
-    fn build(&self, app: &mut App) {
+    fn build(&self, app: &mut App,) {
         app.configure_sets(
             Update,
             (
@@ -31,7 +31,7 @@ impl Plugin for SchedulePlugin {
                 // and we have a system that runs on state to watch for keyboard control
                 // that takes us in or out of InGame - i.e., pausing
                 // 1 line of code right here allows for pausing and starting the game!
-                .run_if(in_state(GameState::InGame)),
+                .run_if(in_state(GameState::InGame,),),
         )
         .add_systems(
             Update,
@@ -40,8 +40,8 @@ impl Plugin for SchedulePlugin {
             // this way there isn't any chance that UserInput systems will use despawned entities
             // for performance reasons this is pretty cool
             apply_deferred
-                .after(InGameSet::DespawnEntities)
-                .before(InGameSet::UserInput),
+                .after(InGameSet::DespawnEntities,)
+                .before(InGameSet::UserInput,),
         );
     }
 }
