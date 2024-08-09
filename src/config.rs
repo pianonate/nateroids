@@ -17,36 +17,36 @@ use bevy_inspector_egui::InspectorOptions;
 pub struct ConfigPlugin;
 
 impl Plugin for ConfigPlugin {
-    fn build(&self, app: &mut App,) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<AppearanceConfig>()
             .init_resource::<ColliderConfig>()
             .init_resource::<OrientationConfig>()
             .init_gizmo_group::<BoundaryGizmos>()
-            .add_systems(Startup, init_gizmo_configs,);
+            .add_systems(Startup, init_gizmo_configs);
     }
 }
 
-#[derive(Default, Reflect, GizmoConfigGroup,)]
+#[derive(Default, Reflect, GizmoConfigGroup)]
 pub struct BoundaryGizmos {}
 
 fn init_gizmo_configs(
-    mut config_store: ResMut<GizmoConfigStore,>,
-    appearance_config: Res<AppearanceConfig,>,
+    mut config_store: ResMut<GizmoConfigStore>,
+    appearance_config: Res<AppearanceConfig>,
 ) {
-    for (_, any_config, _,) in config_store.iter_mut() {
-        any_config.render_layers = RenderLayers::from_layers(RenderLayer::Game.layers(),);
+    for (_, any_config, _) in config_store.iter_mut() {
+        any_config.render_layers = RenderLayers::from_layers(RenderLayer::Game.layers());
         any_config.line_width = 2.;
     }
 
     // so we can avoid an error of borrowing the mutable config_store twice
     // in the same context
     {
-        let (config, _,) = config_store.config_mut::<BoundaryGizmos>();
+        let (config, _) = config_store.config_mut::<BoundaryGizmos>();
         config.line_width = appearance_config.boundary_line_width;
     }
 }
 
-#[derive(Resource, Reflect, Debug,)]
+#[derive(Resource, Reflect, Debug)]
 #[reflect(Resource)]
 pub struct AppearanceConfig {
     pub ambient_light_brightness:       f32,
@@ -75,11 +75,11 @@ impl Default for AppearanceConfig {
             bloom_intensity:                0.9,
             bloom_low_frequency_boost:      0.5,
             bloom_high_pass_frequency:      0.5,
-            boundary_color:                 Color::from(tailwind::BLUE_300,),
+            boundary_color:                 Color::from(tailwind::BLUE_300),
             boundary_line_width:            4.,
-            boundary_cell_count:            UVec3::new(2, 1, 1,),
+            boundary_cell_count:            UVec3::new(2, 1, 1),
             boundary_cell_scalar:           110.,
-            clear_color:                    Srgba(css::MIDNIGHT_BLUE,),
+            clear_color:                    Srgba(css::MIDNIGHT_BLUE),
             clear_color_darkening_factor:   0.019,
             missile_forward_spawn_distance: 5.6,
             missile_circle_radius:          7.,
@@ -89,7 +89,7 @@ impl Default for AppearanceConfig {
     }
 }
 
-#[derive(Debug, Clone, Reflect, Resource, InspectorOptions,)]
+#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
 #[reflect(Resource)]
 pub struct ColliderConfig {
     pub missile:   ColliderConstant,
@@ -97,7 +97,7 @@ pub struct ColliderConfig {
     pub spaceship: ColliderConstant,
 }
 
-#[derive(Debug, Clone, Reflect, Resource, InspectorOptions,)]
+#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
 #[reflect(Resource)]
 pub struct ColliderConstant {
     pub name:                &'static str,
@@ -105,7 +105,7 @@ pub struct ColliderConstant {
     pub health:              f32,
     pub radius:              f32,
     pub scalar:              f32,
-    pub spawn_timer_seconds: Option<f32,>,
+    pub spawn_timer_seconds: Option<f32>,
     pub spawnable:           bool,
     pub velocity:            f32,
 }
@@ -122,7 +122,7 @@ impl Default for ColliderConfig {
                 health:              1.,
                 radius:              0.5,
                 scalar:              1.5,
-                spawn_timer_seconds: Some(1.0 / 20.0,),
+                spawn_timer_seconds: Some(1.0 / 20.0),
                 spawnable:           true,
                 velocity:            85.,
             },
@@ -132,7 +132,7 @@ impl Default for ColliderConfig {
                 health:              50.,
                 radius:              2.3,
                 scalar:              2.,
-                spawn_timer_seconds: Some(2.,),
+                spawn_timer_seconds: Some(2.),
                 spawnable:           true,
                 velocity:            30.,
             },
@@ -170,7 +170,7 @@ impl Default for ColliderConfig {
 // locus is the home position of the camera - It implies a specific, fixed point
 // of reference, which aligns well with the idea of a camera's home or default
 // position.
-#[derive(Resource, Reflect, Debug,)]
+#[derive(Resource, Reflect, Debug)]
 #[reflect(Resource)]
 pub struct OrientationConfig {
     pub axis_mundi:     Vec3,
@@ -192,7 +192,7 @@ impl Default for OrientationConfig {
     }
 }
 
-#[derive(Debug, Clone, Reflect, Resource, InspectorOptions,)]
+#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
 #[reflect(Resource)]
 pub struct StarConfig {
     pub batch_size_replace:            usize,
@@ -232,14 +232,14 @@ impl Default for StarConfig {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq,)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CameraOrder {
     Game,
     Stars,
 }
 
 impl CameraOrder {
-    pub const fn order(self,) -> isize {
+    pub const fn order(self) -> isize {
         match self {
             CameraOrder::Game => 1,
             CameraOrder::Stars => 0,
@@ -254,7 +254,7 @@ impl CameraOrder {
 // showing on render layer 0 even though i don't think i asked for that
 
 // used for both camera order and render layer
-#[derive(Clone, Copy, Debug, PartialEq, Eq,)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RenderLayer {
     Both,
     Game,
@@ -264,11 +264,11 @@ pub enum RenderLayer {
 // returning the array rather than just one in case we have more complex
 // situations in the future that require overlapping layers
 impl RenderLayer {
-    pub const fn layers(self,) -> &'static [Layer] {
+    pub const fn layers(self) -> &'static [Layer] {
         match self {
-            RenderLayer::Both => &[0, 1,],
-            RenderLayer::Game => &[0,],
-            RenderLayer::Stars => &[1,],
+            RenderLayer::Both => &[0, 1],
+            RenderLayer::Game => &[0],
+            RenderLayer::Stars => &[1],
         }
     }
 }

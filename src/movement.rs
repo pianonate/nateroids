@@ -25,24 +25,24 @@ use crate::{
 const DEFAULT_GRAVITY: f32 = 0.0;
 const DEFAULT_MASS: f32 = 1.0;
 
-#[derive(Component, Debug, Default,)]
+#[derive(Component, Debug, Default)]
 pub struct Teleporter {
     pub just_teleported:          bool,
-    pub last_teleported_position: Option<Vec3,>,
-    pub last_teleported_normal:   Option<Dir3,>,
+    pub last_teleported_position: Option<Vec3>,
+    pub last_teleported_normal:   Option<Dir3>,
 }
 
 pub struct MovementPlugin;
 impl Plugin for MovementPlugin {
-    fn build(&self, app: &mut App,) {
+    fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            teleport_at_boundary.in_set(InGameSet::EntityUpdates,),
+            teleport_at_boundary.in_set(InGameSet::EntityUpdates),
         );
     }
 }
 
-#[derive(Bundle,)]
+#[derive(Bundle)]
 pub struct MovingObjectBundle {
     pub active_events:    ActiveEvents,
     pub collider:         Collider,
@@ -63,9 +63,9 @@ impl Default for MovingObjectBundle {
             active_events:    ActiveEvents::COLLISION_EVENTS,
             collider:         Collider::default(),
             collision_groups: CollisionGroups::default(),
-            gravity_scale:    GravityScale(DEFAULT_GRAVITY,),
+            gravity_scale:    GravityScale(DEFAULT_GRAVITY),
             locked_axes:      LockedAxes::TRANSLATION_LOCKED_Z,
-            mass:             Mass(DEFAULT_MASS,),
+            mass:             Mass(DEFAULT_MASS),
             model:            SceneBundle::default(),
             restitution:      Restitution {
                 coefficient:  1.0,
@@ -79,19 +79,19 @@ impl Default for MovingObjectBundle {
 }
 
 fn teleport_at_boundary(
-    boundary: Res<Boundary,>,
-    mut wrappable_entities: Query<(&mut Transform, &mut Teleporter,),>,
+    boundary: Res<Boundary>,
+    mut wrappable_entities: Query<(&mut Transform, &mut Teleporter)>,
 ) {
-    for (mut transform, mut wrappable,) in wrappable_entities.iter_mut() {
+    for (mut transform, mut wrappable) in wrappable_entities.iter_mut() {
         let original_position = transform.translation;
         let teleported_position =
-            calculate_teleport_position(original_position, &boundary.transform,);
+            calculate_teleport_position(original_position, &boundary.transform);
         if teleported_position != original_position {
             transform.translation = teleported_position;
             wrappable.just_teleported = true;
-            wrappable.last_teleported_position = Some(teleported_position,);
+            wrappable.last_teleported_position = Some(teleported_position);
             wrappable.last_teleported_normal =
-                Some(boundary.get_normal_for_position(teleported_position,),);
+                Some(boundary.get_normal_for_position(teleported_position));
         } else {
             wrappable.just_teleported = false;
             wrappable.last_teleported_position = None;
@@ -102,7 +102,7 @@ fn teleport_at_boundary(
 
 /// given a particular point, what is the point on the opposite side of the
 /// boundary?
-pub fn calculate_teleport_position(position: Vec3, transform: &Transform,) -> Vec3 {
+pub fn calculate_teleport_position(position: Vec3, transform: &Transform) -> Vec3 {
     let boundary_min = transform.translation - transform.scale / 2.0;
     let boundary_max = transform.translation + transform.scale / 2.0;
 
