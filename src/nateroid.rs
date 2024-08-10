@@ -4,11 +4,8 @@ use crate::{
         Boundary,
         WallApproachVisual,
     },
+    collider_config::ColliderConfig,
     config::RenderLayer,
-    collider_config::{
-        ColliderConfig,
-        ModelDimensions,
-    },
     health::{
         CollisionDamage,
         Health,
@@ -22,19 +19,12 @@ use bevy::{
     prelude::*,
     render::view::RenderLayers,
 };
-use bevy_rapier3d::prelude::{
-    Velocity,
-};
+use bevy_rapier3d::prelude::Velocity;
 use rand::Rng;
 use std::{
     f32::consts::PI,
     ops::Range,
 };
-
-#[derive(Resource, Debug)]
-pub struct NateroidSpawnTimer {
-    pub timer: Timer,
-}
 
 const ANGULAR_VELOCITY_RANGE: Range<f32> = -4.0..4.0;
 const ROTATION_RANGE: Range<f32> = 0.0..2.0 * PI;
@@ -44,30 +34,18 @@ pub struct Nateroid;
 
 impl Plugin for Nateroid {
     fn build(&self, app: &mut App) {
-        // todo: #bevy_question -
-        // we know it's there...
-        if let Some(config) = app.world().get_resource::<ColliderConfig>() {
-            app.insert_resource(NateroidSpawnTimer {
-                timer: Timer::from_seconds(
-                    config.nateroid.spawn_timer_seconds.unwrap(),
-                    TimerMode::Repeating,
-                ),
-            })
-            .add_systems(Update, spawn_nateroid.in_set(InGameSet::EntityUpdates));
-        }
+        app.add_systems(Update, spawn_nateroid.in_set(InGameSet::EntityUpdates));
     }
 }
 
 fn spawn_nateroid(
     mut commands: Commands,
-    collider_config: Res<ColliderConfig>,
-    mut spawn_timer: ResMut<NateroidSpawnTimer>,
+    mut collider_config: ResMut<ColliderConfig>,
     time: Res<Time>,
     scene_assets: Res<SceneAssets>,
     boundary: Res<Boundary>,
-    model_dimensions: Res<ModelDimensions>,
 ) {
-    if !should_spawn_nateroid(&collider_config, &mut spawn_timer, time) {
+    if !should_spawn_nateroid(&mut collider_config, time) {
         return;
     }
 
@@ -106,7 +84,7 @@ fn spawn_nateroid(
         ..default()
     };
 
-    let collider = model_dimensions.missile.sphere.clone();
+    let collider = collider_config.nateroid.collider.clone();
 
     let nateroid = commands
         .spawn(Nateroid)
@@ -115,6 +93,7 @@ fn spawn_nateroid(
             health:           Health(collider_config.nateroid.health),
         })
         .insert(MovingObjectBundle {
+            aabb: collider_config.nateroid.aabb.clone(),
             collider,
             model: nateroid_model,
             velocity: Velocity {
@@ -130,18 +109,15 @@ fn spawn_nateroid(
     name_entity(&mut commands, nateroid, collider_config.nateroid.name);
 }
 
-fn should_spawn_nateroid(
-    collider_config: &Res<ColliderConfig>,
-    spawn_timer: &mut ResMut<NateroidSpawnTimer>,
-    time: Res<Time>,
-) -> bool {
+fn should_spawn_nateroid(collider_config: &mut ResMut<ColliderConfig>, time: Res<Time>) -> bool {
     if !collider_config.nateroid.spawnable {
         return false;
     }
 
-    spawn_timer.timer.tick(time.delta());
+    let spawn_timer = collider_config.nateroid.spawn_timer.as_mut().unwrap();
+    spawn_timer.tick(time.delta());
 
-    if !spawn_timer.timer.just_finished() {
+    if !spawn_timer.just_finished() {
         return false;
     }
 

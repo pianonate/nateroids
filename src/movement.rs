@@ -1,4 +1,13 @@
-use bevy::prelude::*;
+use crate::{
+    boundary::Boundary,
+    collider_config::Aabb,
+    debug::aabb_mode_enabled,
+    schedule::InGameSet,
+};
+use bevy::{
+    color::palettes::tailwind,
+    prelude::*,
+};
 use bevy_rapier3d::{
     dynamics::{
         GravityScale,
@@ -17,11 +26,6 @@ use bevy_rapier3d::{
     },
 };
 
-use crate::{
-    boundary::Boundary,
-    schedule::InGameSet,
-};
-
 const DEFAULT_GRAVITY: f32 = 0.0;
 const DEFAULT_MASS: f32 = 1.0;
 
@@ -38,12 +42,14 @@ impl Plugin for MovementPlugin {
         app.add_systems(
             Update,
             teleport_at_boundary.in_set(InGameSet::EntityUpdates),
-        );
+        )
+        .add_systems(Update, draw_aabb_system.run_if(aabb_mode_enabled));
     }
 }
 
 #[derive(Bundle)]
 pub struct MovingObjectBundle {
+    pub aabb:             Aabb,
     pub active_events:    ActiveEvents,
     pub collider:         Collider,
     pub collision_groups: CollisionGroups,
@@ -58,12 +64,13 @@ pub struct MovingObjectBundle {
 }
 
 // all of these defaults are necessary - don't get rid of them
-// just because you don't see them accessed elsewhere - they're applied by,...default() 
-// you learned this by looking at active_events and thinking you can just get rid of them
-// you definitely need all of these components
+// just because you don't see them accessed elsewhere - they're applied
+// by,...default() you learned this by looking at active_events and thinking you
+// can just get rid of them you definitely need all of these components
 impl Default for MovingObjectBundle {
     fn default() -> Self {
         Self {
+            aabb:             Aabb::default(),
             active_events:    ActiveEvents::COLLISION_EVENTS,
             collider:         Collider::default(),
             collision_groups: CollisionGroups::default(),
@@ -131,4 +138,18 @@ pub fn calculate_teleport_position(position: Vec3, transform: &Transform) -> Vec
     }
 
     wrapped_position
+}
+
+fn draw_aabb_system(mut gizmos: Gizmos, query: Query<(&Transform, &Aabb)>) {
+    for (transform, aabb) in query.iter() {
+        let center = transform.transform_point(aabb.center());
+
+        // Draw the wireframe cube
+        gizmos.cuboid(
+            Transform::from_translation(center)
+                .with_scale(aabb.size() * transform.scale)
+                .with_rotation(transform.rotation),
+            Color::from(tailwind::GREEN_800),
+        );
+    }
 }

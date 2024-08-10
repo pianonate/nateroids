@@ -12,12 +12,12 @@ use bevy_rapier3d::prelude::{
 use crate::{
     asset_loader::SceneAssets,
     boundary::Boundary,
+    collider_config::ColliderConfig,
     collision_detection::{
         GROUP_ASTEROID,
         GROUP_MISSILE,
     },
     config::RenderLayer,
-    collider_config::ColliderConfig,
     health::{
         CollisionDamage,
         Health,
@@ -36,10 +36,7 @@ use crate::{
     utils::name_entity,
 };
 
-use crate::{
-    config::AppearanceConfig,
-    collider_config::ModelDimensions,
-};
+use crate::config::AppearanceConfig;
 use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
@@ -48,36 +45,22 @@ const MISSILE_MASS: f32 = 0.001;
 
 impl Plugin for MissilePlugin {
     fn build(&self, app: &mut App) {
-        let spawn_timer_seconds = ColliderConfig::default()
-            .missile
-            .spawn_timer_seconds
-            .expect("you haven't broken the missile spawn timer seconds have you?");
-
-        app.insert_resource(MissileSpawnTimer {
-            timer: Timer::from_seconds(spawn_timer_seconds, TimerMode::Repeating),
-        })
-        //.add_systems(Startup, config_gizmo_line_width)
-        .add_systems(Update, fire_missile.in_set(InGameSet::UserInput))
-        .add_systems(
-            Update,
-            (
-                missile_movement,
-                // toggles the MissilePartyEnabled if the MissileParty spaceship action is
-                // pressed
-                toggle_missile_party,
-                // allows missile party to run only if the MissilePartyEnabled resource is true
-                missile_party.run_if(|enabled: Res<MissilePartyEnabled>| enabled.0),
+        app.add_systems(Update, fire_missile.in_set(InGameSet::UserInput))
+            .add_systems(
+                Update,
+                (
+                    missile_movement,
+                    // toggles the MissilePartyEnabled if the MissileParty spaceship action is
+                    // pressed
+                    toggle_missile_party,
+                    // allows missile party to run only if the MissilePartyEnabled resource is true
+                    missile_party.run_if(|enabled: Res<MissilePartyEnabled>| enabled.0),
+                )
+                    .chain()
+                    .in_set(InGameSet::EntityUpdates),
             )
-                .chain()
-                .in_set(InGameSet::EntityUpdates),
-        )
-        .insert_resource(MissilePartyEnabled(true));
+            .insert_resource(MissilePartyEnabled(true));
     }
-}
-
-#[derive(Resource, Debug)]
-struct MissileSpawnTimer {
-    pub timer: Timer,
 }
 
 // todo: #rustquestion - how can i make it so that new has to be used and
@@ -96,11 +79,13 @@ impl Missile {
     fn new(
         spaceship_transform: &Transform,
         spaceship_velocity: &Velocity,
-        res: &FireResources,
+        collider_config: &ColliderConfig,
+        appearance_config: Res<AppearanceConfig>,
+        boundary: Res<Boundary>,
     ) -> Self {
         let forward = -spaceship_transform.forward().with_z(0.0);
 
-        let missile_velocity = forward * res.collider_config.missile.velocity;
+        let missile_velocity = forward * collider_config.missile.velocity;
 
         // add spaceship velocity so that the missile fires in the direction the
         // spaceship is going - without it, they only have the missile velocity
@@ -110,11 +95,11 @@ impl Missile {
 
         let direction = forward;
         let origin = spaceship_transform.translation
-            + direction * res.appearance_config.missile_forward_spawn_distance;
+            + direction * appearance_config.missile_forward_spawn_distance;
 
         Missile {
             velocity,
-            total_distance: res.boundary.max_missile_distance,
+            total_distance: boundary.max_missile_distance,
             traveled_distance: 0.,
             remaining_distance: 0.,
             last_position: origin,
@@ -128,15 +113,17 @@ impl Missile {
 /// we're holding down the fire button
 fn should_fire(
     continuous_fire: Option<&ContinuousFire>,
-    mut spawn_timer: ResMut<MissileSpawnTimer>,
+    collider_config: &mut ResMut<ColliderConfig>,
     time: Res<Time>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
 ) -> bool {
     let action_state = q_input_map.single();
 
     if continuous_fire.is_some() {
-        spawn_timer.timer.tick(time.delta());
-        if !spawn_timer.timer.just_finished() {
+        // We know the timer exists, so we can safely unwrap it
+        let timer = collider_config.missile.spawn_timer.as_mut().unwrap();
+        timer.tick(time.delta());
+        if !timer.just_finished() {
             return false;
         }
         action_state.pressed(&SpaceshipAction::Fire)
@@ -149,9 +136,7 @@ fn should_fire(
 struct FireResources<'w> {
     appearance_config: Res<'w, AppearanceConfig>,
     boundary:          Res<'w, Boundary>,
-    collider_config:   Res<'w, ColliderConfig>,
     scene_assets:      Res<'w, SceneAssets>,
-    model_dimensions:  Res<'w, ModelDimensions>,
 }
 
 // todo: #bevyquestion - in an object oriented world i think of attaching fire
@@ -161,13 +146,13 @@ struct FireResources<'w> {
 //                       fn or is having it here fine?
 fn fire_missile(
     mut commands: Commands,
-    spawn_timer: ResMut<MissileSpawnTimer>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(&Transform, &Velocity, Option<&ContinuousFire>), With<Spaceship>>,
+    mut collider_config: ResMut<ColliderConfig>,
     time: Res<Time>,
     res: FireResources,
 ) {
-    if !res.collider_config.missile.spawnable {
+    if !collider_config.missile.spawnable {
         return;
     }
 
@@ -176,39 +161,53 @@ fn fire_missile(
         return;
     };
 
-    if !should_fire(continuous_fire, spawn_timer, time, q_input_map) {
+    if !should_fire(continuous_fire, &mut collider_config, time, q_input_map) {
         return;
     }
 
     // extracted for readability
-    spawn_missile(&mut commands, spaceship_transform, spaceship_velocity, res);
+    spawn_missile(
+        &mut commands,
+        spaceship_transform,
+        spaceship_velocity,
+        &collider_config,
+        res,
+    );
 }
 
 fn spawn_missile(
     commands: &mut Commands,
     spaceship_transform: &Transform,
     spaceship_velocity: &Velocity,
+    collider_config: &ColliderConfig,
     res: FireResources,
 ) {
     // boundary is used to set the total distance this missile can travel
-    let missile = Missile::new(spaceship_transform, spaceship_velocity, &res);
+    let missile = Missile::new(
+        spaceship_transform,
+        spaceship_velocity,
+        collider_config,
+        res.appearance_config,
+        res.boundary,
+    );
 
-    let collider = res.model_dimensions.missile.cuboid.clone();
+    let collider = collider_config.missile.collider.clone();
 
     let missile = commands
         .spawn(missile)
         .insert(HealthBundle {
-            collision_damage: CollisionDamage(res.collider_config.missile.damage),
-            health:           Health(res.collider_config.missile.health),
+            collision_damage: CollisionDamage(collider_config.missile.damage),
+            health:           Health(collider_config.missile.health),
         })
         .insert(MovingObjectBundle {
+            aabb: collider_config.missile.aabb.clone(),
             collider,
             collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
             mass: Mass(MISSILE_MASS),
             model: SceneBundle {
                 scene: res.scene_assets.missiles.clone(),
                 transform: Transform::from_translation(missile.last_position)
-                    .with_scale(Vec3::splat(res.collider_config.missile.scalar)),
+                    .with_scale(Vec3::splat(collider_config.missile.scalar)),
                 ..default()
             },
             velocity: Velocity {
@@ -221,7 +220,7 @@ fn spawn_missile(
         //.insert(WallApproachVisual::default())
         .id();
 
-    name_entity(commands, missile, res.collider_config.missile.name);
+    name_entity(commands, missile, collider_config.missile.name);
 }
 
 /// we update missile movement so that it can be despawned after it has traveled

@@ -15,14 +15,37 @@ pub struct ColliderConfigPlugin;
 impl Plugin for ColliderConfigPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AssetsState>()
-            .init_resource::<ColliderConfig>()
             .add_systems(
                 Update,
                 check_asset_loading.run_if(in_state(AssetsState::Loading)),
             )
             .add_systems(OnEnter(AssetsState::Loaded), extract_model_dimensions);
-        //.add_systems(Update, debug_model_dimensions);
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ColliderType {
+    Ball,
+    Cuboid,
+}
+
+#[derive(Debug, Clone, Resource)]
+struct InitialColliderConfig {
+    missile:   InitialColliderConstant,
+    nateroid:  InitialColliderConstant,
+    spaceship: InitialColliderConstant,
+}
+
+#[derive(Debug, Clone)]
+struct InitialColliderConstant {
+    name:                &'static str,
+    damage:              f32,
+    health:              f32,
+    scalar:              f32,
+    spawn_timer_seconds: Option<f32>,
+    spawnable:           bool,
+    velocity:            f32,
+    collider_type:       ColliderType,
 }
 
 #[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
@@ -36,44 +59,48 @@ pub struct ColliderConfig {
 #[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
 #[reflect(Resource)]
 pub struct ColliderConstant {
-    pub name:                &'static str,
-    pub damage:              f32,
-    pub health:              f32,
-   // pub radius:              f32,
-    pub scalar:              f32,
-    pub spawn_timer_seconds: Option<f32>,
-    pub spawnable:           bool,
-    pub velocity:            f32,
+    pub aabb:        Aabb,
+    #[reflect(ignore)]
+    pub collider:    Collider,
+    pub damage:      f32,
+    pub health:      f32,
+    pub name:        &'static str,
+    pub scalar:      f32,
+    pub size:        Vec3,
+    #[reflect(ignore)]
+    pub spawn_timer: Option<Timer>,
+    pub spawnable:   bool,
+    pub velocity:    f32,
 }
 
-// these scales were set by eye-balling the game
-// if you get different assets these will likely need to change
-// to match the assets size
-impl Default for ColliderConfig {
+impl Default for InitialColliderConfig {
     fn default() -> Self {
         Self {
-            missile:   ColliderConstant {
-                name:                "missile",
+            missile:   InitialColliderConstant {
+                collider_type:       ColliderType::Cuboid,
                 damage:              50.,
                 health:              1.,
+                name:                "missile",
                 scalar:              1.5,
                 spawn_timer_seconds: Some(1.0 / 20.0),
                 spawnable:           true,
                 velocity:            85.,
             },
-            nateroid:  ColliderConstant {
-                name:                "nateroid",
+            nateroid:  InitialColliderConstant {
+                collider_type:       ColliderType::Ball,
                 damage:              10.,
                 health:              50.,
+                name:                "nateroid",
                 scalar:              2.,
                 spawn_timer_seconds: Some(2.),
                 spawnable:           true,
                 velocity:            30.,
             },
-            spaceship: ColliderConstant {
-                name:                "spaceship",
+            spaceship: InitialColliderConstant {
+                collider_type:       ColliderType::Cuboid,
                 damage:              100.,
                 health:              100.,
+                name:                "spaceship",
                 scalar:              0.8,
                 spawn_timer_seconds: None,
                 spawnable:           true,
@@ -83,87 +110,103 @@ impl Default for ColliderConfig {
     }
 }
 
-// nateroid flags as dead - i think because it's only accessed through a SystemParam, FireResources
-// used to reduce the param list for missile fire systems
-// you don't need to be warned about this instance
-#[allow(dead_code)] 
-#[derive(Resource, Debug)]
-pub struct ModelDimensions {
-    pub missile:   ModelDimension,
-    pub nateroid:  ModelDimension,
-    pub spaceship: ModelDimension,
-}
+const BLENDER_SCALE: f32 = 100.;
 
-const BLENDER_SCALE: f32 = 100.0;
+impl InitialColliderConstant {
+    fn initialize(&self, aabb: Aabb) -> ColliderConstant {
+        let original_aabb = aabb;
+        let adjusted_aabb = original_aabb.scale(BLENDER_SCALE);
 
-#[derive(Debug, Clone)]
-pub struct ModelDimension {
-    pub min:           Vec3,
-    pub max:           Vec3,
-    pub size:          Vec3,
-    pub center_offset: Vec3,
-    pub cuboid:        Collider,
-    pub sphere:        Collider,
-}
+        // Calculate the size based on the adjusted AABB
+        let size = adjusted_aabb.size();
 
-impl ModelDimension {
-    fn new(aabb: Aabb, collider_scalar: f32) -> Self {
-        println!("{:?}", aabb);
-
-        // Apply scale factor and remap axes
-        let min = Vec3::new(
-            aabb.min.x * BLENDER_SCALE,
-            aabb.min.y * BLENDER_SCALE,
-            aabb.min.z * BLENDER_SCALE,
-        );
-        let max = Vec3::new(
-            aabb.max.x * BLENDER_SCALE,
-            aabb.max.y * BLENDER_SCALE,
-            aabb.max.z * BLENDER_SCALE,
-        );
-
-        let size = max - min;
-
-       let center_offset = (min + max) / 2.0;
-        let scaled_dimensions = size * collider_scalar;
-
-        // Create a cuboid collider with an offset
-        let cuboid = Collider::cuboid(
-            scaled_dimensions.x / 2.0,
-            scaled_dimensions.y / 2.0,
-            scaled_dimensions.z / 2.0,
-        );
-
-        let sphere = Collider::ball(scaled_dimensions.length());
+        let collider = match self.collider_type {
+            ColliderType::Ball => {
+                let radius = size.length() / 2.;
+                println!("Creating Ball collider with radius: {}", radius);
+                Collider::ball(radius)
+            },
+            ColliderType::Cuboid => {
+                println!(
+                    "Creating Cuboid collider with half extents: {:?}",
+                    size / 2.0
+                );
+                Collider::cuboid(size.x / 2.0, size.y / 2.0, size.z / 2.0)
+            },
+        };
 
         println!(
-            "size: {:?} sphere radius: {:?} ",
-            size,
-            scaled_dimensions.length()
+            "Collider type after creation: {:?}",
+            collider.raw.shape_type()
         );
 
-        Self {
-            min,
-            max,
+        let spawn_timer = self
+            .spawn_timer_seconds
+            .map(|seconds| Timer::from_seconds(seconds, TimerMode::Repeating));
+
+        ColliderConstant {
+            aabb: adjusted_aabb,
+            collider,
+            damage: self.damage,
+            health: self.health,
+            name: self.name,
+            scalar: self.scalar,
             size,
-            center_offset,
-            cuboid,
-            sphere,
+            spawn_timer,
+            spawnable: self.spawnable,
+            velocity: self.velocity,
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+pub fn extract_model_dimensions(
+    mut commands: Commands,
+    scenes: Res<Assets<Scene>>,
+    meshes: Res<Assets<Mesh>>,
+    scene_assets: Res<SceneAssets>,
+) {
+    let initial_config = InitialColliderConfig::default();
+
+    let collider_config = ColliderConfig {
+        missile:   initial_config.missile.initialize(get_scene_aabb(
+            &scenes,
+            &meshes,
+            &scene_assets.missiles,
+        )),
+        nateroid:  initial_config.nateroid.initialize(get_scene_aabb(
+            &scenes,
+            &meshes,
+            &scene_assets.nateroid,
+        )),
+        spaceship: initial_config.spaceship.initialize(get_scene_aabb(
+            &scenes,
+            &meshes,
+            &scene_assets.spaceship,
+        )),
+    };
+
+    commands.insert_resource(collider_config);
+}
+
+#[derive(Component, Debug, Clone, Reflect, Default)]
 pub struct Aabb {
     pub min: Vec3,
     pub max: Vec3,
 }
 
-impl Default for Aabb {
-    fn default() -> Self {
+impl Aabb {
+    pub fn new(min: Vec3, max: Vec3) -> Self { Self { min, max } }
+
+    pub fn half_extents(&self) -> Vec3 { (self.max - self.min) * 0.5 }
+
+    pub fn size(&self) -> Vec3 { self.max - self.min }
+
+    pub fn center(&self) -> Vec3 { (self.min + self.max) / 2.0 }
+
+    pub fn scale(&self, scale: f32) -> Self {
         Self {
-            min: Vec3::ZERO,
-            max: Vec3::ONE,
+            min: self.min * scale,
+            max: self.max * scale,
         }
     }
 }
@@ -179,7 +222,7 @@ pub fn check_asset_loading(
         asset_server.get_load_state(scene_assets.nateroid.id()) == Some(LoadState::Loaded);
     let spaceship_loaded =
         asset_server.get_load_state(scene_assets.spaceship.id()) == Some(LoadState::Loaded);
-    
+
     if missile_loaded && nateroid_loaded && spaceship_loaded {
         // println!("All assets loaded, transitioning to Loaded state");
         next_state.set(AssetsState::Loaded);
@@ -191,31 +234,6 @@ pub enum AssetsState {
     #[default]
     Loading,
     Loaded,
-}
-
-pub fn extract_model_dimensions(
-    mut commands: Commands,
-    scenes: Res<Assets<Scene>>,
-    meshes: Res<Assets<Mesh>>,
-    scene_assets: Res<SceneAssets>,
-    collider_config: Res<ColliderConfig>,
-) {
-    let dimensions = ModelDimensions {
-        missile:   ModelDimension::new(
-            get_scene_aabb(&scenes, &meshes, &scene_assets.missiles),
-            collider_config.missile.scalar,
-        ),
-        nateroid:  ModelDimension::new(
-            get_scene_aabb(&scenes, &meshes, &scene_assets.nateroid),
-            collider_config.nateroid.scalar,
-        ),
-        spaceship: ModelDimension::new(
-            get_scene_aabb(&scenes, &meshes, &scene_assets.spaceship),
-            collider_config.spaceship.scalar,
-        ),
-    };
-
-    commands.insert_resource(dimensions);
 }
 
 fn get_scene_aabb(scenes: &Assets<Scene>, meshes: &Assets<Mesh>, handle: &Handle<Scene>) -> Aabb {

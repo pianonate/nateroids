@@ -1,10 +1,10 @@
 use crate::{
     boundary::Boundary,
+    collider_config::ColliderConfig,
     config::{
         AppearanceConfig,
         StarConfig,
     },
-    collider_config::ColliderConfig,
     input::GlobalAction,
     schedule::InGameSet,
 };
@@ -25,11 +25,14 @@ impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
         app
             // puts us in debug mode which can be checked anywhere
+            .init_resource::<AabbMode>()
             .init_resource::<DebugMode>()
             .init_resource::<InspectorMode>()
             .add_systems(Startup, register_debug_resources)
-            .add_systems(Update, toggle_debug.in_set(InGameSet::UserInput))
-            .add_systems(Update, toggle_inspector.in_set(InGameSet::UserInput));
+            .add_systems(
+                Update,
+                (toggle_debug, toggle_inspector, toggle_aabb_mode).in_set(InGameSet::UserInput),
+            );
     }
 }
 
@@ -71,5 +74,20 @@ fn toggle_inspector(
     if user_input.just_pressed(&GlobalAction::Inspector) {
         inspector_mode.enabled = !inspector_mode.enabled;
         println!("InspectorMode: {}", inspector_mode.enabled);
+    }
+}
+
+#[derive(Resource, Reflect, Debug, Default)]
+#[reflect(Resource)]
+pub struct AabbMode {
+    pub enabled: bool,
+}
+
+pub fn aabb_mode_enabled(aabb_mode: Res<AabbMode>) -> bool { aabb_mode.enabled }
+
+fn toggle_aabb_mode(user_input: Res<ActionState<GlobalAction>>, mut aabb_mode: ResMut<AabbMode>) {
+    if user_input.just_pressed(&GlobalAction::AABBs) {
+        aabb_mode.enabled = !aabb_mode.enabled;
+        println!("AabbMode: {}", aabb_mode.enabled);
     }
 }

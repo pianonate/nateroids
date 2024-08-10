@@ -4,10 +4,10 @@ use crate::{
     asset_loader::AssetLoaderPlugin,
     boundary::BoundaryPlugin,
     camera::CameraPlugin,
+    collider_config::ColliderConfigPlugin,
     collision_detection::CollisionDetectionPlugin,
     config::ConfigPlugin,
     despawn::DespawnPlugin,
-    collider_config::ColliderConfigPlugin,
     input::InputPlugin,
     missile::MissilePlugin,
     movement::MovementPlugin,
@@ -41,10 +41,10 @@ mod inspector;
 mod asset_loader;
 mod boundary;
 mod camera;
+mod collider_config;
 mod collision_detection;
 mod config;
 mod despawn;
-mod collider_config;
 mod health;
 mod input;
 mod missile;
