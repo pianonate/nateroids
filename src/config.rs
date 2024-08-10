@@ -13,6 +13,7 @@ use bevy::{
     },
 };
 use bevy_inspector_egui::InspectorOptions;
+use crate::inspector::AmbientLightBrightness;
 
 pub struct ConfigPlugin;
 
@@ -21,6 +22,7 @@ impl Plugin for ConfigPlugin {
         app.init_resource::<AppearanceConfig>()
             .init_resource::<OrientationConfig>()
             .init_gizmo_group::<BoundaryGizmos>()
+            .add_systems(Update, update_appearance_config)
             .add_systems(Startup, init_gizmo_configs);
     }
 }
@@ -73,7 +75,7 @@ pub struct AppearanceConfig {
 impl Default for AppearanceConfig {
     fn default() -> Self {
         Self {
-            ambient_light_brightness:       3000.,
+            ambient_light_brightness:       1100.,
             bloom_intensity:                0.9,
             bloom_low_frequency_boost:      0.5,
             bloom_high_pass_frequency:      0.5,
@@ -92,6 +94,19 @@ impl Default for AppearanceConfig {
             zoom_sensitivity_mouse:         5.,
         }
     }
+}
+
+fn update_appearance_config(
+    mut commands: Commands,
+    ambient_light: Res<AmbientLightBrightness>,
+    mut appearance_config: ResMut<AppearanceConfig>,
+) {
+    if ambient_light.is_changed() {
+        appearance_config.ambient_light_brightness = ambient_light.0;
+        commands.insert_resource(AmbientLight {
+            color:      default(),
+            brightness: appearance_config.ambient_light_brightness,
+        })    }
 }
 
 // centralize orientation defaults for a quick change-up

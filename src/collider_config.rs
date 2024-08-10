@@ -91,7 +91,7 @@ impl Default for InitialColliderConfig {
                 damage:              10.,
                 health:              50.,
                 name:                "nateroid",
-                scalar:              2.,
+                scalar:              1.,
                 spawn_timer_seconds: Some(2.),
                 spawnable:           true,
                 velocity:            30.,
