@@ -31,7 +31,7 @@ impl Plugin for BoundaryPlugin {
                 wall_approach_system,
                 draw_wall_approach_circles,
             )
-                .run_if(in_state(GameState::InGame)),
+                .run_if(in_state(GameState::InGame).or_else(in_state(GameState::Paused))),
         );
     }
 }

@@ -61,7 +61,8 @@ pub struct AppearanceConfig {
     pub missile_forward_spawn_distance: f32,
     pub missile_circle_radius:          f32,
     pub splash_timer:                   f32,
-    pub zoom_sensitivity:               f32,
+    pub zoom_sensitivity_pinch:         f32,
+    pub zoom_sensitivity_mouse:         f32,
 }
 
 // centralize appearance defaults
@@ -83,7 +84,8 @@ impl Default for AppearanceConfig {
             missile_forward_spawn_distance: 5.6,
             missile_circle_radius:          7.,
             splash_timer:                   2.,
-            zoom_sensitivity:               5.,
+            zoom_sensitivity_pinch:         100.,
+            zoom_sensitivity_mouse:         5.,
         }
     }
 }

@@ -11,9 +11,12 @@ use crate::{
     stars::StarsCamera,
 };
 use bevy::{
-    input::mouse::{
-        MouseScrollUnit,
-        MouseWheel,
+    input::{
+        gestures::PinchGesture,
+        mouse::{
+            MouseScrollUnit,
+            MouseWheel,
+        },
     },
     prelude::{
         KeyCode::ShiftLeft,
@@ -45,6 +48,7 @@ impl Plugin for CameraPlugin {
                 // order matters because we hack around the input manager
                 // that doesn't yet support trackpads
                 home_camera,
+                pinch_to_zoom,
                 zoom_camera,
                 orbit_camera,
                 pan_camera,
@@ -134,6 +138,19 @@ pub fn spawn_camera(
     // }),
 }
 
+fn pinch_to_zoom(
+    mut query: Query<&mut Transform, With<PrimaryCamera>>,
+    mut pinch_gesture_events: EventReader<PinchGesture>,
+    config: Res<AppearanceConfig>,
+) {
+    for event in pinch_gesture_events.read() {
+        info!("{:?}", event.0);
+        if let Ok(mut transform) = query.get_single_mut() {
+            impl_zoom(config.zoom_sensitivity_pinch, &mut transform, event.0);
+        }
+    }
+}
+
 fn zoom_camera(
     mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
@@ -145,19 +162,23 @@ fn zoom_camera(
             None => return,
         };
 
-        // Calculate zoom direction based on camera's current orientation
-        let zoom_direction = transform.forward();
-
-        // Calculate zoom amount
-        let zoom_speed = config.zoom_sensitivity; // Adjust this value to control zoom sensitivity
-        let zoom_amount = zoom_delta * zoom_speed;
-
-        // Apply zoom
-        transform.translation += zoom_direction * zoom_amount;
+        impl_zoom(config.zoom_sensitivity_mouse, &mut transform, zoom_delta);
 
         // cleanup any dual_axis propagating from orbit so that Pan doesn't see it
         elide_dual_axis_data(&mut action_state);
     }
+}
+
+fn impl_zoom(sensitivity: f32, transform: &mut Mut<Transform>, zoom_delta: f32) {
+    // Calculate zoom direction based on camera's current orientation
+    let zoom_direction = transform.forward();
+
+    // Calculate zoom amount
+    let zoom_speed = sensitivity; // Adjust this value to control zoom sensitivity
+    let zoom_amount = zoom_delta * zoom_speed;
+
+    // Apply zoom
+    transform.translation += zoom_direction * zoom_amount;
 }
 
 // does a lot of stuff! determines if we're mouse or trackpad (where zooming is

@@ -54,7 +54,8 @@ impl Plugin for SpaceshipPlugin {
     fn build(&self, app: &mut App) {
         // we can come into InGame a couple of ways - when we do, spawn a spaceship
         // either when we exit splash, or when we enter GameOver
-        app.add_systems(OnEnter(GameState::InGame), spawn_spaceship)
+        app.add_systems(OnExit(GameState::Splash), spawn_spaceship)
+            .add_systems(OnExit(GameState::GameOver), spawn_spaceship)
             .add_systems(
                 Update,
                 (
@@ -262,9 +263,15 @@ fn spaceship_shield_controls(
 // spaceship doesn't exist
 fn spaceship_destroyed(
     mut next_state: ResMut<NextState<GameState>>,
-    query: Query<(), With<Spaceship>>,
+    query: Query<Entity, With<Spaceship>>,
+    state: Res<State<GameState>>,
 ) {
     if query.get_single().is_err() {
+        println!(
+            "spaceship destroyed: {:?}, count {:?}",
+            state,
+            query.iter().count()
+        );
         next_state.set(GameState::GameOver);
     }
 }

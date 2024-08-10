@@ -33,16 +33,14 @@ impl Plugin for InputPlugin {
         app
             // camera will be added to the camera when it is spawned
             .add_plugins(InputManagerPlugin::<CameraMovement>::default())
-            // global actions such as Pause added as a resource to be used wherever necessary
-            .add_plugins(InputManagerPlugin::<GlobalAction>::default())
             // spaceship will have input attached to it when spawning a spaceship
             .add_plugins(InputManagerPlugin::<SpaceshipAction>::default())
-            .init_resource::<ActionState<GlobalAction>>()
-            // this map is available to all systems
-            .insert_resource(GlobalAction::global_input_map())
             .init_resource::<ActionState<SpaceshipAction>>()
-            // this map is available to all systems
-            .insert_resource(SpaceshipAction::spaceship_input_map());
+            .insert_resource(SpaceshipAction::spaceship_input_map())
+            // global actions such as Pause added as a resource to be used wherever
+            .add_plugins(InputManagerPlugin::<GlobalAction>::default())
+            .init_resource::<ActionState<GlobalAction>>()
+            .insert_resource(GlobalAction::global_input_map());
     }
 }
 

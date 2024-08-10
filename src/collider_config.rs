@@ -122,7 +122,7 @@ impl InitialColliderConstant {
 
         let collider = match self.collider_type {
             ColliderType::Ball => {
-                let radius = size.length() / 2.;
+                let radius = size.length() / 3.;
                 println!("Creating Ball collider with radius: {}", radius);
                 Collider::ball(radius)
             },
