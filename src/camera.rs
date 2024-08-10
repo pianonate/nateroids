@@ -129,13 +129,6 @@ pub fn spawn_camera(
         ))
         .add_child(stars_camera_entity)
         .insert(PrimaryCamera);
-
-    // don't forget to use bevy::core_pipeline::Skybox
-    // if you want to add a skybox on a level, you insert it below
-    // .insert(Skybox {
-    //     image: scene_assets.cubemap.image_handle.clone(),
-    //     brightness: 1000.0,
-    // }),
 }
 
 fn pinch_to_zoom(
