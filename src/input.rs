@@ -9,7 +9,6 @@ use bevy::prelude::{
         KeyA,
         KeyC,
         KeyD,
-        KeyM,
         KeyS,
         KeyW,
         ShiftLeft,
@@ -103,7 +102,6 @@ pub enum SpaceshipAction {
     ContinuousFire,
     Decelerate,
     Fire,
-    MissileParty,
     TurnLeft,
     TurnRight,
 }
@@ -121,8 +119,6 @@ impl SpaceshipAction {
         input_map.insert(Self::Decelerate, ArrowDown);
 
         input_map.insert(Self::Fire, Space);
-
-        input_map.insert(Self::MissileParty, KeyM);
 
         input_map.insert(Self::TurnLeft, KeyA);
         input_map.insert(Self::TurnLeft, ArrowLeft);

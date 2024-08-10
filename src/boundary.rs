@@ -7,14 +7,8 @@ use crate::{
     state::GameState,
 };
 use bevy::{
-    color::palettes::css::{
-        GREEN,
-        RED,
-    },
-    prelude::{
-        Color::Srgba,
-        *,
-    },
+    color::palettes::tailwind,
+    prelude::*,
 };
 use bevy_inspector_egui::InspectorOptions;
 use bevy_rapier3d::prelude::Velocity;
@@ -29,34 +23,27 @@ impl Plugin for BoundaryPlugin {
             (
                 draw_boundary,
                 wall_approach_system,
-                draw_wall_approach_circles,
+                // draw_wall_approach_circles,
+                draw_approaching_circles,
+                draw_emerging_circles,
             )
                 .run_if(in_state(GameState::InGame).or_else(in_state(GameState::Paused))),
         );
     }
 }
 
-// This component can be added to any entity that should trigger the wall
-// approach visualization
 #[derive(Component, Default)]
 pub struct WallApproachVisual {
-    approaching: Option<BoundaryWall>,
-    emerging:    Option<BoundaryWall>,
+    pub approaching: Option<BoundaryWall>,
+    pub emerging:    Option<BoundaryWall>,
 }
 
-struct BoundaryWall {
-    normal:   Dir3,
-    draw_at:  Vec3,
-    distance: f32,
-    circles:  usize,
+#[derive(Clone, Debug)]
+pub struct BoundaryWall {
+    pub position: Vec3,
+    pub normal:   Dir3,
+    pub distance: f32,
 }
-
-// Constants for the visualization
-const APPROACH_THRESHOLD: f32 = 0.3; // 20% of the boundary size
-const SHRINK_THRESHOLD: f32 = 0.07;
-const CIRCLE_COUNT: usize = 10;
-const APPROACHING_COLOR: Color = Srgba(RED);
-const EMERGING_COLOR: Color = Srgba(GREEN);
 
 fn draw_boundary(
     mut boundary: ResMut<Boundary>,
@@ -231,11 +218,11 @@ pub fn wall_approach_system(
     mut query: Query<(&Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
     boundary: Res<Boundary>,
     time: Res<Time>,
+    appearance: Res<AppearanceConfig>,
 ) {
-    let delta_time = time.delta_seconds();
     let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
-    let approach_distance = boundary_size * APPROACH_THRESHOLD;
-    let shrink_distance = boundary_size * SHRINK_THRESHOLD;
+    let approach_distance = boundary_size * appearance.boundary_distance_approach;
+    let delta_time = time.delta_seconds();
 
     for (transform, velocity, teleporter, mut visual) in query.iter_mut() {
         let position = transform.translation;
@@ -243,116 +230,117 @@ pub fn wall_approach_system(
 
         if let Some(collision_point) = boundary.find_edge_point(position, direction) {
             let distance_to_wall = position.distance(collision_point);
+            let normal = boundary.get_normal_for_position(collision_point);
 
             if distance_to_wall <= approach_distance {
-                let normal = boundary.get_normal_for_position(collision_point);
-                // let active_circles = ((CIRCLE_COUNT as f32)
-                //     * (1.0 - distance_to_wall / shrink_distance))
-                //     .ceil() as usize;
-                let active_circles = if distance_to_wall <= shrink_distance {
-                    // Calculate shrinking circles only within shrink distance
-                    ((CIRCLE_COUNT as f32) * (1.0 - distance_to_wall / shrink_distance)).ceil()
-                        as usize
-                } else {
-                    // Only one circle between approach and shrink distance
-                    1
-                };
                 visual.approaching = Some(BoundaryWall {
+                    position: collision_point,
                     normal,
-                    draw_at: collision_point,
                     distance: distance_to_wall,
-                    circles: active_circles.min(CIRCLE_COUNT),
                 });
                 visual.emerging = None;
             } else {
                 visual.approaching = None;
-
-                if teleporter.just_teleported {
-                    if let Some(normal) = teleporter.last_teleported_normal {
-                        // boundary.get_normal_for_position(position);
-                        visual.emerging = Some(BoundaryWall {
-                            normal,
-                            draw_at: position,
-                            distance: 0.0,
-                            circles: CIRCLE_COUNT,
-                        });
-                    }
-                } else if let Some(ref mut emerging) = visual.emerging {
-                    emerging.distance += velocity.linvel.length() * delta_time;
-                    if emerging.distance > shrink_distance {
-                        visual.emerging = None;
-                    } else {
-                        let progress = emerging.distance / shrink_distance;
-                        emerging.circles = (CIRCLE_COUNT as f32 * (1.0 - progress)).ceil() as usize;
-                    }
-                }
             }
         } else {
             visual.approaching = None;
-            visual.emerging = None;
-        }
-    }
-}
-
-pub fn draw_wall_approach_circles(
-    query: Query<&WallApproachVisual>,
-    boundary: Res<Boundary>,
-    mut gizmos: Gizmos,
-) {
-    let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
-    let threshold_distance = boundary_size * SHRINK_THRESHOLD;
-
-    for visual in query.iter() {
-        if let Some(ref approaching) = visual.approaching {
-            draw_approaching_circles(
-                &mut gizmos,
-                approaching.draw_at,
-                approaching.normal,
-                threshold_distance,
-                APPROACHING_COLOR,
-                approaching.circles,
-            );
         }
 
-        if let Some(ref emerging) = visual.emerging {
-            draw_emerging_circles(
-                &mut gizmos,
-                emerging.draw_at,
-                emerging.normal,
-                threshold_distance,
-                EMERGING_COLOR,
-                emerging.circles,
-            );
+        if teleporter.just_teleported {
+            if let Some(normal) = teleporter.last_teleported_normal {
+                visual.emerging = Some(BoundaryWall {
+                    position,
+                    normal,
+                    distance: 0.0,
+                });
+            }
+        } else if let Some(ref mut emerging) = visual.emerging {
+            emerging.distance += velocity.linvel.length() * delta_time;
+            if emerging.distance > approach_distance {
+                visual.emerging = None;
+            }
         }
     }
 }
 
 fn draw_approaching_circles(
-    gizmos: &mut Gizmos,
-    position: Vec3,
-    normal: Dir3,
-    max_radius: f32,
-    color: Color,
-    circle_count: usize,
+    query: Query<&WallApproachVisual>,
+    boundary: Res<Boundary>,
+    mut gizmos: Gizmos,
+    appearance_config: Res<AppearanceConfig>,
 ) {
-    for i in 0..circle_count {
-        let radius = max_radius * (CIRCLE_COUNT - i) as f32 / CIRCLE_COUNT as f32;
-        let dir3_normal = normal;
-        gizmos.circle(position, dir3_normal, radius, color);
+    let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
+    let shrink_distance = boundary_size * appearance_config.boundary_distance_shrink;
+
+    for visual in query.iter() {
+        if let Some(ref approaching) = visual.approaching {
+            draw_single_circle(
+                &mut gizmos,
+                approaching.position,
+                approaching.normal,
+                approaching.distance,
+                Color::from(tailwind::BLUE_600),
+                &appearance_config,
+                shrink_distance,
+            );
+        }
     }
 }
 
 fn draw_emerging_circles(
+    query: Query<&WallApproachVisual>,
+    boundary: Res<Boundary>,
+    mut gizmos: Gizmos,
+    appearance_config: Res<AppearanceConfig>,
+) {
+    let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
+    let shrink_distance = boundary_size * appearance_config.boundary_distance_shrink;
+    let approach_distance = boundary_size * appearance_config.boundary_distance_approach;
+
+    for visual in query.iter() {
+        if let Some(ref emerging) = visual.emerging {
+            let radius = if emerging.distance <= shrink_distance {
+                appearance_config.missile_circle_radius
+            } else if emerging.distance >= approach_distance {
+                0.0 // This will effectively make the circle disappear
+            } else {
+                // Linear interpolation between full size and zero,
+                // but only after exceeding the shrink distance
+                let t =
+                    (emerging.distance - shrink_distance) / (approach_distance - shrink_distance);
+                appearance_config.missile_circle_radius * (1.0 - t)
+            };
+
+            if radius > 0.0 {
+                gizmos.circle(
+                    emerging.position,
+                    emerging.normal,
+                    radius,
+                    Color::from(tailwind::YELLOW_800),
+                );
+            }
+        }
+    }
+}
+
+fn draw_single_circle(
     gizmos: &mut Gizmos,
     position: Vec3,
     normal: Dir3,
-    max_radius: f32,
+    distance: f32,
     color: Color,
-    remaining_circles: usize,
+    config: &AppearanceConfig,
+    shrink_distance: f32,
 ) {
-    for i in 0..remaining_circles {
-        let radius = max_radius * (i + 1) as f32 / CIRCLE_COUNT as f32;
-        let dir3_normal = normal; //Dir3::new(normal).unwrap_or(Dir3::NEG_Z);
-        gizmos.circle(position, dir3_normal, radius, color);
-    }
+    let max_radius = config.missile_circle_radius;
+    let min_radius = max_radius * 0.5;
+
+    let radius = if distance > shrink_distance {
+        max_radius
+    } else {
+        let scale_factor = (distance / shrink_distance).clamp(0.0, 1.0);
+        min_radius + (max_radius - min_radius) * scale_factor
+    };
+
+    gizmos.circle(position, normal, radius, color);
 }

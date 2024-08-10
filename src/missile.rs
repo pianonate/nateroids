@@ -36,7 +36,10 @@ use crate::{
     utils::name_entity,
 };
 
-use crate::config::AppearanceConfig;
+use crate::{
+    boundary::WallApproachVisual,
+    config::AppearanceConfig,
+};
 use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
@@ -48,18 +51,8 @@ impl Plugin for MissilePlugin {
         app.add_systems(Update, fire_missile.in_set(InGameSet::UserInput))
             .add_systems(
                 Update,
-                (
-                    missile_movement,
-                    // toggles the MissilePartyEnabled if the MissileParty spaceship action is
-                    // pressed
-                    toggle_missile_party,
-                    // allows missile party to run only if the MissilePartyEnabled resource is true
-                    missile_party.run_if(|enabled: Res<MissilePartyEnabled>| enabled.0),
-                )
-                    .chain()
-                    .in_set(InGameSet::EntityUpdates),
-            )
-            .insert_resource(MissilePartyEnabled(true));
+                (missile_movement, missile_party).in_set(InGameSet::EntityUpdates),
+            );
     }
 }
 
@@ -217,7 +210,7 @@ fn spawn_missile(
             ..default()
         })
         .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
-        //.insert(WallApproachVisual::default())
+        .insert(WallApproachVisual::default())
         .id();
 
     name_entity(commands, missile, collider_config.missile.name);
@@ -251,21 +244,6 @@ fn missile_movement(mut query: Query<(&Transform, &mut Missile, &Teleporter)>) {
     }
 }
 
-#[derive(Resource, Default)]
-struct MissilePartyEnabled(bool);
-
-fn toggle_missile_party(
-    q_input_map: Query<&ActionState<SpaceshipAction>, With<Spaceship>>,
-    mut missile_party_enabled: ResMut<MissilePartyEnabled>,
-) {
-    if let Ok(spaceship_action) = q_input_map.get_single() {
-        if spaceship_action.just_pressed(&SpaceshipAction::MissileParty) {
-            missile_party_enabled.0 = !missile_party_enabled.0;
-            println!("missile party: {:?}", missile_party_enabled.0);
-        }
-    }
-}
-
 /// fun! with missiles!
 fn missile_party(
     mut q_missile: Query<&mut Missile>,
@@ -274,59 +252,104 @@ fn missile_party(
     config: Res<AppearanceConfig>,
 ) {
     for missile in q_missile.iter_mut() {
-        draw_missile_targets(&mut gizmos, &missile, &boundary, &config);
-    }
-}
+        let current_position = missile.last_position;
 
-fn draw_missile_targets(
-    gizmos: &mut Gizmos,
-    missile: &Missile,
-    boundary: &Res<Boundary>,
-    config: &AppearanceConfig,
-) {
-    let current_position = missile.last_position;
-
-    if let Some(next_boundary) = boundary.find_edge_point(current_position, missile.velocity) {
-        let (position, normal, color, remaining_distance) =
+        if let Some(next_boundary) = boundary.find_edge_point(current_position, missile.velocity) {
             if missile.remaining_distance < current_position.distance(next_boundary) {
                 let end_point =
                     current_position + missile.velocity.normalize() * missile.remaining_distance;
                 let circle_normal = Dir3::new(-missile.velocity.normalize()).unwrap_or(Dir3::NEG_Z);
-                (
+
+                draw_variable_size_circle(
+                    &config,
+                    &mut gizmos,
                     end_point,
                     circle_normal,
                     Color::from(tailwind::GREEN_800),
                     missile.remaining_distance,
-                )
-            } else {
-                let boundary_normal = boundary.get_normal_for_position(next_boundary);
-                let distance = current_position.distance(next_boundary);
-                (
-                    next_boundary,
-                    boundary_normal,
-                    Color::from(tailwind::BLUE_600),
-                    distance,
-                )
-            };
-
-        draw_variable_size_circle(config, gizmos, position, normal, color, remaining_distance);
-    }
-
-    // Draw sphere at the last teleport position if it exists
-    if let Some(last_teleport_position) = missile.last_teleport_position {
-        let teleport_normal = boundary.get_normal_for_position(last_teleport_position);
-
-        gizmos.circle(
-            last_teleport_position,
-            teleport_normal,
-            config.missile_circle_radius,
-            Color::from(tailwind::YELLOW_600),
-        );
+                );
+            }
+        }
     }
 }
 
+// fn draw_missile_targets(
+//     gizmos: &mut Gizmos,
+//     missile: &Missile,
+//     boundary: &Res<Boundary>,
+//     config: &AppearanceConfig,
+// ) {
+//     let current_position = missile.last_position;
+//
+//     if let Some(next_boundary) = boundary.find_edge_point(current_position,
+// missile.velocity) {         if missile.remaining_distance <
+// current_position.distance(next_boundary) {             let end_point =
+//                 current_position + missile.velocity.normalize() *
+// missile.remaining_distance;             let circle_normal =
+// Dir3::new(-missile.velocity.normalize()).unwrap_or(Dir3::NEG_Z);
+//
+//             draw_variable_size_circle(
+//                 config,
+//                 gizmos,
+//                 end_point,
+//                 circle_normal,
+//                 Color::from(tailwind::GREEN_800),
+//                 missile.remaining_distance,
+//             );
+//         }
+//     }
+// }
+
+// fn draw_missile_targets(
+//     gizmos: &mut Gizmos,
+//     missile: &Missile,
+//     boundary: &Res<Boundary>,
+//     config: &AppearanceConfig,
+// ) {
+//     let current_position = missile.last_position;
+//
+//     if let Some(next_boundary) = boundary.find_edge_point(current_position,
+// missile.velocity) {         let (position, normal, color, remaining_distance)
+// =             if missile.remaining_distance <
+// current_position.distance(next_boundary) {                 let end_point =
+//                     current_position + missile.velocity.normalize() *
+// missile.remaining_distance;                 let circle_normal =
+// Dir3::new(-missile.velocity.normalize()).unwrap_or(Dir3::NEG_Z);
+// (                     end_point,
+//                     circle_normal,
+//                     Color::from(tailwind::GREEN_800),
+//                     missile.remaining_distance,
+//                 )
+//             } else {
+//                 let boundary_normal =
+// boundary.get_normal_for_position(next_boundary);                 let distance
+// = current_position.distance(next_boundary);                 (
+//                     next_boundary,
+//                     boundary_normal,
+//                     Color::from(tailwind::BLUE_600),
+//                     distance,
+//                 )
+//             };
+//
+//         draw_variable_size_circle(config, gizmos, position, normal, color,
+// remaining_distance);     }
+//
+//     // Draw sphere at the last teleport position if it exists
+//     if let Some(last_teleport_position) = missile.last_teleport_position {
+//         let teleport_normal =
+// boundary.get_normal_for_position(last_teleport_position);
+//
+//         gizmos.circle(
+//             last_teleport_position,
+//             teleport_normal,
+//             config.missile_circle_radius,
+//             Color::from(tailwind::YELLOW_600),
+//         );
+//     }
+// }
+
 fn draw_variable_size_circle(
-    config: &AppearanceConfig,
+    config: &Res<AppearanceConfig>,
     gizmos: &mut Gizmos,
     position: Vec3,
     normal: Dir3,
