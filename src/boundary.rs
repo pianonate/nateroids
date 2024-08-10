@@ -67,7 +67,7 @@ fn draw_boundary(
     // and also so that it can be dynamically changed with the inspector while the
     // game is running the boundary transform is used both for position but also
     // so the fixed camera can be positioned based on the boundary scale
-    boundary.transform.scale = config.boundary_cell_scalar * boundary.cell_count.as_vec3();
+    boundary.transform.scale = config.boundary_scalar * boundary.cell_count.as_vec3();
 
     // update the longest diagonal so that the camera can be positioned correctly
 
@@ -76,7 +76,7 @@ fn draw_boundary(
             boundary.transform.translation,
             Quat::IDENTITY,
             boundary.cell_count,
-            Vec3::splat(config.boundary_cell_scalar),
+            Vec3::splat(config.boundary_scalar),
             config.boundary_color,
         )
         .outer_edges();
@@ -95,7 +95,7 @@ impl Default for Boundary {
     fn default() -> Self {
         let config = AppearanceConfig::default();
 
-        let cell_scale = config.boundary_cell_scalar * config.boundary_cell_count.as_vec3();
+        let cell_scale = config.boundary_scalar * config.boundary_cell_count.as_vec3();
         let longest_diagonal =
             (cell_scale.x.powi(2) + cell_scale.y.powi(2) + cell_scale.z.powi(2)).sqrt();
 

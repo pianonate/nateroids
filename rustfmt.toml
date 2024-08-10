@@ -7,3 +7,4 @@ max_width = 100
 struct_field_align_threshold = 30
 trailing_comma = "Vertical"
 wrap_comments = true
+unstable_features = true

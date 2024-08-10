@@ -19,7 +19,6 @@ pub struct ConfigPlugin;
 impl Plugin for ConfigPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<AppearanceConfig>()
-            .init_resource::<ColliderConfig>()
             .init_resource::<OrientationConfig>()
             .init_gizmo_group::<BoundaryGizmos>()
             .add_systems(Startup, init_gizmo_configs);
@@ -56,7 +55,7 @@ pub struct AppearanceConfig {
     pub boundary_color:                 Color,
     pub boundary_line_width:            f32,
     pub boundary_cell_count:            UVec3,
-    pub boundary_cell_scalar:           f32,
+    pub boundary_scalar:                f32,
     pub clear_color:                    Color,
     pub clear_color_darkening_factor:   f32,
     pub missile_forward_spawn_distance: f32,
@@ -78,77 +77,17 @@ impl Default for AppearanceConfig {
             boundary_color:                 Color::from(tailwind::BLUE_300),
             boundary_line_width:            4.,
             boundary_cell_count:            UVec3::new(2, 1, 1),
-            boundary_cell_scalar:           110.,
+            boundary_scalar:                110.,
             clear_color:                    Srgba(css::MIDNIGHT_BLUE),
             clear_color_darkening_factor:   0.019,
             missile_forward_spawn_distance: 5.6,
             missile_circle_radius:          7.,
             splash_timer:                   2.,
-            zoom_sensitivity:               8.,
+            zoom_sensitivity:               5.,
         }
     }
 }
 
-#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
-#[reflect(Resource)]
-pub struct ColliderConfig {
-    pub missile:   ColliderConstant,
-    pub nateroid:  ColliderConstant,
-    pub spaceship: ColliderConstant,
-}
-
-#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
-#[reflect(Resource)]
-pub struct ColliderConstant {
-    pub name:                &'static str,
-    pub damage:              f32,
-    pub health:              f32,
-    pub radius:              f32,
-    pub scalar:              f32,
-    pub spawn_timer_seconds: Option<f32>,
-    pub spawnable:           bool,
-    pub velocity:            f32,
-}
-
-// these scales were set by eye-balling the game
-// if you get different assets these will likely need to change
-// to match the assets size
-impl Default for ColliderConfig {
-    fn default() -> Self {
-        Self {
-            missile:   ColliderConstant {
-                name:                "missile",
-                damage:              50.,
-                health:              1.,
-                radius:              0.5,
-                scalar:              1.5,
-                spawn_timer_seconds: Some(1.0 / 20.0),
-                spawnable:           true,
-                velocity:            85.,
-            },
-            nateroid:  ColliderConstant {
-                name:                "nateroid",
-                damage:              10.,
-                health:              50.,
-                radius:              2.3,
-                scalar:              2.,
-                spawn_timer_seconds: Some(2.),
-                spawnable:           true,
-                velocity:            30.,
-            },
-            spaceship: ColliderConstant {
-                name:                "spaceship",
-                damage:              100.,
-                health:              100.,
-                radius:              6.25,
-                scalar:              0.8,
-                spawn_timer_seconds: None,
-                spawnable:           true,
-                velocity:            60.,
-            },
-        }
-    }
-}
 // centralize orientation defaults for a quick change-up
 // Y-axis (vertical): Axis Mundi
 // This represents the central axis of the world, connecting the heavens, earth,

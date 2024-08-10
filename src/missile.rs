@@ -16,10 +16,8 @@ use crate::{
         GROUP_ASTEROID,
         GROUP_MISSILE,
     },
-    config::{
-        ColliderConfig,
-        RenderLayer,
-    },
+    config::RenderLayer,
+    collider_config::ColliderConfig,
     health::{
         CollisionDamage,
         Health,
@@ -38,7 +36,10 @@ use crate::{
     utils::name_entity,
 };
 
-use crate::config::AppearanceConfig;
+use crate::{
+    config::AppearanceConfig,
+    collider_config::ModelDimensions,
+};
 use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
@@ -150,6 +151,7 @@ struct FireResources<'w> {
     boundary:          Res<'w, Boundary>,
     collider_config:   Res<'w, ColliderConfig>,
     scene_assets:      Res<'w, SceneAssets>,
+    model_dimensions:  Res<'w, ModelDimensions>,
 }
 
 // todo: #bevyquestion - in an object oriented world i think of attaching fire
@@ -191,6 +193,8 @@ fn spawn_missile(
     // boundary is used to set the total distance this missile can travel
     let missile = Missile::new(spaceship_transform, spaceship_velocity, &res);
 
+    let collider = res.model_dimensions.missile.cuboid.clone();
+
     let missile = commands
         .spawn(missile)
         .insert(HealthBundle {
@@ -198,7 +202,7 @@ fn spawn_missile(
             health:           Health(res.collider_config.missile.health),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(res.collider_config.missile.radius),
+            collider,
             collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
             mass: Mass(MISSILE_MASS),
             model: SceneBundle {

@@ -57,6 +57,10 @@ pub struct MovingObjectBundle {
     pub wrappable:        Teleporter,
 }
 
+// all of these defaults are necessary - don't get rid of them
+// just because you don't see them accessed elsewhere - they're applied by,...default() 
+// you learned this by looking at active_events and thinking you can just get rid of them
+// you definitely need all of these components
 impl Default for MovingObjectBundle {
     fn default() -> Self {
         Self {

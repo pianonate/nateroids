@@ -49,8 +49,7 @@ impl Plugin for CameraPlugin {
                 orbit_camera,
                 pan_camera,
             )
-                .chain()
-                .in_set(InGameSet::UserInput),
+                .chain(), // .in_set(InGameSet::UserInput),
         )
         .add_systems(Update, update_clear_color.in_set(InGameSet::EntityUpdates));
     }

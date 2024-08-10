@@ -4,9 +4,10 @@ use crate::{
         Boundary,
         WallApproachVisual,
     },
-    config::{
+    config::RenderLayer,
+    collider_config::{
         ColliderConfig,
-        RenderLayer,
+        ModelDimensions,
     },
     health::{
         CollisionDamage,
@@ -22,7 +23,6 @@ use bevy::{
     render::view::RenderLayers,
 };
 use bevy_rapier3d::prelude::{
-    Collider,
     Velocity,
 };
 use rand::Rng;
@@ -65,14 +65,9 @@ fn spawn_nateroid(
     time: Res<Time>,
     scene_assets: Res<SceneAssets>,
     boundary: Res<Boundary>,
+    model_dimensions: Res<ModelDimensions>,
 ) {
-    if !collider_config.nateroid.spawnable {
-        return;
-    }
-
-    spawn_timer.timer.tick(time.delta());
-
-    if !spawn_timer.timer.just_finished() {
+    if !should_spawn_nateroid(&collider_config, &mut spawn_timer, time) {
         return;
     }
 
@@ -111,6 +106,8 @@ fn spawn_nateroid(
         ..default()
     };
 
+    let collider = model_dimensions.missile.sphere.clone();
+
     let nateroid = commands
         .spawn(Nateroid)
         .insert(HealthBundle {
@@ -118,7 +115,7 @@ fn spawn_nateroid(
             health:           Health(collider_config.nateroid.health),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(collider_config.nateroid.radius),
+            collider,
             model: nateroid_model,
             velocity: Velocity {
                 linvel: random_velocity,
@@ -131,6 +128,24 @@ fn spawn_nateroid(
         .id();
 
     name_entity(&mut commands, nateroid, collider_config.nateroid.name);
+}
+
+fn should_spawn_nateroid(
+    collider_config: &Res<ColliderConfig>,
+    spawn_timer: &mut ResMut<NateroidSpawnTimer>,
+    time: Res<Time>,
+) -> bool {
+    if !collider_config.nateroid.spawnable {
+        return false;
+    }
+
+    spawn_timer.timer.tick(time.delta());
+
+    if !spawn_timer.timer.just_finished() {
+        return false;
+    }
+
+    true
 }
 
 fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {

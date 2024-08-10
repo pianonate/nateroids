@@ -3,7 +3,6 @@ use bevy::{
     render::view::visibility::RenderLayers,
 };
 use bevy_rapier3d::prelude::{
-    Collider,
     ColliderMassProperties::Mass,
     CollisionGroups,
     LockedAxes,
@@ -17,10 +16,8 @@ use crate::{
         GROUP_ASTEROID,
         GROUP_SPACESHIP,
     },
-    config::{
-        ColliderConfig,
-        RenderLayer,
-    },
+    config::RenderLayer,
+    collider_config::ColliderConfig,
     health::{
         CollisionDamage,
         Health,
@@ -33,7 +30,10 @@ use crate::{
     utils::name_entity,
 };
 
-use crate::boundary::WallApproachVisual;
+use crate::{
+    boundary::WallApproachVisual,
+    collider_config::ModelDimensions,
+};
 use leafwing_input_manager::prelude::*;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
@@ -102,13 +102,16 @@ fn toggle_continuous_fire(
 fn spawn_spaceship(
     mut commands: Commands,
     collider_config: Res<ColliderConfig>,
-    scene_assets: Res<SceneAssets>, //  q_camera: Query<Entity, With<PrimaryCamera>>,
+    scene_assets: Res<SceneAssets>,
+    model_dimensions: Res<ModelDimensions>,
 ) {
     if !collider_config.spaceship.spawnable {
         return;
     }
 
     let spaceship_input = InputManagerBundle::with_map(SpaceshipAction::spaceship_input_map());
+
+    let collider = model_dimensions.spaceship.cuboid.clone();
 
     let spaceship = commands
         .spawn(Spaceship)
@@ -118,7 +121,8 @@ fn spawn_spaceship(
             health:           Health(collider_config.spaceship.health),
         })
         .insert(MovingObjectBundle {
-            collider: Collider::ball(collider_config.spaceship.radius),
+            //  collider: Collider::ball(collider_config.spaceship.radius),
+            collider,
             collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Z
                 | LockedAxes::ROTATION_LOCKED_X

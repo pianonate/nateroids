@@ -2,9 +2,9 @@ use crate::{
     boundary::Boundary,
     config::{
         AppearanceConfig,
-        ColliderConfig,
         StarConfig,
     },
+    collider_config::ColliderConfig,
     input::GlobalAction,
     schedule::InGameSet,
 };

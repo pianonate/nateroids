@@ -44,7 +44,7 @@ pub struct SceneAssets {
     pub spaceship: Handle<Scene>, // pub sphere: Handle<Scene>,
 }
 
-fn load_assets(
+pub fn load_assets(
     //    mut commands: Commands,
     mut scene_assets: ResMut<SceneAssets>,
     asset_server: Res<AssetServer>,

@@ -7,6 +7,7 @@ use crate::{
     collision_detection::CollisionDetectionPlugin,
     config::ConfigPlugin,
     despawn::DespawnPlugin,
+    collider_config::ColliderConfigPlugin,
     input::InputPlugin,
     missile::MissilePlugin,
     movement::MovementPlugin,
@@ -43,6 +44,7 @@ mod camera;
 mod collision_detection;
 mod config;
 mod despawn;
+mod collider_config;
 mod health;
 mod input;
 mod missile;
@@ -66,6 +68,7 @@ fn main() {
         .add_plugins(CameraPlugin)
         .add_plugins(CollisionDetectionPlugin)
         .add_plugins(ConfigPlugin)
+        .add_plugins(ColliderConfigPlugin)
         .add_plugins(DespawnPlugin)
         .add_plugins(InputPlugin)
         .add_plugins(MovementPlugin)
