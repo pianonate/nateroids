@@ -24,6 +24,7 @@ use bevy::{
     },
     render::view::RenderLayers,
 };
+use bevy::core_pipeline::tonemapping::Tonemapping;
 use leafwing_input_manager::prelude::*;
 
 pub struct CameraPlugin;
@@ -109,10 +110,12 @@ pub fn spawn_camera(
 
     let primary_camera = Camera3dBundle {
         camera: Camera {
+            hdr: true,
             order: CameraOrder::Game.order(),
             clear_color: ClearColorConfig::Custom(clear_color),
             ..default()
         },
+        tonemapping: Tonemapping::TonyMcMapface, 
         transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.)
             .looking_at(orientation.nexus, orientation.axis_mundi),
 

@@ -29,15 +29,20 @@ use egui_dock::{
     NodeIndex,
 };
 use leafwing_input_manager::action_state::ActionState;
+use crate::config::AppearanceConfig;
 
 pub struct InspectorPlugin;
 
 impl Plugin for InspectorPlugin {
+    
+    
     fn build(&self, app: &mut App) {
+        let default_config = AppearanceConfig::default();
+        
         app.add_plugins(EguiPlugin)
             .add_plugins(DefaultInspectorConfigPlugin)
             .insert_resource(UiState::new())
-            .insert_resource(SliderValue(50.0))
+            .insert_resource(AmbientLightBrightness(default_config.ambient_light_brightness))
             .add_systems(
                 PostUpdate,
                 show_ui_system
@@ -111,7 +116,8 @@ impl UiState {
 }
 
 #[derive(Resource)]
-struct SliderValue(f64);
+pub struct AmbientLightBrightness(pub(crate) f32);
+
 
 struct TabViewer<'a> {
     world:         &'a mut World,
@@ -131,30 +137,23 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                 ui.label("GameState");
                 ui_for_state::<GameState>(self.world, ui);
                 ui.add_space(8.0);
-                if let Some(mut slider_value) = self.world.get_resource_mut::<SliderValue>() {
-                    let label = "star field_radius:";
-                    let min = 1.;
-                    let max = 100.;
-                    let step_by = 1.;
+                if let Some(mut ambient_light_slider) = self.world.get_resource_mut::<AmbientLightBrightness>() {
+                    let label = "ambient light value:";
+                    let min = 200.;
+                    let max = 3000.;
+                    let step_by = 200.;
 
                     ui.label(label);
                     ui.add(
-                        egui::Slider::new(&mut slider_value.0, min..=max)
-                            //.text("outer_star_field_radius")
+                        egui::Slider::new(&mut ambient_light_slider.0, min..=max)
                             .step_by(step_by)
                             .custom_formatter(|n, _| {
-                                if n == max {
-                                    "Max".to_owned()
-                                } else {
-                                    format!("{:.0}", n)
-                                }
+                                format!("{:.2}", n)
                             })
                             .custom_parser(|s| s.parse::<f64>().ok())
-                            .logarithmic(false),
                     );
 
-                    //  ui.label(format!("Slider Value: {:.2}",
-                    // slider_value.0));
+
                 }
                 egui::CollapsingHeader::new("resources")
                     .default_open(true)
