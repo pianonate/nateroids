@@ -3,6 +3,15 @@ use crate::{
     debug::inspector_mode_enabled,
     state::GameState,
 };
+use bevy::diagnostic::{
+    DiagnosticsStore,
+    FrameTimeDiagnosticsPlugin,
+};
+
+use crate::{
+    config::AppearanceConfig,
+    input::GlobalAction,
+};
 use bevy::{
     prelude::*,
     render::camera::Viewport,
@@ -18,12 +27,12 @@ use bevy_inspector_egui::{
     bevy_inspector,
     bevy_inspector::ui_for_state,
     egui,
+    egui::{
+        emath,
+        Align,
+        Layout,
+    },
     DefaultInspectorConfigPlugin,
-};
-
-use crate::{
-    config::AppearanceConfig,
-    input::GlobalAction,
 };
 use egui_dock::{
     DockArea,
@@ -85,7 +94,7 @@ fn show_ui_system(world: &mut World) {
 enum EguiWindow {
     Controls,
     GameView,
-    Inspector,
+    //  Inspector,
 }
 
 #[derive(Resource)]
@@ -98,9 +107,12 @@ impl UiState {
     pub fn new() -> Self {
         let mut state = DockState::new(vec![EguiWindow::GameView]);
         let tree = state.main_surface_mut();
-        let [game, _inspector] =
-            tree.split_right(NodeIndex::root(), 0.8, vec![EguiWindow::Inspector]);
-        let [_game, _controls] = tree.split_left(game, 0.25, vec![EguiWindow::Controls]);
+        // let [game, _inspector] =
+        //     tree.split_right(NodeIndex::root(), 0.8, vec![EguiWindow::Inspector]);
+        // let [_game, _controls] = tree.split_left(game, 0.25,
+        // vec![EguiWindow::Controls]);
+        let [_game, _controls] =
+            tree.split_left(NodeIndex::root(), 0.25, vec![EguiWindow::Controls]);
 
         Self {
             state,
@@ -132,12 +144,52 @@ impl egui_dock::TabViewer for TabViewer<'_> {
     fn ui(&mut self, ui: &mut egui::Ui, window: &mut Self::Tab) {
         match window {
             EguiWindow::Controls => {
+                let mut fps_value = 0.;
+                let mut fps_average = 0.;
+
+                if let Some(diagnostics) = self.world.get_resource::<DiagnosticsStore>() {
+                    if let Some(fps) = diagnostics.get(&FrameTimeDiagnosticsPlugin::FPS) {
+                        if let Some(smoothed) = fps.smoothed() {
+                            fps_value = smoothed;
+                        }
+                        if let Some(avg) = fps.average() {
+                            fps_average = avg;
+                        }
+                    }
+                };
+
                 ui.label("Press F4 to toggle Inspector UI");
+                ui.add_space(8.0);
+                // Assuming you're in a `ui.horizontal` block
+                // Assuming you're in a `ui.horizontal` block
+                ui.horizontal(|ui| {
+                    // Get the total available width
+                    let total_width = ui.available_width();
+
+                    // Split the width into three parts
+                    let third_width = total_width / 3.0;
+
+                    // Allocate the first third and right-align the label
+                    ui.allocate_ui(emath::Vec2::new(third_width, ui.available_height()), |ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.label(format!("fps: {:>5.0}", fps_value));
+                        });
+                    });
+
+                    // Allocate the second third and right-align the label
+                    ui.allocate_ui(emath::Vec2::new(third_width, ui.available_height()), |ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.label(format!("avg: {:>5.0}", fps_average));
+                        });
+                    });
+
+                    // Allocate the last third for any additional label later
+                });
                 ui.add_space(8.0);
                 ui.label("GameState");
                 ui_for_state::<GameState>(self.world, ui);
                 ui.add_space(8.0);
-                if let Some(mut ambient_light_slider) =
+                if let Some(mut ambient_light_value) =
                     self.world.get_resource_mut::<AmbientLightBrightness>()
                 {
                     let label = "ambient light value:";
@@ -147,22 +199,12 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 
                     ui.label(label);
                     ui.add(
-                        egui::Slider::new(&mut ambient_light_slider.0, min..=max)
+                        egui::Slider::new(&mut ambient_light_value.0, min..=max)
                             .step_by(step_by)
                             .custom_formatter(|n, _| format!("{:.2}", n))
                             .custom_parser(|s| s.parse::<f64>().ok()),
                     );
                 }
-                egui::CollapsingHeader::new("resources")
-                    .default_open(true)
-                    .show(ui, |ui| {
-                        bevy_inspector::ui_for_resources(self.world, ui);
-                    });
-            },
-            EguiWindow::GameView => {
-                *self.viewport_rect = ui.clip_rect();
-            },
-            EguiWindow::Inspector => {
                 egui::CollapsingHeader::new("entities")
                     .default_open(false)
                     .show(ui, |ui| {
@@ -173,6 +215,14 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                     .show(ui, |ui| {
                         bevy_inspector::ui_for_all_assets(self.world, ui);
                     });
+                egui::CollapsingHeader::new("resources")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        bevy_inspector::ui_for_resources(self.world, ui);
+                    });
+            },
+            EguiWindow::GameView => {
+                *self.viewport_rect = ui.clip_rect();
             },
         }
     }

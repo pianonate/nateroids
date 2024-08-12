@@ -8,11 +8,11 @@ license = "Apache-2.0 OR MIT"
 bevy = { version = "0.14.0", features = ["tonemapping_luts"] }
 rand = "0.8.5"
 bevy_rapier3d = { version = "0.27.0", features = ["simd-stable", "debug-render-3d"] }
-# leafwing-input-manager = "0.15.0"
 # pulling from github main branch works - and even though it has the same version number in the toml,
-# pulling it from crates.io (above) results in compile failures.
+# pulling it from crates.io (commented out) results in compile failures :(
+# leafwing-input-manager = "0.15.0"
 leafwing-input-manager = { git = "https://github.com/Leafwing-Studios/leafwing-input-manager", branch = "main" }
-iyes_perf_ui = "0.3.0"
+#
 # todo: rust question - bevy-inspector-egui explicilty asks for the "manage-clipboard" feature from bevy_egui
 #                       however this feature breaks the wasm build so that i have to disable it
 #                       as follows - IMO this is unnessary because i've configured bevy-inspector-egui

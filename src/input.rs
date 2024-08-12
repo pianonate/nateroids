@@ -19,7 +19,6 @@ use bevy::prelude::{
         F3,
         F4,
         F5,
-        F6,
     },
     MouseButton::Middle,
     *,
@@ -63,7 +62,7 @@ impl CameraMovement {
         InputMap::default()
             // Orbit:  mouse wheel pressed with mouse move
             .with(CameraMovement::Home, Home)
-            .with(CameraMovement::Home, F6)
+            .with(CameraMovement::Home, F5)
             .with_dual_axis(
                 CameraMovement::Orbit,
                 DualAxislikeChord::new(Middle, MouseMove::default()),
@@ -160,11 +159,10 @@ impl GlobalAction {
         let mut input_map = InputMap::default();
         input_map.insert(Self::AABBs, F1);
         input_map.insert(Self::Debug, F10);
-        input_map.insert(Self::Diagnostics, F3);
         input_map.insert(Self::Inspector, F4);
         input_map.insert(Self::Pause, Escape);
         input_map.insert(Self::Physics, F2);
-        input_map.insert(Self::Stars, F5);
+        input_map.insert(Self::Stars, F3);
         input_map
     }
 }

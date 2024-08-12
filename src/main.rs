@@ -5,8 +5,10 @@ use crate::{
     collider_config::ColliderConfigPlugin,
     collision_detection::CollisionDetectionPlugin,
     config::ConfigPlugin,
+    debug::DebugPlugin,
     despawn::DespawnPlugin,
     input::InputPlugin,
+    inspector::InspectorPlugin,
     missile::MissilePlugin,
     movement::MovementPlugin,
     nateroid::NateroidPlugin,
@@ -24,21 +26,6 @@ use bevy::window::{
     PresentMode,
     WindowMode,
 };
-// use camera::star_twinkling::StarTwinklingPlugin;
-// use camera::stars::StarsPlugin;
-use crate::{
-    debug::DebugPlugin,
-    inspector::InspectorPlugin,
-};
-
-#[cfg(not(target_arch = "wasm32"))]
-use crate::diagnostic::DiagnosticPlugin;
-
-mod debug;
-mod inspector;
-
-#[cfg(not(target_arch = "wasm32"))]
-mod diagnostic;
 
 // exclude when targeting wasm - this breaks in the browser right now
 mod asset_loader;
@@ -47,9 +34,11 @@ mod camera;
 mod collider_config;
 mod collision_detection;
 mod config;
+mod debug;
 mod despawn;
 mod health;
 mod input;
+mod inspector;
 mod missile;
 mod movement;
 mod nateroid;
@@ -87,8 +76,10 @@ fn main() {
         .add_plugins(CollisionDetectionPlugin)
         .add_plugins(ConfigPlugin)
         .add_plugins(ColliderConfigPlugin)
+        .add_plugins(DebugPlugin)
         .add_plugins(DespawnPlugin)
         .add_plugins(InputPlugin)
+        .add_plugins(InspectorPlugin)
         .add_plugins(MovementPlugin)
         .add_plugins(MissilePlugin)
         .add_plugins(NateroidPlugin)
@@ -97,12 +88,6 @@ fn main() {
         .add_plugins(SchedulePlugin)
         .add_plugins(SpaceshipPlugin)
         .add_plugins(SplashPlugin)
-        .add_plugins(StatePlugin);
-
-    app.add_plugins(InspectorPlugin).add_plugins(DebugPlugin);
-
-    #[cfg(not(target_arch = "wasm32"))]
-    app.add_plugins(DiagnosticPlugin);
-
-    app.run();
+        .add_plugins(StatePlugin)
+        .run();
 }
