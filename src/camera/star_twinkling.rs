@@ -1,7 +1,7 @@
 use crate::{
+    camera::stars::Star,
     config::StarConfig,
     schedule::InGameSet,
-    stars::Star,
 };
 use bevy::prelude::*;
 use rand::Rng;

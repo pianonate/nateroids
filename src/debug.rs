@@ -7,8 +7,8 @@ use crate::{
     },
     input::GlobalAction,
     orientation::{
-        OrientationConfig,
         CameraOrientation,
+        OrientationConfig,
     },
     schedule::InGameSet,
 };

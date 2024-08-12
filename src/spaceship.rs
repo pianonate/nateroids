@@ -32,10 +32,12 @@ use crate::{
 
 use crate::{
     boundary::WallApproachVisual,
-    orientation::CameraOrientation,
+    orientation::{
+        CameraOrientation,
+        OrientationType,
+    },
 };
 use leafwing_input_manager::prelude::*;
-use crate::orientation::OrientationType;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
 // const SPACESHIP_MAX_SPEED: f32 = 40.0;
@@ -242,9 +244,10 @@ fn apply_acceleration(
         velocity.linvel = proposed_velocity;
     }
 
-    match orientation.orientation   { // in 3d we can accelerate in all dirs
+    match orientation.orientation {
+        // in 3d we can accelerate in all dirs
         OrientationType::BehindSpaceship3D => (),
-        _ => velocity.linvel.z = 0.0,             // Force the `z` value of velocity.linvel to be 0
+        _ => velocity.linvel.z = 0.0, // Force the `z` value of velocity.linvel to be 0
     }
 }
 

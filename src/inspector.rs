@@ -1,13 +1,12 @@
-use bevy::{
-    prelude::*,
-    render::camera::Viewport,
-    window::PrimaryWindow,
-};
-
 use crate::{
     camera::PrimaryCamera,
     debug::inspector_mode_enabled,
     state::GameState,
+};
+use bevy::{
+    prelude::*,
+    render::camera::Viewport,
+    window::PrimaryWindow,
 };
 use bevy_inspector_egui::{
     bevy_egui,

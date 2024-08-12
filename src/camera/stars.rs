@@ -1,6 +1,6 @@
 use crate::{
     boundary::Boundary,
-    camera::spawn_primary_camera,
+    camera::primary_camera::spawn_primary_camera,
     config::{
         AppearanceConfig,
         CameraOrder,
@@ -14,7 +14,6 @@ use bevy::{
         bloom::BloomSettings,
         tonemapping::Tonemapping,
     },
-    ecs::system::SystemParam,
     prelude::*,
     render::view::RenderLayers,
 };
@@ -26,12 +25,10 @@ pub struct StarsPlugin;
 
 impl Plugin for StarsPlugin {
     fn build(&self, app: &mut App) {
-
         app.init_resource::<StarBloom>()
             .add_systems(Startup, spawn_star_camera.before(spawn_primary_camera))
             .add_systems(Startup, (spawn_stars, setup_star_rendering).chain())
             .add_systems(Update, (toggle_stars, update_bloom_settings));
-
     }
 }
 
@@ -132,8 +129,8 @@ pub struct Star {
     pub(crate) emissive: Vec4,
 }
 
-
-// just set up the entities with their positions - we'll add an emissive StandardMaterial separately
+// just set up the entities with their positions - we'll add an emissive
+// StandardMaterial separately
 fn spawn_stars(mut commands: Commands, config: Res<StarConfig>, boundary: Res<Boundary>) {
     let longest_diagonal = boundary.longest_diagonal;
     let inner_sphere_radius = longest_diagonal + config.star_field_inner_diameter;

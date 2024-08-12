@@ -9,14 +9,12 @@ use crate::{
     input::InputPlugin,
     missile::MissilePlugin,
     movement::MovementPlugin,
-    orientation::OrientationPlugin,
     nateroid::NateroidPlugin,
+    orientation::OrientationPlugin,
     physics::PhysicsPlugin,
     schedule::SchedulePlugin,
     spaceship::SpaceshipPlugin,
     splash::SplashPlugin,
-    star_twinkling::StarTwinklingPlugin,
-    stars::StarsPlugin,
     state::StatePlugin,
 };
 use bevy::prelude::*;
@@ -26,7 +24,8 @@ use bevy::window::{
     PresentMode,
     WindowMode,
 };
-
+// use camera::star_twinkling::StarTwinklingPlugin;
+// use camera::stars::StarsPlugin;
 use crate::{
     debug::DebugPlugin,
     inspector::InspectorPlugin,
@@ -59,8 +58,6 @@ mod physics;
 mod schedule;
 mod spaceship;
 mod splash;
-mod star_twinkling;
-mod stars;
 mod state;
 mod utils;
 
@@ -100,8 +97,6 @@ fn main() {
         .add_plugins(SchedulePlugin)
         .add_plugins(SpaceshipPlugin)
         .add_plugins(SplashPlugin)
-        .add_plugins(StarsPlugin)
-        .add_plugins(StarTwinklingPlugin)
         .add_plugins(StatePlugin);
 
     app.add_plugins(InspectorPlugin).add_plugins(DebugPlugin);

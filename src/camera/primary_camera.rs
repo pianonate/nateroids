@@ -1,13 +1,14 @@
 use crate::{
     boundary::Boundary,
+    camera::StarsCamera,
     config::{
         AppearanceConfig,
         CameraOrder,
         RenderLayer,
     },
     input::CameraMovement,
+    orientation::CameraOrientation,
     schedule::InGameSet,
-    stars::StarsCamera,
 };
 use bevy::{
     core_pipeline::tonemapping::Tonemapping,
@@ -25,11 +26,10 @@ use bevy::{
     render::view::RenderLayers,
 };
 use leafwing_input_manager::prelude::*;
-use crate::orientation::CameraOrientation;
 
-pub struct CameraPlugin;
+pub struct PrimaryCameraPlugin;
 
-impl Plugin for CameraPlugin {
+impl Plugin for PrimaryCameraPlugin {
     fn build(&self, app: &mut App) {
         let appearance = AppearanceConfig::default();
 
