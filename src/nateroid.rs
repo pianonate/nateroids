@@ -30,9 +30,9 @@ const ANGULAR_VELOCITY_RANGE: Range<f32> = -4.0..4.0;
 const ROTATION_RANGE: Range<f32> = 0.0..2.0 * PI;
 
 #[derive(Component, Debug)]
-pub struct Nateroid;
+pub struct NateroidPlugin;
 
-impl Plugin for Nateroid {
+impl Plugin for NateroidPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, spawn_nateroid.in_set(InGameSet::EntityUpdates));
     }
@@ -87,7 +87,7 @@ fn spawn_nateroid(
     let collider = collider_config.nateroid.collider.clone();
 
     let nateroid = commands
-        .spawn(Nateroid)
+        .spawn(NateroidPlugin)
         .insert(HealthBundle {
             collision_damage: CollisionDamage(collider_config.nateroid.damage),
             health:           Health(collider_config.nateroid.health),

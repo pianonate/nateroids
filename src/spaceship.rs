@@ -30,8 +30,12 @@ use crate::{
     utils::name_entity,
 };
 
-use crate::boundary::WallApproachVisual;
+use crate::{
+    boundary::WallApproachVisual,
+    orientation::CameraOrientation,
+};
 use leafwing_input_manager::prelude::*;
+use crate::orientation::OrientationType;
 
 const SPACESHIP_ACCELERATION: f32 = 20.0;
 // const SPACESHIP_MAX_SPEED: f32 = 40.0;
@@ -140,10 +144,6 @@ fn spawn_spaceship(
         .insert(WallApproachVisual::default())
         .id();
 
-    // if let Ok(camera) = q_camera.get_single() {
-    //     commands.entity(spaceship).add_child(camera);
-    // }
-
     name_entity(&mut commands, spaceship, collider_config.spaceship.name);
 }
 
@@ -153,6 +153,7 @@ fn spaceship_movement_controls(
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     config: Res<ColliderConfig>,
     time: Res<Time>,
+    orientation_mode: Res<CameraOrientation>,
 ) {
     if let Ok(camera_transform) = q_camera.get_single() {
         // we can use this because there is only exactly one spaceship - so we're not
@@ -189,22 +190,22 @@ fn spaceship_movement_controls(
             let max_speed = config.spaceship.velocity;
 
             if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
-                // down
                 apply_acceleration(
                     &mut velocity,
                     -spaceship_transform.forward().as_vec3(),
                     SPACESHIP_ACCELERATION,
                     max_speed,
                     delta_seconds,
+                    orientation_mode,
                 );
             } else if spaceship_action.pressed(&SpaceshipAction::Decelerate) {
-                // up
                 apply_acceleration(
                     &mut velocity,
                     spaceship_transform.forward().as_vec3(),
                     SPACESHIP_ACCELERATION,
                     max_speed,
                     delta_seconds,
+                    orientation_mode,
                 );
             }
 
@@ -229,6 +230,7 @@ fn apply_acceleration(
     acceleration: f32,
     max_speed: f32,
     delta_seconds: f32,
+    orientation: Res<CameraOrientation>,
 ) {
     let proposed_velocity = velocity.linvel + direction * (acceleration * delta_seconds);
     let proposed_speed = proposed_velocity.length();
@@ -240,8 +242,10 @@ fn apply_acceleration(
         velocity.linvel = proposed_velocity;
     }
 
-    // Force the `z` value of velocity.linvel to be 0
-    velocity.linvel.z = 0.0;
+    match orientation.orientation   { // in 3d we can accelerate in all dirs
+        OrientationType::BehindSpaceship3D => (),
+        _ => velocity.linvel.z = 0.0,             // Force the `z` value of velocity.linvel to be 0
+    }
 }
 
 fn spaceship_shield_controls(

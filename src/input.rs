@@ -14,6 +14,7 @@ use bevy::prelude::{
         ShiftLeft,
         Space,
         F1,
+        F10,
         F2,
         F3,
         F4,
@@ -136,6 +137,7 @@ pub enum GlobalAction {
     Diagnostics,
     Debug,
     Inspector,
+    Physics,
     Pause,
     Stars,
 }
@@ -157,10 +159,11 @@ impl GlobalAction {
     pub fn global_input_map() -> InputMap<Self> {
         let mut input_map = InputMap::default();
         input_map.insert(Self::AABBs, F1);
-        input_map.insert(Self::Debug, F2);
+        input_map.insert(Self::Debug, F10);
         input_map.insert(Self::Diagnostics, F3);
         input_map.insert(Self::Inspector, F4);
         input_map.insert(Self::Pause, Escape);
+        input_map.insert(Self::Physics, F2);
         input_map.insert(Self::Stars, F5);
         input_map
     }

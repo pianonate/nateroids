@@ -3,7 +3,6 @@ use crate::{
     config::{
         AppearanceConfig,
         CameraOrder,
-        OrientationConfig,
         RenderLayer,
     },
     input::CameraMovement,
@@ -26,6 +25,7 @@ use bevy::{
     render::view::RenderLayers,
 };
 use leafwing_input_manager::prelude::*;
+use crate::orientation::CameraOrientation;
 
 pub struct CameraPlugin;
 
@@ -42,7 +42,7 @@ impl Plugin for CameraPlugin {
             color:      default(),
             brightness: appearance.ambient_light_brightness,
         })
-        .add_systems(Startup, spawn_camera)
+        .add_systems(Startup, spawn_primary_camera)
         .add_systems(
             Update,
             (
@@ -79,7 +79,7 @@ fn update_clear_color(
 pub struct PrimaryCamera;
 
 fn home_camera(
-    orientation: Res<OrientationConfig>,
+    orientation: Res<CameraOrientation>,
     mut camera_transform: Query<
         (&mut Transform, &ActionState<CameraMovement>),
         With<PrimaryCamera>,
@@ -87,15 +87,15 @@ fn home_camera(
 ) {
     if let Ok((mut transform, action_state)) = camera_transform.get_single_mut() {
         if action_state.just_pressed(&CameraMovement::Home) {
-            *transform = orientation.locus;
+            *transform = orientation.config.locus;
         }
     }
 }
 
-pub fn spawn_camera(
+pub fn spawn_primary_camera(
     boundary: Res<Boundary>,
     mut commands: Commands,
-    mut orientation: ResMut<OrientationConfig>,
+    mut orientation: ResMut<CameraOrientation>,
     mut q_stars_camera: Query<Entity, With<StarsCamera>>,
 ) {
     let clear_color = Color::srgba(0., 0., 0., 0.);
@@ -117,12 +117,12 @@ pub fn spawn_camera(
         },
         tonemapping: Tonemapping::TonyMcMapface,
         transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.)
-            .looking_at(orientation.nexus, orientation.axis_mundi),
+            .looking_at(orientation.config.nexus, orientation.config.axis_mundi),
 
         ..default()
     };
 
-    orientation.locus = primary_camera.transform;
+    orientation.config.locus = primary_camera.transform;
 
     commands
         .spawn(primary_camera)
@@ -223,7 +223,7 @@ fn should_zoom(
 fn pan_camera(
     mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<PrimaryCamera>>,
     keycode: Res<ButtonInput<KeyCode>>,
-    orientation: Res<OrientationConfig>,
+    orientation: Res<CameraOrientation>,
 ) {
     if let Ok((mut camera_transform, action_state)) = query.get_single_mut() {
         let pan_vector = match should_pan(keycode, action_state) {
@@ -234,8 +234,8 @@ fn pan_camera(
         // To achieve consistent panning behavior regardless of the camera’s rotation,
         // we need to ensure that the panning movement is relative to the camera’s
         // current orientation.
-        let right = camera_transform.rotation * orientation.axis_orbis;
-        let up = camera_transform.rotation * orientation.axis_mundi;
+        let right = camera_transform.rotation * orientation.config.axis_orbis;
+        let up = camera_transform.rotation * orientation.config.axis_mundi;
 
         camera_transform.translation += right * -pan_vector.x;
         camera_transform.translation += up * pan_vector.y;
@@ -271,7 +271,7 @@ fn should_pan(
 fn orbit_camera(
     mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
     keycode: Res<ButtonInput<KeyCode>>,
-    orientation: Res<OrientationConfig>,
+    orientation: Res<CameraOrientation>,
 ) {
     if let Ok((mut camera_transform, mut action_state)) = query.get_single_mut() {
         let orbit_vector = match should_orbit(keycode, &mut action_state) {
@@ -282,10 +282,10 @@ fn orbit_camera(
         let rotation_speed = 0.005;
         // Assuming the target is at the origin - this may change in the future
         // as the target could be the ship when we move into flying behind the ship
-        let target = orientation.nexus;
+        let target = orientation.config.nexus;
 
         // this will change if we change our up vector to Z for FPSpaceship mode
-        let up = orientation.axis_mundi;
+        let up = orientation.config.axis_mundi;
         let right = camera_transform.right().as_vec3();
 
         // Create rotation quaternions

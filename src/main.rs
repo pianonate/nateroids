@@ -9,7 +9,8 @@ use crate::{
     input::InputPlugin,
     missile::MissilePlugin,
     movement::MovementPlugin,
-    nateroid::Nateroid,
+    orientation::OrientationPlugin,
+    nateroid::NateroidPlugin,
     physics::PhysicsPlugin,
     schedule::SchedulePlugin,
     spaceship::SpaceshipPlugin,
@@ -31,15 +32,14 @@ use crate::{
     inspector::InspectorPlugin,
 };
 
-#[cfg(debug_assertions)]
+#[cfg(not(target_arch = "wasm32"))]
 use crate::diagnostic::DiagnosticPlugin;
 
 mod debug;
-
-#[cfg(debug_assertions)]
-mod diagnostic;
-
 mod inspector;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod diagnostic;
 
 // exclude when targeting wasm - this breaks in the browser right now
 mod asset_loader;
@@ -54,6 +54,7 @@ mod input;
 mod missile;
 mod movement;
 mod nateroid;
+mod orientation;
 mod physics;
 mod schedule;
 mod spaceship;
@@ -93,7 +94,8 @@ fn main() {
         .add_plugins(InputPlugin)
         .add_plugins(MovementPlugin)
         .add_plugins(MissilePlugin)
-        .add_plugins(Nateroid)
+        .add_plugins(NateroidPlugin)
+        .add_plugins(OrientationPlugin)
         .add_plugins(PhysicsPlugin)
         .add_plugins(SchedulePlugin)
         .add_plugins(SpaceshipPlugin)
@@ -102,9 +104,9 @@ fn main() {
         .add_plugins(StarTwinklingPlugin)
         .add_plugins(StatePlugin);
 
-    //#[cfg(debug_assertions)]
     app.add_plugins(InspectorPlugin).add_plugins(DebugPlugin);
-    #[cfg(debug_assertions)]
+
+    #[cfg(not(target_arch = "wasm32"))]
     app.add_plugins(DiagnosticPlugin);
 
     app.run();

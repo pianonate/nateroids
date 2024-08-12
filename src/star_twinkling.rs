@@ -1,7 +1,7 @@
 use crate::{
     config::StarConfig,
     schedule::InGameSet,
-    stars::Stars,
+    stars::Star,
 };
 use bevy::prelude::*;
 use rand::Rng;
@@ -65,7 +65,7 @@ fn extract_elements_at_indices<T: Clone>(vec: &[T], indices: &[usize]) -> Vec<T>
 fn start_twinkling(
     mut commands: Commands,
     config: Res<StarConfig>,
-    stars: Query<(Entity, &Handle<StandardMaterial>), (With<Stars>, Without<Twinkling>)>,
+    stars: Query<(Entity, &Handle<StandardMaterial>), (With<Star>, Without<Twinkling>)>,
     materials: Res<Assets<StandardMaterial>>,
     mut start_timer: ResMut<StartTwinklingTimer>,
     time: Res<Time>,

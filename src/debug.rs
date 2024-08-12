@@ -6,6 +6,10 @@ use crate::{
         StarConfig,
     },
     input::GlobalAction,
+    orientation::{
+        OrientationConfig,
+        CameraOrientation,
+    },
     schedule::InGameSet,
 };
 use bevy::prelude::{
@@ -41,6 +45,8 @@ fn register_debug_resources(world: &mut World) {
     type_registry.write().register::<Boundary>();
     type_registry.write().register::<DebugMode>();
     type_registry.write().register::<ColliderConfig>();
+    type_registry.write().register::<OrientationConfig>();
+    type_registry.write().register::<CameraOrientation>();
     type_registry.write().register::<StarConfig>();
 }
 
