@@ -11,6 +11,7 @@ use crate::{
     stars::StarsCamera,
 };
 use bevy::{
+    core_pipeline::tonemapping::Tonemapping,
     input::{
         gestures::PinchGesture,
         mouse::{
@@ -24,7 +25,6 @@ use bevy::{
     },
     render::view::RenderLayers,
 };
-use bevy::core_pipeline::tonemapping::Tonemapping;
 use leafwing_input_manager::prelude::*;
 
 pub struct CameraPlugin;
@@ -115,7 +115,7 @@ pub fn spawn_camera(
             clear_color: ClearColorConfig::Custom(clear_color),
             ..default()
         },
-        tonemapping: Tonemapping::TonyMcMapface, 
+        tonemapping: Tonemapping::TonyMcMapface,
         transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.)
             .looking_at(orientation.nexus, orientation.axis_mundi),
 

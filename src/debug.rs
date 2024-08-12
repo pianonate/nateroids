@@ -16,7 +16,6 @@ use bevy::prelude::{
     Resource,
     *,
 };
-use bevy_inspector_egui::InspectorOptions;
 use leafwing_input_manager::action_state::ActionState;
 
 pub struct DebugPlugin;
@@ -46,7 +45,7 @@ fn register_debug_resources(world: &mut World) {
 }
 
 // the default bool is false, which is what we want
-#[derive(Reflect, Resource, Default, InspectorOptions)]
+#[derive(Reflect, Resource, Default)]
 #[reflect(Resource)]
 pub struct DebugMode {
     pub enabled: bool,

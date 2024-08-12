@@ -1,5 +1,3 @@
-use bevy::prelude::*;
-
 use crate::{
     asset_loader::AssetLoaderPlugin,
     boundary::BoundaryPlugin,
@@ -20,21 +18,27 @@ use crate::{
     stars::StarsPlugin,
     state::StatePlugin,
 };
+use bevy::prelude::*;
 
-#[cfg(debug_assertions)]
+#[cfg(target_arch = "wasm32")]
+use bevy::window::{
+    PresentMode,
+    WindowMode,
+};
+
 use crate::{
     debug::DebugPlugin,
     inspector::InspectorPlugin,
 };
-//#[cfg(debug_assertions)]
+
+#[cfg(debug_assertions)]
 use crate::diagnostic::DiagnosticPlugin;
 
-#[cfg(debug_assertions)]
 mod debug;
 
-// #[cfg(debug_assertions)]
-mod diagnostic;
 #[cfg(debug_assertions)]
+mod diagnostic;
+
 mod inspector;
 
 // exclude when targeting wasm - this breaks in the browser right now
@@ -62,8 +66,24 @@ mod utils;
 fn main() {
     let mut app = App::new();
 
-    app.add_plugins(DefaultPlugins)
-        .add_plugins(AssetLoaderPlugin)
+    #[cfg(not(target_arch = "wasm32"))]
+    app.add_plugins(DefaultPlugins);
+
+    #[cfg(target_arch = "wasm32")]
+    app.add_plugins(
+        DefaultPlugins
+            .set(ImagePlugin::default_nearest())
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    present_mode: PresentMode::AutoNoVsync, // Reduces input lag.
+                    mode: WindowMode::BorderlessFullscreen,
+                    ..default()
+                }),
+                ..default()
+            }),
+    );
+
+    app.add_plugins(AssetLoaderPlugin)
         .add_plugins(BoundaryPlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(CollisionDetectionPlugin)
@@ -82,10 +102,9 @@ fn main() {
         .add_plugins(StarTwinklingPlugin)
         .add_plugins(StatePlugin);
 
-    #[cfg(debug_assertions)]
+    //#[cfg(debug_assertions)]
     app.add_plugins(InspectorPlugin).add_plugins(DebugPlugin);
-
-    // #[cfg(debug_assertions)]
+    #[cfg(debug_assertions)]
     app.add_plugins(DiagnosticPlugin);
 
     app.run();

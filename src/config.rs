@@ -12,7 +12,7 @@ use bevy::{
         RenderLayers,
     },
 };
-use bevy_inspector_egui::InspectorOptions;
+
 use crate::inspector::AmbientLightBrightness;
 
 pub struct ConfigPlugin;
@@ -22,8 +22,9 @@ impl Plugin for ConfigPlugin {
         app.init_resource::<AppearanceConfig>()
             .init_resource::<OrientationConfig>()
             .init_gizmo_group::<BoundaryGizmos>()
-            .add_systems(Update, update_appearance_config)
             .add_systems(Startup, init_gizmo_configs);
+
+        app.add_systems(Update, update_appearance_config);
     }
 }
 
@@ -75,7 +76,7 @@ pub struct AppearanceConfig {
 impl Default for AppearanceConfig {
     fn default() -> Self {
         Self {
-            ambient_light_brightness:       1100.,
+            ambient_light_brightness:       1000.,
             bloom_intensity:                0.9,
             bloom_low_frequency_boost:      0.5,
             bloom_high_pass_frequency:      0.5,
@@ -106,7 +107,8 @@ fn update_appearance_config(
         commands.insert_resource(AmbientLight {
             color:      default(),
             brightness: appearance_config.ambient_light_brightness,
-        })    }
+        })
+    }
 }
 
 // centralize orientation defaults for a quick change-up
@@ -152,7 +154,7 @@ impl Default for OrientationConfig {
     }
 }
 
-#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
+#[derive(Debug, Clone, Reflect, Resource)]
 #[reflect(Resource)]
 pub struct StarConfig {
     pub batch_size_replace:            usize,

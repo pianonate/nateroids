@@ -5,30 +5,15 @@ use crate::{
 };
 use bevy::prelude::*;
 use rand::Rng;
-use std::{
-    collections::HashSet,
-    time::Instant,
-};
+use std::collections::HashSet;
 
 pub struct StarTwinklingPlugin;
-
-#[derive(Resource, Debug, Default)]
-pub struct TwinkleTiming {
-    start_twinkling_elapsed:      u128,
-    filter_timing:                u128,
-    outside_loop_time:            u128,
-    inside_loop_accumulated_time: u128,
-    start_twinkling_count:        usize,
-    update_twinkling_elapsed:     u128,
-    update_twinkling_count:       usize,
-}
 
 impl Plugin for StarTwinklingPlugin {
     fn build(&self, app: &mut App) {
         let start_twinkling_timer_duration = StarConfig::default().start_twinkling_delay;
 
         app.init_resource::<StarConfig>()
-            .init_resource::<TwinkleTiming>()
             .insert_resource(StartTwinklingTimer {
                 timer: Timer::from_seconds(start_twinkling_timer_duration, TimerMode::Repeating),
             })
@@ -51,15 +36,9 @@ struct StartTwinklingTimer {
     timer: Timer,
 }
 
-fn should_start_twinkling(
-    start_timer: &mut ResMut<StartTwinklingTimer>,
-    timing: &mut ResMut<TwinkleTiming>,
-    time: Res<Time>,
-) -> bool {
+fn should_start_twinkling(start_timer: &mut ResMut<StartTwinklingTimer>, time: Res<Time>) -> bool {
     start_timer.timer.tick(time.delta());
     if !start_timer.timer.just_finished() {
-        timing.start_twinkling_elapsed = 0;
-        timing.start_twinkling_count = 0;
         return false;
     }
     true
@@ -90,16 +69,11 @@ fn start_twinkling(
     materials: Res<Assets<StandardMaterial>>,
     mut start_timer: ResMut<StartTwinklingTimer>,
     time: Res<Time>,
-    mut timing: ResMut<TwinkleTiming>,
 ) {
-    if !should_start_twinkling(&mut start_timer, &mut timing, time) {
+    if !should_start_twinkling(&mut start_timer, time) {
         return;
     }
 
-    let start = Instant::now();
-
-    timing.start_twinkling_count = 0;
-    timing.inside_loop_accumulated_time = 0;
     let mut rng = rand::thread_rng();
 
     let indices = get_random_indices(config.twinkle_choose_multiple_count, config.star_count);
@@ -119,17 +93,10 @@ fn start_twinkling(
     // this pre-filtering avoids that cost - i don't know what is the difference
     // of collecting into a Vec vs. destructuring in the for loop - but it's a LOT
     // slower
-    let filtered_timing = Instant::now();
     let all_stars: Vec<(Entity, &Handle<StandardMaterial>)> = stars.iter().collect();
     let filtered_stars = extract_elements_at_indices(&all_stars, &indices);
 
-    timing.filter_timing = filtered_timing.elapsed().as_nanos();
-
-    let outer_loop_time = Instant::now();
-
     for (entity, material_handle) in filtered_stars {
-        let loop_time = Instant::now();
-
         if let Some(material) = materials.get(material_handle) {
             let original_emissive = Vec4::new(
                 material.emissive.red,
@@ -148,13 +115,7 @@ fn start_twinkling(
                 twinkle_timer: Timer::from_seconds(duration, TimerMode::Once),
             });
         }
-        timing.start_twinkling_count += 1;
-        timing.inside_loop_accumulated_time += loop_time.elapsed().as_nanos();
     }
-
-    timing.outside_loop_time = outer_loop_time.elapsed().as_nanos();
-    timing.start_twinkling_elapsed = start.elapsed().as_nanos();
-    // println!("{:?}", timing);
 }
 
 fn update_twinkling(
@@ -162,11 +123,7 @@ fn update_twinkling(
     time: Res<Time>,
     mut stars: Query<(Entity, &Handle<StandardMaterial>, &mut Twinkling)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut timing: ResMut<TwinkleTiming>,
 ) {
-    let start = Instant::now();
-    let mut star_count = 0;
-
     for (entity, material_handle, mut twinkling) in stars.iter_mut() {
         twinkling.twinkle_timer.tick(time.delta());
 
@@ -197,10 +154,5 @@ fn update_twinkling(
         if twinkling.twinkle_timer.finished() {
             commands.entity(entity).remove::<Twinkling>();
         }
-
-        star_count += 1;
     }
-
-    timing.update_twinkling_count = star_count;
-    timing.update_twinkling_elapsed = start.elapsed().as_nanos();
 }

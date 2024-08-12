@@ -1,9 +1,11 @@
 use crate::{
     boundary::Boundary,
     collider_config::Aabb,
-    debug::aabb_mode_enabled,
     schedule::InGameSet,
 };
+
+use crate::debug::aabb_mode_enabled;
+
 use bevy::{
     color::palettes::tailwind,
     prelude::*,
@@ -42,8 +44,9 @@ impl Plugin for MovementPlugin {
         app.add_systems(
             Update,
             teleport_at_boundary.in_set(InGameSet::EntityUpdates),
-        )
-        .add_systems(Update, draw_aabb_system.run_if(aabb_mode_enabled));
+        );
+
+        app.add_systems(Update, draw_aabb_system.run_if(aabb_mode_enabled));
     }
 }
 

@@ -10,7 +10,6 @@ use bevy::{
     color::palettes::tailwind,
     prelude::*,
 };
-use bevy_inspector_egui::InspectorOptions;
 use bevy_rapier3d::prelude::Velocity;
 use std::cell::Cell;
 
@@ -69,7 +68,7 @@ fn draw_boundary(
         .outer_edges();
 }
 
-#[derive(Reflect, Resource, Debug, InspectorOptions)]
+#[derive(Reflect, Resource, Debug)]
 #[reflect(Resource)]
 pub struct Boundary {
     pub cell_count:           UVec3,

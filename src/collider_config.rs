@@ -8,7 +8,6 @@ use bevy::{
     },
     scene::Scene,
 };
-use bevy_inspector_egui::InspectorOptions;
 use bevy_rapier3d::prelude::Collider;
 
 pub struct ColliderConfigPlugin;
@@ -48,7 +47,7 @@ struct InitialColliderConstant {
     collider_type:       ColliderType,
 }
 
-#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
+#[derive(Debug, Clone, Reflect, Resource)]
 #[reflect(Resource)]
 pub struct ColliderConfig {
     pub missile:   ColliderConstant,
@@ -56,7 +55,7 @@ pub struct ColliderConfig {
     pub spaceship: ColliderConstant,
 }
 
-#[derive(Debug, Clone, Reflect, Resource, InspectorOptions)]
+#[derive(Debug, Clone, Reflect, Resource)]
 #[reflect(Resource)]
 pub struct ColliderConstant {
     pub aabb:        Aabb,
@@ -195,9 +194,9 @@ pub struct Aabb {
 }
 
 impl Aabb {
-    pub fn new(min: Vec3, max: Vec3) -> Self { Self { min, max } }
+    //pub fn new(min: Vec3, max: Vec3) -> Self { Self { min, max } }
 
-    pub fn half_extents(&self) -> Vec3 { (self.max - self.min) * 0.5 }
+    //pub fn half_extents(&self) -> Vec3 { (self.max - self.min) * 0.5 }
 
     pub fn size(&self) -> Vec3 { self.max - self.min }
 
