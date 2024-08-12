@@ -39,10 +39,10 @@ use crate::{
 };
 use leafwing_input_manager::prelude::*;
 
-const SPACESHIP_ACCELERATION: f32 = 20.0;
+const SPACESHIP_ACCELERATION: f32 = 60.0;
 // const SPACESHIP_MAX_SPEED: f32 = 40.0;
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
-const SPACESHIP_ROTATION_SPEED: f32 = 3.0;
+const SPACESHIP_ROTATION_SPEED: f32 = 5.0;
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0);
 
 #[derive(Component, Debug)]

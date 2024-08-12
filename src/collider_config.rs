@@ -103,7 +103,7 @@ impl Default for InitialColliderConfig {
                 scalar:              0.8,
                 spawn_timer_seconds: None,
                 spawnable:           true,
-                velocity:            60.,
+                velocity:            80.,
             },
         }
     }
