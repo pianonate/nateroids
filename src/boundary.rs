@@ -12,6 +12,7 @@ use bevy::{
 };
 use bevy_rapier3d::prelude::Velocity;
 use std::cell::Cell;
+use crate::collider_config::Aabb;
 
 pub struct BoundaryPlugin;
 
@@ -22,50 +23,12 @@ impl Plugin for BoundaryPlugin {
             (
                 draw_boundary,
                 wall_approach_system,
-                // draw_wall_approach_circles,
                 draw_approaching_circles,
                 draw_emerging_circles,
             )
                 .run_if(in_state(GameState::InGame).or_else(in_state(GameState::Paused))),
         );
     }
-}
-
-#[derive(Component, Default)]
-pub struct WallApproachVisual {
-    pub approaching: Option<BoundaryWall>,
-    pub emerging:    Option<BoundaryWall>,
-}
-
-#[derive(Clone, Debug)]
-pub struct BoundaryWall {
-    pub position: Vec3,
-    pub normal:   Dir3,
-    pub distance: f32,
-}
-
-fn draw_boundary(
-    mut boundary: ResMut<Boundary>,
-    config: Res<AppearanceConfig>,
-    mut gizmos: Gizmos<BoundaryGizmos>,
-) {
-    // updating the transform from config so it can be located in one place
-    // and also so that it can be dynamically changed with the inspector while the
-    // game is running the boundary transform is used both for position but also
-    // so the fixed camera can be positioned based on the boundary scale
-    boundary.transform.scale = config.boundary_scalar * boundary.cell_count.as_vec3();
-
-    // update the longest diagonal so that the camera can be positioned correctly
-
-    gizmos
-        .grid_3d(
-            boundary.transform.translation,
-            Quat::IDENTITY,
-            boundary.cell_count,
-            Vec3::splat(config.boundary_scalar),
-            config.boundary_color,
-        )
-        .outer_edges();
 }
 
 #[derive(Reflect, Resource, Debug)]
@@ -113,8 +76,8 @@ impl Default for Boundary {
 ///
 /// # Method
 /// - The function calculates the intersection points of the ray with the
-///   positive and negative boundaries of the viewable area along both the x and
-///   z axes.
+///   positive and negative boundaries of the viewable area along all axes.
+///   todo: is this true? you'll have to test in 3d mode
 /// - It iterates over these axes, updating the minimum intersection distance
 ///   (`t_min`) if a valid intersection is found.
 /// - Finally, it returns the intersection point corresponding to the minimum
@@ -213,17 +176,64 @@ fn is_in_bounds(
     }
 }
 
+fn draw_boundary(
+    mut boundary: ResMut<Boundary>,
+    config: Res<AppearanceConfig>,
+    mut gizmos: Gizmos<BoundaryGizmos>,
+) {
+    // updating the transform from config so it can be located in one place
+    // and also so that it can be dynamically changed with the inspector while the
+    // game is running the boundary transform is used both for position but also
+    // so the fixed camera can be positioned based on the boundary scale
+    boundary.transform.scale = config.boundary_scalar * boundary.cell_count.as_vec3();
+
+    // update the longest diagonal so that the camera can be positioned correctly
+
+    gizmos
+        .grid_3d(
+            boundary.transform.translation,
+            Quat::IDENTITY,
+            boundary.cell_count,
+            Vec3::splat(config.boundary_scalar),
+            config.boundary_color,
+        )
+        .outer_edges();
+}
+
+#[derive(Component, Default)]
+pub struct WallApproachVisual {
+    pub approaching: Option<BoundaryWall>,
+    pub emerging:    Option<BoundaryWall>,
+}
+
+#[derive(Clone, Debug)]
+pub struct BoundaryWall {
+    pub approach_distance: f32,
+    pub distance_to_wall:  f32,
+    pub normal:            Dir3,
+    pub position:          Vec3,
+    pub radius:            f32,
+    pub shrink_distance:   f32,
+}
+
 pub fn wall_approach_system(
-    mut query: Query<(&Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
+    mut query: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
     boundary: Res<Boundary>,
     time: Res<Time>,
     appearance: Res<AppearanceConfig>,
 ) {
     let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
     let approach_distance = boundary_size * appearance.boundary_distance_approach;
+    let shrink_distance = boundary_size * appearance.boundary_distance_shrink;
+
     let delta_time = time.delta_seconds();
 
-    for (transform, velocity, teleporter, mut visual) in query.iter_mut() {
+    for (aabb, transform, velocity, teleporter, mut visual) in query.iter_mut() {
+        // the max dimension of the aabb is actually the diameter - using it as the radius
+        // has the circles start out twice as big and then shrink to fit the size of the object
+        // minimium size for small objects is preserved
+        let radius = aabb.max_dimension().max(appearance.smallest_teleport_circle); 
+
         let position = transform.translation;
         let direction = velocity.linvel.normalize_or_zero();
 
@@ -233,9 +243,12 @@ pub fn wall_approach_system(
 
             if distance_to_wall <= approach_distance {
                 visual.approaching = Some(BoundaryWall {
-                    position: collision_point,
+                    approach_distance,
+                    distance_to_wall,
                     normal,
-                    distance: distance_to_wall,
+                    radius,
+                    position: collision_point,
+                    shrink_distance,
                 });
                 visual.emerging = None;
             } else {
@@ -248,14 +261,17 @@ pub fn wall_approach_system(
         if teleporter.just_teleported {
             if let Some(normal) = teleporter.last_teleported_normal {
                 visual.emerging = Some(BoundaryWall {
-                    position,
+                    approach_distance,
+                    distance_to_wall: 0.0,
                     normal,
-                    distance: 0.0,
+                    position,
+                    radius,
+                    shrink_distance,
                 });
             }
         } else if let Some(ref mut emerging) = visual.emerging {
-            emerging.distance += velocity.linvel.length() * delta_time;
-            if emerging.distance > approach_distance {
+            emerging.distance_to_wall += velocity.linvel.length() * delta_time;
+            if emerging.distance_to_wall > approach_distance {
                 visual.emerging = None;
             }
         }
@@ -263,51 +279,50 @@ pub fn wall_approach_system(
 }
 
 fn draw_approaching_circles(
-    query: Query<&WallApproachVisual>,
-    boundary: Res<Boundary>,
+    q_wall: Query<&WallApproachVisual>,
     mut gizmos: Gizmos,
-    appearance_config: Res<AppearanceConfig>,
 ) {
-    let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
-    let shrink_distance = boundary_size * appearance_config.boundary_distance_shrink;
-
-    for visual in query.iter() {
+    for visual in q_wall.iter() {
         if let Some(ref approaching) = visual.approaching {
-            draw_single_circle(
-                &mut gizmos,
+            let max_radius = approaching.radius;
+            let min_radius = max_radius * 0.5;
+
+            let radius = if approaching.distance_to_wall > approaching.shrink_distance {
+                max_radius
+            } else {
+                let scale_factor =
+                    (approaching.distance_to_wall / approaching.shrink_distance).clamp(0.0, 1.0);
+                min_radius + (max_radius - min_radius) * scale_factor
+            };
+
+            gizmos.circle(
                 approaching.position,
                 approaching.normal,
-                approaching.distance,
+                radius,
                 Color::from(tailwind::BLUE_600),
-                &appearance_config,
-                shrink_distance,
             );
         }
     }
 }
 
 fn draw_emerging_circles(
-    query: Query<&WallApproachVisual>,
-    boundary: Res<Boundary>,
+    q_wall: Query<&WallApproachVisual>,
     mut gizmos: Gizmos,
     appearance_config: Res<AppearanceConfig>,
 ) {
-    let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
-    let shrink_distance = boundary_size * appearance_config.boundary_distance_shrink;
-    let approach_distance = boundary_size * appearance_config.boundary_distance_approach;
-
-    for visual in query.iter() {
+    for visual in q_wall.iter() {
         if let Some(ref emerging) = visual.emerging {
-            let radius = if emerging.distance <= shrink_distance {
-                appearance_config.missile_circle_radius
-            } else if emerging.distance >= approach_distance {
+            let radius = if emerging.distance_to_wall <= emerging.shrink_distance {
+                emerging.radius//appearance_config.missile_circle_radius
+            } else if emerging.distance_to_wall >= emerging.approach_distance {
                 0.0 // This will effectively make the circle disappear
             } else {
                 // Linear interpolation between full size and zero,
                 // but only after exceeding the shrink distance
-                let t =
-                    (emerging.distance - shrink_distance) / (approach_distance - shrink_distance);
-                appearance_config.missile_circle_radius * (1.0 - t)
+                let t = (emerging.distance_to_wall - emerging.shrink_distance)
+                    / (emerging.approach_distance - emerging.shrink_distance);
+                //appearance_config.missile_circle_radius * (1.0 - t)
+                emerging.radius * (1.0 - t)
             };
 
             if radius > 0.0 {
@@ -320,26 +335,4 @@ fn draw_emerging_circles(
             }
         }
     }
-}
-
-fn draw_single_circle(
-    gizmos: &mut Gizmos,
-    position: Vec3,
-    normal: Dir3,
-    distance: f32,
-    color: Color,
-    config: &AppearanceConfig,
-    shrink_distance: f32,
-) {
-    let max_radius = config.missile_circle_radius;
-    let min_radius = max_radius * 0.5;
-
-    let radius = if distance > shrink_distance {
-        max_radius
-    } else {
-        let scale_factor = (distance / shrink_distance).clamp(0.0, 1.0);
-        min_radius + (max_radius - min_radius) * scale_factor
-    };
-
-    gizmos.circle(position, normal, radius, color);
 }

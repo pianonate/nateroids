@@ -118,6 +118,7 @@ impl InitialColliderConstant {
 
         // Calculate the size based on the adjusted AABB
         let size = adjusted_aabb.size();
+        
 
         let collider = match self.collider_type {
             ColliderType::Ball => {
@@ -133,11 +134,6 @@ impl InitialColliderConstant {
                 Collider::cuboid(size.x / 2.0, size.y / 2.0, size.z / 2.0)
             },
         };
-
-        println!(
-            "Collider type after creation: {:?}",
-            collider.raw.shape_type()
-        );
 
         let spawn_timer = self
             .spawn_timer_seconds
@@ -194,13 +190,15 @@ pub struct Aabb {
 }
 
 impl Aabb {
-    //pub fn new(min: Vec3, max: Vec3) -> Self { Self { min, max } }
-
-    //pub fn half_extents(&self) -> Vec3 { (self.max - self.min) * 0.5 }
 
     pub fn size(&self) -> Vec3 { self.max - self.min }
 
     pub fn center(&self) -> Vec3 { (self.min + self.max) / 2.0 }
+    
+    pub fn max_dimension(&self) -> f32 {
+        let size = self.size();
+        size.x.max(size.y).max(size.z)
+    }
 
     pub fn scale(&self, scale: f32) -> Self {
         Self {

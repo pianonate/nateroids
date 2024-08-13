@@ -356,8 +356,8 @@ fn draw_variable_size_circle(
     color: Color,
     remaining_distance: f32,
 ) {
-    let min_radius = config.missile_circle_radius * 0.5; // Minimum radius to ensure visibility
-    let max_radius = config.missile_circle_radius; // Maximum radius (current fixed radius)
+    let min_radius = config.smallest_teleport_circle * 0.5; // Minimum radius to ensure visibility
+    let max_radius = config.smallest_teleport_circle; // Maximum radius (current fixed radius)
 
     // Define a distance threshold where the circle starts to shrink
     let shrink_threshold = 20.; // Adjust this value as needed
