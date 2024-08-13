@@ -27,14 +27,8 @@ const BLENDER_SCALE: f32 = 100.;
 pub struct ColliderConfigPlugin;
 impl Plugin for ColliderConfigPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<AssetsState>().add_systems(
-            OnEnter(AssetsState::Loaded),
-            (initialize_configuration /* apply_emissive_materials */,).chain(),
-        );
-        // .add_systems(
-        //     Update,
-        //     update_emissive_materials.
-        // run_if(resource_exists::<ColliderConfig>), );
+        app.init_state::<AssetsState>()
+            .add_systems(OnEnter(AssetsState::Loaded), initialize_configuration);
     }
 }
 
@@ -57,7 +51,6 @@ struct InitialColliderConstant {
     angvel:              Option<f32>,
     collider_type:       ColliderType,
     damage:              f32,
-    // emissive:            LinearRgba,
     health:              f32,
     mass:                ColliderMassProperties,
     name:                &'static str,
@@ -77,7 +70,6 @@ impl Default for InitialColliderConfig {
                 angvel:              None,
                 collider_type:       ColliderType::Cuboid,
                 damage:              50.,
-                // emissive:            LinearRgba::new(0., 0., 0., 0.),
                 health:              1.,
                 mass:                Mass(0.001),
                 name:                "missile",
@@ -93,7 +85,6 @@ impl Default for InitialColliderConfig {
                 angvel:              Some(4.),
                 collider_type:       ColliderType::Ball,
                 damage:              10.,
-                //  emissive:            LinearRgba::new(0., 0., 0., 0.),
                 health:              50.,
                 mass:                Mass(1.0),
                 name:                "nateroid",
@@ -109,7 +100,6 @@ impl Default for InitialColliderConfig {
                 angvel:              None,
                 collider_type:       ColliderType::Cuboid,
                 damage:              100.,
-                //    emissive:            LinearRgba::new(1., 0., 0., 0.),
                 health:              100.,
                 mass:                Mass(3.0),
                 name:                "spaceship",
@@ -158,7 +148,6 @@ impl InitialColliderConstant {
             angular_velocity: self.angvel,
             collider,
             damage: self.damage,
-            // emissive: self.emissive,
             health: self.health,
             mass: self.mass,
             name: self.name.to_string(),
@@ -188,7 +177,6 @@ pub struct ColliderConstant {
     #[reflect(ignore)]
     pub collider:         Collider,
     pub damage:           f32,
-    // pub emissive:         LinearRgba,
     pub health:           f32,
     pub mass:             ColliderMassProperties,
     pub name:             String,
@@ -261,103 +249,6 @@ impl ColliderConstant {
         Quat::from_euler(EulerRot::XYZ, x_angle, y_angle, z_angle)
     }
 }
-
-// fn apply_emissive_materials(
-//     collider_config: Res<ColliderConfig>,
-//     mut materials: ResMut<Assets<StandardMaterial>>,
-//     mut scenes: ResMut<Assets<Scene>>,
-//     scene_assets: Res<SceneAssets>,
-// ) {
-//     apply_emissive_impl(collider_config, &mut materials, &mut scenes,
-// &scene_assets); }
-//
-// fn update_emissive_materials(
-//     collider_config: Res<ColliderConfig>,
-//     mut materials: ResMut<Assets<StandardMaterial>>,
-//     mut scenes: ResMut<Assets<Scene>>,
-//     scene_assets: Res<SceneAssets>,
-// ) {
-//
-//         apply_emissive_impl(collider_config, &mut materials, &mut scenes,
-// &scene_assets); }
-
-// fn apply_emissive_impl(
-//     collider_config: Res<ColliderConfig>,
-//     materials: &mut ResMut<Assets<StandardMaterial>>,
-//     scenes: &mut ResMut<Assets<Scene>>,
-//     scene_assets: &Res<SceneAssets>,
-// ) {
-//     apply_material_to_scene(
-//         scenes,
-//         &scene_assets.spaceship,
-//         collider_config.spaceship.emissive,
-//         materials,
-//     );
-//     apply_material_to_scene(
-//         scenes,
-//         &scene_assets.nateroid,
-//         collider_config.nateroid.emissive,
-//         materials,
-//     );
-//     apply_material_to_scene(
-//         scenes,
-//         &scene_assets.missile,
-//         collider_config.missile.emissive,
-//         materials,
-//     );
-// }
-
-// fn apply_material_to_scene(
-//     scenes: &mut Assets<Scene>,
-//     scene_handle: &Handle<Scene>,
-//     linear_rgba: LinearRgba,
-//     materials: &mut ResMut<Assets<StandardMaterial>>,
-// ) {
-//     let configured_material_handle = materials.add(StandardMaterial {
-//         emissive: linear_rgba,
-//         ..default()
-//     });
-//
-//     if let Some(scene) = scenes.get_mut(scene_handle) {
-//         let mut query = scene.world.query::<&mut Handle<StandardMaterial>>();
-//         for mut material in query.iter_mut(&mut scene.world) {
-//             *material = configured_material_handle.clone();
-//         }
-//     }
-// }
-
-// fn apply_material_to_scene(
-//     scenes: &mut Assets<Scene>,
-//     scene_handle: &Handle<Scene>,
-//     linear_rgba: LinearRgba,
-//     materials: &mut Assets<StandardMaterial>,
-// ) {
-//     if let Some(scene) = scenes.get_mut(scene_handle) {
-//         // First pass: Collect information
-//         let mut updates = Vec::new();
-//         {
-//             let mut query = scene.world.query::<(Entity,
-// &Handle<StandardMaterial>)>();             for (entity, material_handle) in
-// query.iter(&scene.world) {                 if let Some(original_material) =
-// materials.get(material_handle) {                     updates.push((entity,
-// original_material.base_color));                 }
-//             }
-//         }
-//
-//         // Second pass: Apply updates
-//         for (entity, base_color) in updates {
-//             let new_material = StandardMaterial {
-//                 base_color,
-//                 emissive: linear_rgba,
-//                 ..StandardMaterial::default()
-//             };
-//             let new_material_handle = materials.add(new_material);
-//             if let Some(mut entity_mut) = scene.world.get_entity_mut(entity)
-// {                 entity_mut.insert(new_material_handle);
-//             }
-//         }
-//     }
-// }
 
 fn initialize_configuration(
     mut commands: Commands,

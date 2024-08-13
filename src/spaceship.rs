@@ -53,26 +53,20 @@ impl Plugin for SpaceshipPlugin {
     // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
         // we can enter InGame a couple of ways - when we do, spawn a spaceship
-        app.add_systems(
-            OnExit(GameState::Splash),
-            (spawn_spaceship, apply_emissive_material).chain(),
-        )
-        .add_systems(
-            OnExit(GameState::GameOver),
-            (spawn_spaceship, apply_emissive_material).chain(),
-        )
-        .add_systems(
-            Update,
-            (
-                spaceship_movement_controls,
-                spaceship_shield_controls,
-                toggle_continuous_fire,
+        app.add_systems(OnExit(GameState::Splash), spawn_spaceship)
+            .add_systems(OnExit(GameState::GameOver), spawn_spaceship)
+            .add_systems(
+                Update,
+                (
+                    spaceship_movement_controls,
+                    spaceship_shield_controls,
+                    toggle_continuous_fire,
+                )
+                    .chain()
+                    .in_set(InGameSet::UserInput),
             )
-                .chain()
-                .in_set(InGameSet::UserInput),
-        )
-        // check if spaceship is destroyed...this will change the GameState
-        .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
+            // check if spaceship is destroyed...this will change the GameState
+            .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
     }
 }
 
@@ -99,45 +93,6 @@ fn toggle_continuous_fire(
                 println!("adding continuous");
                 commands.entity(entity).insert(ContinuousFire);
             }
-        }
-    }
-}
-
-// Add this new component
-#[derive(Component)]
-struct NeedsEmissiveMaterial(LinearRgba);
-
-// Add this new system to your SpaceshipPlugin
-// Update the apply_emissive_material system
-fn apply_emissive_material(
-    mut commands: Commands,
-    query: Query<(Entity, &NeedsEmissiveMaterial)>,
-    children: Query<&Children>,
-    meshes: Query<&Handle<StandardMaterial>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    for (entity, needs_emissive) in query.iter() {
-        apply_material_recursive(entity, needs_emissive.0, &children, &meshes, &mut materials);
-        commands.entity(entity).remove::<NeedsEmissiveMaterial>();
-    }
-}
-
-fn apply_material_recursive(
-    entity: Entity,
-    emissive_color: LinearRgba,
-    children: &Query<&Children>,
-    meshes: &Query<&Handle<StandardMaterial>>,
-    materials: &mut Assets<StandardMaterial>,
-) {
-    if let Ok(material_handle) = meshes.get(entity) {
-        if let Some(material) = materials.get_mut(material_handle) {
-            material.emissive = emissive_color;
-        }
-    }
-
-    if let Ok(child_entities) = children.get(entity) {
-        for child in child_entities.iter() {
-            apply_material_recursive(*child, emissive_color, children, meshes, materials);
         }
     }
 }
@@ -184,7 +139,6 @@ fn spawn_spaceship(
         })
         .insert(spaceship_input)
         .insert(WallApproachVisual::default())
-        .insert(NeedsEmissiveMaterial(LinearRgba::new(1., 0., 0., 1.)))
         .id();
 
     name_entity(
