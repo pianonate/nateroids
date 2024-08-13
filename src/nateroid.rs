@@ -4,7 +4,10 @@ use crate::{
         Boundary,
         WallApproachVisual,
     },
-    collider_config::ColliderConfig,
+    collider_config::{
+        ColliderConfig,
+        ColliderConstant,
+    },
     config::RenderLayer,
     health::{
         CollisionDamage,
@@ -21,13 +24,9 @@ use bevy::{
 };
 use bevy_rapier3d::prelude::Velocity;
 use rand::Rng;
-use std::{
-    f32::consts::PI,
-    ops::Range,
-};
+use std::ops::Range;
 
 const ANGULAR_VELOCITY_RANGE: Range<f32> = -4.0..4.0;
-const ROTATION_RANGE: Range<f32> = 0.0..2.0 * PI;
 
 #[derive(Component, Debug)]
 pub struct NateroidPlugin;
@@ -49,6 +48,8 @@ fn spawn_nateroid(
         return;
     }
 
+    let nateroid_config = &collider_config.nateroid;
+
     let mut rng = rand::thread_rng();
 
     let boundary_min = boundary.transform.translation - boundary.transform.scale / 2.0;
@@ -61,22 +62,16 @@ fn spawn_nateroid(
         0.0, //rng.gen_range(boundary_min.z..boundary_max.z),
     );
 
-    let velocity = collider_config.nateroid.velocity;
-    let random_velocity = random_vec3(-velocity..velocity, -velocity..velocity, 0.0..0.0);
-    let random_angular_velocity = random_vec3(
-        ANGULAR_VELOCITY_RANGE,
-        ANGULAR_VELOCITY_RANGE,
-        ANGULAR_VELOCITY_RANGE,
-    );
-
     let mut transform = Transform::from_translation(spawn_translation);
-
     // start in a random position
-    transform.rotate_local_x(rng.gen_range(ROTATION_RANGE));
-    transform.rotate_local_y(rng.gen_range(ROTATION_RANGE));
-    transform.rotate_local_z(rng.gen_range(ROTATION_RANGE));
+    transform.rotation = ColliderConstant::random_rotation();
+    
+    // with random velocity and angular velocity
+    let random_velocity = nateroid_config.random_velocity();
+    let random_angular_velocity = nateroid_config.random_angular_velocity();
 
-    transform.scale = Vec3::splat(collider_config.nateroid.scalar);
+
+    transform.scale = Vec3::splat(nateroid_config.scalar);
 
     let nateroid_model = SceneBundle {
         scene: scene_assets.nateroid.clone(),
@@ -84,17 +79,18 @@ fn spawn_nateroid(
         ..default()
     };
 
-    let collider = collider_config.nateroid.collider.clone();
+    let collider = nateroid_config.collider.clone();
 
     let nateroid = commands
         .spawn(NateroidPlugin)
         .insert(HealthBundle {
-            collision_damage: CollisionDamage(collider_config.nateroid.damage),
-            health:           Health(collider_config.nateroid.health),
+            collision_damage: CollisionDamage(nateroid_config.damage),
+            health:           Health(nateroid_config.health),
         })
         .insert(MovingObjectBundle {
-            aabb: collider_config.nateroid.aabb.clone(),
+            aabb: nateroid_config.aabb.clone(),
             collider,
+            mass: nateroid_config.mass,
             model: nateroid_model,
             velocity: Velocity {
                 linvel: random_velocity,
@@ -106,15 +102,17 @@ fn spawn_nateroid(
         .insert(WallApproachVisual::default())
         .id();
 
-    name_entity(&mut commands, nateroid, collider_config.nateroid.name);
+    name_entity(&mut commands, nateroid, nateroid_config.name);
 }
 
 fn should_spawn_nateroid(collider_config: &mut ResMut<ColliderConfig>, time: Res<Time>) -> bool {
-    if !collider_config.nateroid.spawnable {
+    let nateroid_config = &mut collider_config.nateroid;
+
+    if !nateroid_config.spawnable {
         return false;
     }
 
-    let spawn_timer = collider_config.nateroid.spawn_timer.as_mut().unwrap();
+    let spawn_timer = nateroid_config.spawn_timer.as_mut().unwrap();
     spawn_timer.tick(time.delta());
 
     if !spawn_timer.just_finished() {
@@ -122,25 +120,4 @@ fn should_spawn_nateroid(collider_config: &mut ResMut<ColliderConfig>, time: Res
     }
 
     true
-}
-
-fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {
-    let mut rng = rand::thread_rng();
-    let x = if range_x.start < range_x.end {
-        rng.gen_range(range_x)
-    } else {
-        0.0
-    };
-    let y = if range_y.start < range_y.end {
-        rng.gen_range(range_y)
-    } else {
-        0.0
-    };
-    let z = if range_z.start < range_z.end {
-        rng.gen_range(range_z)
-    } else {
-        0.0
-    };
-
-    Vec3::new(x, y, z)
 }

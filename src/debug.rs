@@ -34,7 +34,7 @@ impl Plugin for DebugPlugin {
             .add_systems(Startup, register_debug_resources)
             .add_systems(
                 Update,
-                (toggle_debug, toggle_inspector, toggle_aabb_mode).in_set(InGameSet::UserInput),
+                (toggle_debug, toggle_inspector, toggle_aabb_mode),
             );
     }
 }

@@ -181,7 +181,7 @@ fn draw_aabb_system(mut gizmos: Gizmos, query: Query<(&Transform, &Aabb)>) {
 //         // Get the collider from the entity and draw Rapier's AABB
 //         if let Some(collider_handle) =
 // rapier_context.entity2collider().get(&entity) {             if let
-// Some(collider) = rapier_context.colliders.get(*collider_handle) {            
+// Some(collider) = rapier_context.colliders.get(*collider_handle) {
 // let rapier_aabb = collider.compute_aabb();
 //
 //                 // Convert Rapier's AABB to Bevy types
@@ -203,14 +203,14 @@ fn draw_aabb_system(mut gizmos: Gizmos, query: Query<(&Transform, &Aabb)>) {
 //                 gizmos.cuboid(
 //                     Transform::from_translation(transform.translation)
 //                         .with_rotation(rotation)
-//                         
+//
 // .with_scale(Vec3::new(aabb_half_extents.y,aabb_half_extents.z,
-// aabb_half_extents.x ) * 2.0 * transform.scale),                     
+// aabb_half_extents.x ) * 2.0 * transform.scale),
 // Color::from(tailwind::RED_800).with_alpha(0.3),                 );
 //
 //                 println!("your_aabb.half_extents() {}, {}, {}, rapier
 // half_extents {}, {}, {}", your_aabb.half_extents().x,
-// your_aabb.half_extents().y, your_aabb.half_extents().z,                      
+// your_aabb.half_extents().y, your_aabb.half_extents().z,
 // aabb_half_extents.x, aabb_half_extents.y, aabb_half_extents.z)             }
 //         }
 //     }

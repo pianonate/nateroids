@@ -41,10 +41,9 @@ use crate::{
     config::AppearanceConfig,
 };
 use leafwing_input_manager::prelude::*;
+use crate::collider_config::{Aabb, ColliderConstant};
 
 pub struct MissilePlugin;
-
-const MISSILE_MASS: f32 = 0.001;
 
 impl Plugin for MissilePlugin {
     fn build(&self, app: &mut App) {
@@ -70,32 +69,34 @@ pub struct Missile {
 
 impl Missile {
     fn new(
-        spaceship_transform: &Transform,
+        spaceship_transform: Transform,
         spaceship_velocity: &Velocity,
-        collider_config: &ColliderConfig,
-        appearance_config: Res<AppearanceConfig>,
+        spaceship_aabb: &Aabb,
+        missile_config: &ColliderConstant,
         boundary: Res<Boundary>,
     ) -> Self {
-        let forward = -spaceship_transform.forward().with_z(0.0);
+        
+        let forward = -spaceship_transform.forward();
 
-        let missile_velocity = forward * collider_config.missile.velocity;
+        let missile_velocity = forward * missile_config.velocity;
 
         // add spaceship velocity so that the missile fires in the direction the
         // spaceship is going - without it, they only have the missile velocity
         // and if the spaceship is moving it will look as if they are trailing
         // off to the left or right
         let velocity = spaceship_velocity.linvel + missile_velocity;
-
-        let direction = forward;
-        let origin = spaceship_transform.translation
-            + direction * appearance_config.missile_forward_spawn_distance;
+        
+        
+        // this one is actually tricky to land the firing point right at the edge of the
+        // bounding box - got some help from claude.ai and it's working after some trial and error
+        let last_position = missile_config.get_forward_spawn_point(spaceship_transform, spaceship_aabb);
 
         Missile {
             velocity,
             total_distance: boundary.max_missile_distance,
             traveled_distance: 0.,
             remaining_distance: 0.,
-            last_position: origin,
+            last_position,
             last_teleport_position: None,
         }
     }
@@ -106,7 +107,7 @@ impl Missile {
 /// we're holding down the fire button
 fn should_fire(
     continuous_fire: Option<&ContinuousFire>,
-    collider_config: &mut ResMut<ColliderConfig>,
+    missile_config: &mut ColliderConstant,
     time: Res<Time>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
 ) -> bool {
@@ -114,7 +115,7 @@ fn should_fire(
 
     if continuous_fire.is_some() {
         // We know the timer exists, so we can safely unwrap it
-        let timer = collider_config.missile.spawn_timer.as_mut().unwrap();
+        let timer = missile_config.spawn_timer.as_mut().unwrap();
         timer.tick(time.delta());
         if !timer.just_finished() {
             return false;
@@ -140,7 +141,7 @@ struct FireResources<'w> {
 fn fire_missile(
     mut commands: Commands,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
-    q_spaceship: Query<(&Transform, &Velocity, Option<&ContinuousFire>), With<Spaceship>>,
+    q_spaceship: Query<(&Transform, &Velocity, &Aabb, Option<&ContinuousFire>), With<Spaceship>>,
     mut collider_config: ResMut<ColliderConfig>,
     time: Res<Time>,
     res: FireResources,
@@ -149,58 +150,60 @@ fn fire_missile(
         return;
     }
 
-    let Ok((spaceship_transform, spaceship_velocity, continuous_fire)) = q_spaceship.get_single()
+    let Ok((spaceship_transform, spaceship_velocity,aabb,  continuous_fire)) = q_spaceship.get_single()
     else {
         return;
     };
 
-    if !should_fire(continuous_fire, &mut collider_config, time, q_input_map) {
+    if !should_fire(continuous_fire, &mut collider_config.missile, time, q_input_map) {
         return;
     }
 
     // extracted for readability
     spawn_missile(
         &mut commands,
-        spaceship_transform,
+        *spaceship_transform,
         spaceship_velocity,
-        &collider_config,
+        &aabb,
+        &collider_config.missile,
         res,
     );
 }
 
 fn spawn_missile(
     commands: &mut Commands,
-    spaceship_transform: &Transform,
+    spaceship_transform: Transform,
     spaceship_velocity: &Velocity,
-    collider_config: &ColliderConfig,
+    aabb: &Aabb,
+    missile_config: &ColliderConstant,
     res: FireResources,
 ) {
     // boundary is used to set the total distance this missile can travel
     let missile = Missile::new(
         spaceship_transform,
         spaceship_velocity,
-        collider_config,
-        res.appearance_config,
+        aabb,
+        missile_config,
         res.boundary,
     );
-
-    let collider = collider_config.missile.collider.clone();
+    
+    let collider = missile_config.collider.clone();
 
     let missile = commands
         .spawn(missile)
         .insert(HealthBundle {
-            collision_damage: CollisionDamage(collider_config.missile.damage),
-            health:           Health(collider_config.missile.health),
+            collision_damage: CollisionDamage(missile_config.damage),
+            health:           Health(missile_config.health),
         })
         .insert(MovingObjectBundle {
-            aabb: collider_config.missile.aabb.clone(),
+            aabb: missile_config.aabb.clone(),
             collider,
             collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
-            mass: Mass(MISSILE_MASS),
+            mass: missile_config.mass,
             model: SceneBundle {
                 scene: res.scene_assets.missiles.clone(),
                 transform: Transform::from_translation(missile.last_position)
-                    .with_scale(Vec3::splat(collider_config.missile.scalar)),
+                    .with_scale(Vec3::splat(missile_config.scalar)).with_rotation(spaceship_transform.rotation),
                 ..default()
             },
             velocity: Velocity {
@@ -213,7 +216,7 @@ fn spawn_missile(
         .insert(WallApproachVisual::default())
         .id();
 
-    name_entity(commands, missile, collider_config.missile.name);
+    name_entity(commands, missile, missile_config.name);
 }
 
 /// we update missile movement so that it can be despawned after it has traveled

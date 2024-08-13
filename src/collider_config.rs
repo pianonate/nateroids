@@ -8,7 +8,16 @@ use bevy::{
     },
     scene::Scene,
 };
-use bevy_rapier3d::prelude::Collider;
+use bevy_rapier3d::prelude::{Collider, ColliderMassProperties};
+use rand::Rng;
+use std::{
+    f32::consts::PI,
+    ops::Range,
+};
+use bevy_rapier3d::prelude::ColliderMassProperties::Mass;
+
+// todo: #bevyquestion - where should this go
+const BLENDER_SCALE: f32 = 100.;
 
 pub struct ColliderConfigPlugin;
 impl Plugin for ColliderConfigPlugin {
@@ -37,14 +46,19 @@ struct InitialColliderConfig {
 
 #[derive(Debug, Clone)]
 struct InitialColliderConstant {
-    name:                &'static str,
+    acceleration:        Option<f32>,
+    angvel:              Option<f32>,
+    collider_type:       ColliderType,
     damage:              f32,
     health:              f32,
+    mass:                ColliderMassProperties,
+    name:                &'static str,
+    rotation_speed:      f32,
     scalar:              f32,
+    spawn_point:         Vec3,
     spawn_timer_seconds: Option<f32>,
     spawnable:           bool,
     velocity:            f32,
-    collider_type:       ColliderType,
 }
 
 #[derive(Debug, Clone, Reflect, Resource)]
@@ -58,49 +72,131 @@ pub struct ColliderConfig {
 #[derive(Debug, Clone, Reflect, Resource)]
 #[reflect(Resource)]
 pub struct ColliderConstant {
-    pub aabb:        Aabb,
+    pub aabb:           Aabb,
+    pub acceleration:   Option<f32>,
+    pub angvel:         Option<f32>,
     #[reflect(ignore)]
-    pub collider:    Collider,
-    pub damage:      f32,
-    pub health:      f32,
-    pub name:        &'static str,
-    pub scalar:      f32,
-    pub size:        Vec3,
+    pub collider:       Collider,
+    pub damage:         f32,
+    pub health:         f32,
+    pub mass:           ColliderMassProperties,
+    pub rotation_speed: f32,
+    pub name:           &'static str,
+    pub scalar:         f32,
+    pub size:           Vec3,
+    pub spawn_point:    Vec3,
     #[reflect(ignore)]
-    pub spawn_timer: Option<Timer>,
-    pub spawnable:   bool,
-    pub velocity:    f32,
+    pub spawn_timer:    Option<Timer>,
+    pub spawnable:      bool,
+    pub velocity:       f32,
+}
+
+impl ColliderConstant {
+    
+    pub fn get_forward_spawn_point(&self, spaceship_transform: Transform, spaceship_aabb: &Aabb) -> Vec3 {
+        // Step 1: Determine the forward vector of the box in world space
+        let forward = -spaceship_transform.forward();
+
+        // Step 2: Get the half extents of the AABB
+        let half_extents = spaceship_aabb.half_extents();
+
+        // Step 3: Transform the half extents to world space
+        let world_half_extents = spaceship_transform.rotation * (half_extents * spaceship_transform.scale);
+
+        // Step 4: Project the world half extents onto the forward vector
+        let forward_extent = forward.dot(world_half_extents);
+
+        // Step 5: Compute the point on the edge of the box in the forward direction + a buffer from the missile
+        //         we're overloading the spawn_point from the missile as it is not otherewise used
+        let edge_point = spaceship_transform.translation + forward * (forward_extent + self.spawn_point.length());
+
+        edge_point
+    }
+
+
+    // todo: rustquestion - i wanted to centralize construction of collider params
+    //                      these are specfic to the nateroid and just put here to
+    //                      beautify the spawn code for nateroid
+    //                      not sure i love the choices about storing the limits
+    //                      as an f32 and then constructing ranges here
+    pub fn random_angular_velocity(&self) -> Vec3 {
+
+        if let Some( angvel) = self.angvel {
+            random_vec3(
+                -angvel..angvel,
+                -angvel..angvel,
+                -angvel..angvel,
+            )
+        } else {
+            Vec3::ZERO
+        }
+    }
+
+    pub fn random_velocity(&self) -> Vec3 {
+        random_vec3(
+            -self.velocity..self.velocity,
+            -self.velocity..self.velocity,
+            //todo: #handle3d
+            0.0..0.0,
+        )
+    }
+
+    pub fn random_rotation() -> Quat {
+        const ROTATION_RANGE: Range<f32> = 0.0..2.0 * PI;
+
+        let mut rng = rand::thread_rng();
+        let x_angle = rng.gen_range(ROTATION_RANGE);
+        let y_angle = rng.gen_range(ROTATION_RANGE);
+        let z_angle = rng.gen_range(ROTATION_RANGE);
+
+        Quat::from_euler(EulerRot::XYZ, x_angle, y_angle, z_angle)
+    }
 }
 
 impl Default for InitialColliderConfig {
     fn default() -> Self {
         Self {
             missile:   InitialColliderConstant {
+                acceleration:        None,
+                angvel:              None,
                 collider_type:       ColliderType::Cuboid,
                 damage:              50.,
                 health:              1.,
+                mass:                Mass(0.001),
                 name:                "missile",
+                rotation_speed:      0.,
                 scalar:              1.5,
+                spawn_point:         Vec3::new(0.5,0.,0.),
                 spawn_timer_seconds: Some(1.0 / 20.0),
                 spawnable:           true,
                 velocity:            85.,
             },
             nateroid:  InitialColliderConstant {
+                acceleration:        None,
+                angvel:              Some(4.),
                 collider_type:       ColliderType::Ball,
                 damage:              10.,
                 health:              50.,
+                mass:                Mass(1.0),
                 name:                "nateroid",
+                rotation_speed:      0.,
                 scalar:              1.,
+                spawn_point:         Vec3::ZERO,
                 spawn_timer_seconds: Some(2.),
                 spawnable:           true,
                 velocity:            30.,
             },
             spaceship: InitialColliderConstant {
+                acceleration:        Some(60.),
+                angvel:              None,
                 collider_type:       ColliderType::Cuboid,
                 damage:              100.,
                 health:              100.,
+                mass:                Mass(3.0),
                 name:                "spaceship",
+                rotation_speed:      5.,
                 scalar:              0.8,
+                spawn_point:         Vec3::new(0.0, -20.0, 0.0),
                 spawn_timer_seconds: None,
                 spawnable:           true,
                 velocity:            80.,
@@ -108,9 +204,6 @@ impl Default for InitialColliderConfig {
         }
     }
 }
-
-const BLENDER_SCALE: f32 = 100.;
-
 impl InitialColliderConstant {
     fn initialize(&self, aabb: Aabb) -> ColliderConstant {
         let original_aabb = aabb;
@@ -141,12 +234,17 @@ impl InitialColliderConstant {
 
         ColliderConstant {
             aabb: adjusted_aabb,
+            acceleration: self.acceleration,
+            angvel: self.angvel,
             collider,
             damage: self.damage,
             health: self.health,
+            mass: self.mass,
             name: self.name,
+            rotation_speed: self.rotation_speed,
             scalar: self.scalar,
             size,
+            spawn_point: self.spawn_point,
             spawn_timer,
             spawnable: self.spawnable,
             velocity: self.velocity,
@@ -285,4 +383,25 @@ fn combine_aabb(a: Aabb, b: Aabb) -> Aabb {
         min: a.min.min(b.min),
         max: a.max.max(b.max),
     }
+}
+
+fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {
+    let mut rng = rand::thread_rng();
+    let x = if range_x.start < range_x.end {
+        rng.gen_range(range_x)
+    } else {
+        0.0
+    };
+    let y = if range_y.start < range_y.end {
+        rng.gen_range(range_y)
+    } else {
+        0.0
+    };
+    let z = if range_z.start < range_z.end {
+        rng.gen_range(range_z)
+    } else {
+        0.0
+    };
+
+    Vec3::new(x, y, z)
 }

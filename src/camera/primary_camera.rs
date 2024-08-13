@@ -140,7 +140,6 @@ fn pinch_to_zoom(
     config: Res<AppearanceConfig>,
 ) {
     for event in pinch_gesture_events.read() {
-        info!("{:?}", event.0);
         if let Ok(mut transform) = query.get_single_mut() {
             impl_zoom(config.zoom_sensitivity_pinch, &mut transform, event.0);
         }

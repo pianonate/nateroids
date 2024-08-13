@@ -38,11 +38,9 @@ use crate::{
 };
 use leafwing_input_manager::prelude::*;
 
-const SPACESHIP_ACCELERATION: f32 = 60.0;
 // const SPACESHIP_MAX_SPEED: f32 = 40.0;
 //const SPACESHIP_ROLL_SPEED: f32 = 2.5;
-const SPACESHIP_ROTATION_SPEED: f32 = 5.0;
-const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0);
+//const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0);
 
 #[derive(Component, Debug)]
 pub struct Spaceship;
@@ -111,31 +109,31 @@ fn spawn_spaceship(
         return;
     }
 
+    let spaceship_config = &collider_config.spaceship;
     let spaceship_input = InputManagerBundle::with_map(SpaceshipAction::spaceship_input_map());
 
-    let collider = collider_config.spaceship.collider.clone();
-    let center = collider_config.spaceship.aabb.center();
+    let collider = spaceship_config.collider.clone();
 
     let spaceship = commands
         .spawn(Spaceship)
         .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
         .insert(HealthBundle {
-            collision_damage: CollisionDamage(collider_config.spaceship.damage),
-            health:           Health(collider_config.spaceship.health),
+            collision_damage: CollisionDamage(spaceship_config.damage),
+            health:           Health(spaceship_config.health),
         })
         .insert(MovingObjectBundle {
-            aabb: collider_config.spaceship.aabb.clone(),
+            aabb: spaceship_config.aabb.clone(),
             collider,
             collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
             locked_axes: LockedAxes::TRANSLATION_LOCKED_Z
                 | LockedAxes::ROTATION_LOCKED_X
                 | LockedAxes::ROTATION_LOCKED_Y,
-            mass: Mass(3.0),
+            mass: spaceship_config.mass,
             model: SceneBundle {
                 scene: scene_assets.spaceship.clone(),
                 transform: Transform {
-                    translation: STARTING_TRANSLATION - center,
-                    scale:       Vec3::splat(collider_config.spaceship.scalar),
+                    translation: spaceship_config.spawn_point,
+                    scale:       Vec3::splat(spaceship_config.scalar),
                     rotation:    Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2),
                 },
                 ..default()
@@ -153,7 +151,7 @@ fn spaceship_movement_controls(
     mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
     q_camera: Query<&Transform, (With<PrimaryCamera>, Without<Spaceship>)>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
-    config: Res<ColliderConfig>,
+    collider_config: Res<ColliderConfig>,
     time: Res<Time>,
     orientation_mode: Res<CameraOrientation>,
 ) {
@@ -161,22 +159,25 @@ fn spaceship_movement_controls(
         // we can use this because there is only exactly one spaceship - so we're not
         // looping over the query
         if let Ok((mut spaceship_transform, mut velocity)) = q_spaceship.get_single_mut() {
+            let spaceship_config = &collider_config.spaceship;
+
             // dynamically update from inspector while game is running
-            spaceship_transform.scale = Vec3::splat(config.spaceship.scalar);
+            spaceship_transform.scale = Vec3::splat(spaceship_config.scalar);
 
             let spaceship_action = q_input_map.single();
 
             let mut rotation = 0.0;
             let delta_seconds = time.delta_seconds();
+            let rotation_speed = spaceship_config.rotation_speed;
 
             if spaceship_action.pressed(&SpaceshipAction::TurnRight) {
                 // right
                 velocity.angvel.z = 0.0;
-                rotation = SPACESHIP_ROTATION_SPEED * delta_seconds;
+                rotation = rotation_speed * delta_seconds;
             } else if spaceship_action.pressed(&SpaceshipAction::TurnLeft) {
                 // left
                 velocity.angvel.z = 0.0;
-                rotation = -SPACESHIP_ROTATION_SPEED * delta_seconds;
+                rotation = -rotation_speed * delta_seconds;
             }
 
             let camera_forward = camera_transform.forward();
@@ -189,13 +190,17 @@ fn spaceship_movement_controls(
             // rotate around the z-axis
             spaceship_transform.rotate_z(rotation);
 
-            let max_speed = config.spaceship.velocity;
+            let max_speed = spaceship_config.velocity;
+
+            let accel = spaceship_config
+                .acceleration
+                .expect("did you delete spaceship acceleration?");
 
             if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
                 apply_acceleration(
                     &mut velocity,
                     -spaceship_transform.forward().as_vec3(),
-                    SPACESHIP_ACCELERATION,
+                    accel,
                     max_speed,
                     delta_seconds,
                     orientation_mode,
@@ -204,7 +209,7 @@ fn spaceship_movement_controls(
                 apply_acceleration(
                     &mut velocity,
                     spaceship_transform.forward().as_vec3(),
-                    SPACESHIP_ACCELERATION,
+                    accel,
                     max_speed,
                     delta_seconds,
                     orientation_mode,
