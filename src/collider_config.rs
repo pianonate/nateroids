@@ -118,7 +118,7 @@ impl InitialColliderConstant {
 
         // Calculate the size based on the adjusted AABB
         let size = adjusted_aabb.size();
-        
+        let half_extents = adjusted_aabb.half_extents();
 
         let collider = match self.collider_type {
             ColliderType::Ball => {
@@ -131,7 +131,7 @@ impl InitialColliderConstant {
                     "Creating Cuboid collider with half extents: {:?}",
                     size / 2.0
                 );
-                Collider::cuboid(size.x / 2.0, size.y / 2.0, size.z / 2.0)
+                Collider::cuboid(half_extents.x, half_extents.y, half_extents.z)
             },
         };
 
@@ -190,11 +190,12 @@ pub struct Aabb {
 }
 
 impl Aabb {
-
     pub fn size(&self) -> Vec3 { self.max - self.min }
 
     pub fn center(&self) -> Vec3 { (self.min + self.max) / 2.0 }
-    
+
+    pub fn half_extents(&self) -> Vec3 { self.size() / 2.0 }
+
     pub fn max_dimension(&self) -> f32 {
         let size = self.size();
         size.x.max(size.y).max(size.z)

@@ -1,4 +1,5 @@
 use crate::{
+    collider_config::Aabb,
     config::{
         AppearanceConfig,
         BoundaryGizmos,
@@ -12,7 +13,6 @@ use bevy::{
 };
 use bevy_rapier3d::prelude::Velocity;
 use std::cell::Cell;
-use crate::collider_config::Aabb;
 
 pub struct BoundaryPlugin;
 
@@ -113,7 +113,7 @@ impl Boundary {
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;
 
         // Cell is a type in Rust's standard library that provides interior mutability.
-        // It allows you to mutate data even when you have an immutable
+        // It allows you toF mutate data even when you have an immutable
         // reference to the Cell. This is useful in scenarios where you need to
         // update a value but only have an immutable reference to the containing
         // structure. In this case it allows us to write a simpler closure
@@ -217,7 +217,13 @@ pub struct BoundaryWall {
 }
 
 pub fn wall_approach_system(
-    mut query: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
+    mut query: Query<(
+        &Aabb,
+        &Transform,
+        &Velocity,
+        &Teleporter,
+        &mut WallApproachVisual,
+    )>,
     boundary: Res<Boundary>,
     time: Res<Time>,
     appearance: Res<AppearanceConfig>,
@@ -229,10 +235,12 @@ pub fn wall_approach_system(
     let delta_time = time.delta_seconds();
 
     for (aabb, transform, velocity, teleporter, mut visual) in query.iter_mut() {
-        // the max dimension of the aabb is actually the diameter - using it as the radius
-        // has the circles start out twice as big and then shrink to fit the size of the object
-        // minimium size for small objects is preserved
-        let radius = aabb.max_dimension().max(appearance.smallest_teleport_circle); 
+        // the max dimension of the aabb is actually the diameter - using it as the
+        // radius has the circles start out twice as big and then shrink to fit
+        // the size of the object minimum size for small objects is preserved
+        let radius = aabb
+            .max_dimension()
+            .max(appearance.smallest_teleport_circle);
 
         let position = transform.translation;
         let direction = velocity.linvel.normalize_or_zero();
@@ -278,10 +286,7 @@ pub fn wall_approach_system(
     }
 }
 
-fn draw_approaching_circles(
-    q_wall: Query<&WallApproachVisual>,
-    mut gizmos: Gizmos,
-) {
+fn draw_approaching_circles(q_wall: Query<&WallApproachVisual>, mut gizmos: Gizmos) {
     for visual in q_wall.iter() {
         if let Some(ref approaching) = visual.approaching {
             let max_radius = approaching.radius;
@@ -305,15 +310,11 @@ fn draw_approaching_circles(
     }
 }
 
-fn draw_emerging_circles(
-    q_wall: Query<&WallApproachVisual>,
-    mut gizmos: Gizmos,
-    appearance_config: Res<AppearanceConfig>,
-) {
+fn draw_emerging_circles(q_wall: Query<&WallApproachVisual>, mut gizmos: Gizmos) {
     for visual in q_wall.iter() {
         if let Some(ref emerging) = visual.emerging {
             let radius = if emerging.distance_to_wall <= emerging.shrink_distance {
-                emerging.radius//appearance_config.missile_circle_radius
+                emerging.radius //appearance_config.missile_circle_radius
             } else if emerging.distance_to_wall >= emerging.approach_distance {
                 0.0 // This will effectively make the circle disappear
             } else {

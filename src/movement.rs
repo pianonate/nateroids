@@ -46,6 +46,7 @@ impl Plugin for MovementPlugin {
             teleport_at_boundary.in_set(InGameSet::EntityUpdates),
         );
 
+        // app.add_systems(Update, debug_spaceship);
         app.add_systems(Update, draw_aabb_system.run_if(aabb_mode_enabled));
     }
 }
@@ -150,9 +151,67 @@ fn draw_aabb_system(mut gizmos: Gizmos, query: Query<(&Transform, &Aabb)>) {
         // Draw the wireframe cube
         gizmos.cuboid(
             Transform::from_translation(center)
-                .with_scale(aabb.size() * transform.scale)
+                // .with_scale(aabb.size() * transform.scale)
+                .with_scale(aabb.half_extents() * 2.0 * transform.scale)
                 .with_rotation(transform.rotation),
             Color::from(tailwind::GREEN_800),
         );
     }
 }
+
+// todo: #bevyqestion - attempt to try to draw what rapier is drawing but
+// couldn't get       it to draw the same aabb that rapier actually draws - the
+// issue is that       for cuboids, rapier is off by some pixels whereas,
+// visually, my aabb is perfectly aligned       the question is why
+// fn debug_spaceship(
+//     query: Query<(Entity, &Transform, &Aabb), With<Spaceship>>,
+//     rapier_context: Res<RapierContext>,
+//     mut gizmos: Gizmos,
+// ) {
+//     for (entity, transform, your_aabb) in query.iter() {
+//         // Draw your calculated AABB
+//         let your_center = transform.transform_point(your_aabb.center());
+//         gizmos.cuboid(
+//             Transform::from_translation(your_center)
+//                 .with_scale(your_aabb.half_extents() * 2.0 * transform.scale)
+//                 .with_rotation(transform.rotation),
+//             Color::from(tailwind::GREEN_800).with_alpha(0.3),
+//         );
+//
+//         // Get the collider from the entity and draw Rapier's AABB
+//         if let Some(collider_handle) =
+// rapier_context.entity2collider().get(&entity) {             if let
+// Some(collider) = rapier_context.colliders.get(*collider_handle) {            
+// let rapier_aabb = collider.compute_aabb();
+//
+//                 // Convert Rapier's AABB to Bevy types
+//                 let aabb_half_extents = Vec3::new(
+//                     rapier_aabb.half_extents().x,
+//                     rapier_aabb.half_extents().y,
+//                     rapier_aabb.half_extents().z
+//                 );
+//
+//                 // Apply initial correction to align with your coordinate
+// system                 let correction_z =
+// Quat::from_rotation_z(-std::f32::consts::FRAC_PI_2);                 let
+// correction_y = Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2);
+//
+//                 let rotation =  transform.rotation; // correction_z *
+// transform.rotation * correction_y;
+//
+//                 // Draw Rapier's AABB
+//                 gizmos.cuboid(
+//                     Transform::from_translation(transform.translation)
+//                         .with_rotation(rotation)
+//                         
+// .with_scale(Vec3::new(aabb_half_extents.y,aabb_half_extents.z,
+// aabb_half_extents.x ) * 2.0 * transform.scale),                     
+// Color::from(tailwind::RED_800).with_alpha(0.3),                 );
+//
+//                 println!("your_aabb.half_extents() {}, {}, {}, rapier
+// half_extents {}, {}, {}", your_aabb.half_extents().x,
+// your_aabb.half_extents().y, your_aabb.half_extents().z,                      
+// aabb_half_extents.x, aabb_half_extents.y, aabb_half_extents.z)             }
+//         }
+//     }
+// }

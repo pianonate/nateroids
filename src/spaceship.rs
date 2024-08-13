@@ -1,14 +1,3 @@
-use bevy::{
-    prelude::*,
-    render::view::visibility::RenderLayers,
-};
-use bevy_rapier3d::prelude::{
-    ColliderMassProperties::Mass,
-    CollisionGroups,
-    LockedAxes,
-    Velocity,
-};
-
 use crate::{
     asset_loader::SceneAssets,
     camera::PrimaryCamera,
@@ -28,6 +17,16 @@ use crate::{
     schedule::InGameSet,
     state::GameState,
     utils::name_entity,
+};
+use bevy::{
+    prelude::*,
+    render::view::visibility::RenderLayers,
+};
+use bevy_rapier3d::prelude::{
+    ColliderMassProperties::Mass,
+    CollisionGroups,
+    LockedAxes,
+    Velocity,
 };
 
 use crate::{
@@ -115,6 +114,7 @@ fn spawn_spaceship(
     let spaceship_input = InputManagerBundle::with_map(SpaceshipAction::spaceship_input_map());
 
     let collider = collider_config.spaceship.collider.clone();
+    let center = collider_config.spaceship.aabb.center();
 
     let spaceship = commands
         .spawn(Spaceship)
@@ -134,7 +134,7 @@ fn spawn_spaceship(
             model: SceneBundle {
                 scene: scene_assets.spaceship.clone(),
                 transform: Transform {
-                    translation: STARTING_TRANSLATION,
+                    translation: STARTING_TRANSLATION - center,
                     scale:       Vec3::splat(collider_config.spaceship.scalar),
                     rotation:    Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2),
                 },
