@@ -4,10 +4,7 @@ use bevy::{
     prelude::*,
     render::view::RenderLayers,
 };
-use bevy_rapier3d::prelude::{
-    ColliderMassProperties::Mass,
-    *,
-};
+use bevy_rapier3d::prelude::*;
 
 use crate::{
     asset_loader::SceneAssets,
@@ -38,10 +35,13 @@ use crate::{
 
 use crate::{
     boundary::WallApproachVisual,
+    collider_config::{
+        Aabb,
+        ColliderConstant,
+    },
     config::AppearanceConfig,
 };
 use leafwing_input_manager::prelude::*;
-use crate::collider_config::{Aabb, ColliderConstant};
 
 pub struct MissilePlugin;
 
@@ -75,7 +75,6 @@ impl Missile {
         missile_config: &ColliderConstant,
         boundary: Res<Boundary>,
     ) -> Self {
-        
         let forward = -spaceship_transform.forward();
 
         let missile_velocity = forward * missile_config.velocity;
@@ -85,11 +84,12 @@ impl Missile {
         // and if the spaceship is moving it will look as if they are trailing
         // off to the left or right
         let velocity = spaceship_velocity.linvel + missile_velocity;
-        
-        
+
         // this one is actually tricky to land the firing point right at the edge of the
-        // bounding box - got some help from claude.ai and it's working after some trial and error
-        let last_position = missile_config.get_forward_spawn_point(spaceship_transform, spaceship_aabb);
+        // bounding box - got some help from claude.ai and it's working after some trial
+        // and error
+        let last_position =
+            missile_config.get_forward_spawn_point(spaceship_transform, spaceship_aabb);
 
         Missile {
             velocity,
@@ -128,9 +128,8 @@ fn should_fire(
 
 #[derive(SystemParam)]
 struct FireResources<'w> {
-    appearance_config: Res<'w, AppearanceConfig>,
-    boundary:          Res<'w, Boundary>,
-    scene_assets:      Res<'w, SceneAssets>,
+    boundary:     Res<'w, Boundary>,
+    scene_assets: Res<'w, SceneAssets>,
 }
 
 // todo: #bevyquestion - in an object oriented world i think of attaching fire
@@ -150,12 +149,18 @@ fn fire_missile(
         return;
     }
 
-    let Ok((spaceship_transform, spaceship_velocity,aabb,  continuous_fire)) = q_spaceship.get_single()
+    let Ok((spaceship_transform, spaceship_velocity, aabb, continuous_fire)) =
+        q_spaceship.get_single()
     else {
         return;
     };
 
-    if !should_fire(continuous_fire, &mut collider_config.missile, time, q_input_map) {
+    if !should_fire(
+        continuous_fire,
+        &mut collider_config.missile,
+        time,
+        q_input_map,
+    ) {
         return;
     }
 
@@ -164,7 +169,7 @@ fn fire_missile(
         &mut commands,
         *spaceship_transform,
         spaceship_velocity,
-        &aabb,
+        aabb,
         &collider_config.missile,
         res,
     );
@@ -186,7 +191,7 @@ fn spawn_missile(
         missile_config,
         res.boundary,
     );
-    
+
     let collider = missile_config.collider.clone();
 
     let missile = commands
@@ -203,7 +208,8 @@ fn spawn_missile(
             model: SceneBundle {
                 scene: res.scene_assets.missiles.clone(),
                 transform: Transform::from_translation(missile.last_position)
-                    .with_scale(Vec3::splat(missile_config.scalar)).with_rotation(spaceship_transform.rotation),
+                    .with_scale(Vec3::splat(missile_config.scalar))
+                    .with_rotation(spaceship_transform.rotation),
                 ..default()
             },
             velocity: Velocity {

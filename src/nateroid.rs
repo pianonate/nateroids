@@ -24,9 +24,6 @@ use bevy::{
 };
 use bevy_rapier3d::prelude::Velocity;
 use rand::Rng;
-use std::ops::Range;
-
-const ANGULAR_VELOCITY_RANGE: Range<f32> = -4.0..4.0;
 
 #[derive(Component, Debug)]
 pub struct NateroidPlugin;
@@ -65,11 +62,10 @@ fn spawn_nateroid(
     let mut transform = Transform::from_translation(spawn_translation);
     // start in a random position
     transform.rotation = ColliderConstant::random_rotation();
-    
+
     // with random velocity and angular velocity
     let random_velocity = nateroid_config.random_velocity();
     let random_angular_velocity = nateroid_config.random_angular_velocity();
-
 
     transform.scale = Vec3::splat(nateroid_config.scalar);
 

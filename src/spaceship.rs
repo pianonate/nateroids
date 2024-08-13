@@ -23,7 +23,6 @@ use bevy::{
     render::view::visibility::RenderLayers,
 };
 use bevy_rapier3d::prelude::{
-    ColliderMassProperties::Mass,
     CollisionGroups,
     LockedAxes,
     Velocity,

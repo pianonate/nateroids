@@ -1,19 +1,15 @@
 use crate::{
     boundary::Boundary,
+    camera::StarConfig,
     collider_config::ColliderConfig,
-    config::{
-        AppearanceConfig,
-        StarConfig,
-    },
+    config::AppearanceConfig,
     input::GlobalAction,
     orientation::{
         CameraOrientation,
         OrientationConfig,
     },
-    schedule::InGameSet,
 };
 use bevy::prelude::{
-    IntoSystemConfigs,
     Reflect,
     Res,
     ResMut,
@@ -32,10 +28,7 @@ impl Plugin for DebugPlugin {
             .init_resource::<DebugMode>()
             .init_resource::<InspectorMode>()
             .add_systems(Startup, register_debug_resources)
-            .add_systems(
-                Update,
-                (toggle_debug, toggle_inspector, toggle_aabb_mode),
-            );
+            .add_systems(Update, (toggle_debug, toggle_inspector, toggle_aabb_mode));
     }
 }
 

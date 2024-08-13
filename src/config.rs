@@ -109,44 +109,6 @@ fn update_appearance_config(
     }
 }
 
-#[derive(Debug, Clone, Reflect, Resource)]
-#[reflect(Resource)]
-pub struct StarConfig {
-    pub batch_size_replace:            usize,
-    pub duration_replace_timer:        f32,
-    pub star_count:                    usize,
-    pub star_radius_max:               f32,
-    pub star_radius_min:               f32,
-    pub star_field_inner_diameter:     f32,
-    pub star_field_outer_diameter:     f32,
-    pub start_twinkling_delay:         f32,
-    pub twinkle_duration_min:          f32,
-    pub twinkle_duration_max:          f32,
-    pub twinkle_intensity_min:         f32,
-    pub twinkle_intensity_max:         f32,
-    pub twinkle_choose_multiple_count: usize,
-}
-
-impl Default for StarConfig {
-    fn default() -> Self {
-        Self {
-            batch_size_replace:            10,
-            duration_replace_timer:        1.,
-            star_count:                    500,
-            star_radius_max:               2.5,
-            star_radius_min:               0.3,
-            star_field_inner_diameter:     100.,
-            star_field_outer_diameter:     200.,
-            start_twinkling_delay:         0.5,
-            twinkle_duration_max:          2.,
-            twinkle_duration_min:          0.5,
-            twinkle_intensity_min:         10.,
-            twinkle_intensity_max:         30.,
-            twinkle_choose_multiple_count: 2, // stars to look at each update
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CameraOrder {
     Game,

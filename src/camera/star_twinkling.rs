@@ -1,6 +1,8 @@
 use crate::{
-    camera::stars::Star,
-    config::StarConfig,
+    camera::stars::{
+        Star,
+        StarConfig,
+    },
     schedule::InGameSet,
 };
 use bevy::prelude::*;

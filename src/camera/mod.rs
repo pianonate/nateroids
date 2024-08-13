@@ -4,11 +4,15 @@ use star_twinkling::StarTwinklingPlugin;
 use stars::StarsPlugin;
 
 pub mod primary_camera;
-pub use primary_camera::PrimaryCamera; // make this name available to inspector for ease of use
+pub use primary_camera::PrimaryCamera; /* make this name available to inspector for ease of
+                                        * use */
+pub use stars::{
+    StarConfig,
+    StarsCamera,
+};
 
 mod star_twinkling;
 pub mod stars;
-pub use stars::StarsCamera;
 
 pub struct CameraPlugin;
 

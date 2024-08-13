@@ -1,18 +1,18 @@
 use crate::{
     camera::PrimaryCamera,
-    debug::inspector_mode_enabled,
+    config::AppearanceConfig,
+    debug::{
+        inspector_mode_enabled,
+        InspectorMode,
+    },
+    input::GlobalAction,
     state::GameState,
 };
-use bevy::diagnostic::{
-    DiagnosticsStore,
-    FrameTimeDiagnosticsPlugin,
-};
-
-use crate::{
-    config::AppearanceConfig,
-    input::GlobalAction,
-};
 use bevy::{
+    diagnostic::{
+        DiagnosticsStore,
+        FrameTimeDiagnosticsPlugin,
+    },
     prelude::*,
     render::camera::Viewport,
     window::PrimaryWindow,
@@ -49,6 +49,7 @@ impl Plugin for InspectorPlugin {
 
         app.add_plugins(EguiPlugin)
             .add_plugins(DefaultInspectorConfigPlugin)
+            .add_plugins(FrameTimeDiagnosticsPlugin)
             .insert_resource(UiState::new())
             .insert_resource(AmbientLightBrightness(
                 default_config.ambient_light_brightness,
@@ -62,13 +63,14 @@ impl Plugin for InspectorPlugin {
             )
             .add_systems(
                 PostUpdate,
-                set_inspector_viewport
-                    .run_if(inspector_mode_enabled)
+                (
+                    set_inspector_viewport.run_if(inspector_mode_enabled),
+                    reset_camera_viewport.run_if(|button: Res<ActionState<GlobalAction>>| {
+                        button.just_pressed(&GlobalAction::Inspector)
+                    }),
+                )
+                    .chain()
                     .after(show_ui_system),
-            )
-            .add_systems(
-                PostUpdate,
-                reset_camera_viewport.run_if(not(inspector_mode_enabled)),
             );
     }
 }
@@ -92,9 +94,9 @@ fn show_ui_system(world: &mut World) {
 
 #[derive(Debug)]
 enum EguiWindow {
-    Controls,
+    //RightSide,
     GameView,
-    //  Inspector,
+    Inspector,
 }
 
 #[derive(Resource)]
@@ -108,11 +110,11 @@ impl UiState {
         let mut state = DockState::new(vec![EguiWindow::GameView]);
         let tree = state.main_surface_mut();
         // let [game, _inspector] =
-        //     tree.split_right(NodeIndex::root(), 0.8, vec![EguiWindow::Inspector]);
+        //     tree.split_right(NodeIndex::root(), 0.8, vec![EguiWindow::RightSide]);
         // let [_game, _controls] = tree.split_left(game, 0.25,
         // vec![EguiWindow::Controls]);
         let [_game, _controls] =
-            tree.split_left(NodeIndex::root(), 0.25, vec![EguiWindow::Controls]);
+            tree.split_left(NodeIndex::root(), 0.25, vec![EguiWindow::Inspector]);
 
         Self {
             state,
@@ -143,7 +145,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 
     fn ui(&mut self, ui: &mut egui::Ui, window: &mut Self::Tab) {
         match window {
-            EguiWindow::Controls => {
+            EguiWindow::Inspector => {
                 let mut fps_value = 0.;
                 let mut fps_average = 0.;
 
@@ -236,10 +238,12 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 
 // make camera render to full window
 fn reset_camera_viewport(
-    user_input: Res<ActionState<GlobalAction>>,
     mut cameras: Query<&mut Camera, With<PrimaryCamera>>,
+    inspector_mode: Res<InspectorMode>,
 ) {
-    if user_input.just_pressed(&GlobalAction::Inspector) {
+    println!("resetting primary_camera_viewport running");
+
+    if !inspector_mode.enabled {
         if let Ok(mut primary_camera) = cameras.get_single_mut() {
             primary_camera.viewport = None;
             println!("resetting primary_camera_viewport back to normal")
@@ -267,6 +271,9 @@ fn set_inspector_viewport(
                 physical_size:     UVec2::new(viewport_size.x as u32, viewport_size.y as u32),
                 depth:             0.0..1.0,
             });
+
+            //  println!("primary_camera.viewport: {:?}",
+            // primary_camera.viewport);
         }
     }
 }
