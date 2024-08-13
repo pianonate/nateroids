@@ -1,11 +1,7 @@
 use crate::{
     boundary::Boundary,
     camera::primary_camera::spawn_primary_camera,
-    config::{
-        AppearanceConfig,
-        CameraOrder,
-        RenderLayer,
-    },
+    config::AppearanceConfig,
     input::GlobalAction,
 };
 use bevy::{
@@ -16,9 +12,17 @@ use bevy::{
     prelude::*,
     render::view::RenderLayers,
 };
+use std::ops::Range;
 
+use crate::camera::{
+    CameraOrder,
+    RenderLayer,
+};
 use leafwing_input_manager::action_state::ActionState;
-use rand::Rng;
+use rand::{
+    prelude::ThreadRng,
+    Rng,
+};
 
 pub struct StarsPlugin;
 
@@ -36,16 +40,17 @@ impl Plugin for StarsPlugin {
 pub struct StarConfig {
     pub batch_size_replace:            usize,
     pub duration_replace_timer:        f32,
+    pub star_color:                    Range<f32>,
+    pub star_color_white_probability:  f32,
+    pub star_color_white_start_ratio:  f32,
     pub star_count:                    usize,
     pub star_radius_max:               f32,
     pub star_radius_min:               f32,
     pub star_field_inner_diameter:     f32,
     pub star_field_outer_diameter:     f32,
     pub start_twinkling_delay:         f32,
-    pub twinkle_duration_min:          f32,
-    pub twinkle_duration_max:          f32,
-    pub twinkle_intensity_min:         f32,
-    pub twinkle_intensity_max:         f32,
+    pub twinkle_duration:              Range<f32>,
+    pub twinkle_intensity:             Range<f32>,
     pub twinkle_choose_multiple_count: usize,
 }
 
@@ -55,15 +60,16 @@ impl Default for StarConfig {
             batch_size_replace:            10,
             duration_replace_timer:        1.,
             star_count:                    500,
+            star_color:                    -30.0..30.0,
+            star_color_white_probability:  0.85,
+            star_color_white_start_ratio:  0.7,
             star_radius_max:               2.5,
             star_radius_min:               0.3,
-            star_field_inner_diameter:     100.,
-            star_field_outer_diameter:     200.,
+            star_field_inner_diameter:     200.,
+            star_field_outer_diameter:     400.,
             start_twinkling_delay:         0.5,
-            twinkle_duration_max:          2.,
-            twinkle_duration_min:          0.5,
-            twinkle_intensity_min:         10.,
-            twinkle_intensity_max:         30.,
+            twinkle_duration:              0.5..2.,
+            twinkle_intensity:             10.0..20.,
             twinkle_choose_multiple_count: 2, // stars to look at each update
         }
     }
@@ -114,6 +120,8 @@ fn update_bloom_settings(
     }
 }
 
+// star camera uses bloom so it needs to be in its own layer as we don't
+// want that effect on the colliders
 fn spawn_star_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
     let camera3d = Camera3dBundle {
         camera: Camera {
@@ -135,6 +143,8 @@ fn spawn_star_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
 #[derive(Component)]
 pub struct StarsCamera;
 
+// remove and insert BloomSettings to toggle them off and on
+// this can probably be removed now that bloom is pretty well working...
 fn toggle_stars(
     mut commands: Commands,
     mut camera: Query<(Entity, Option<&mut BloomSettings>), With<StarsCamera>>,
@@ -161,9 +171,9 @@ fn toggle_stars(
 
 #[derive(Component, Default)]
 pub struct Star {
-    position:            Vec3,
-    radius:              f32,
-    pub(crate) emissive: Vec4,
+    position:     Vec3,
+    radius:       f32,
+    pub emissive: Vec4,
 }
 
 // just set up the entities with their positions - we'll add an emissive
@@ -176,28 +186,9 @@ fn spawn_stars(mut commands: Commands, config: Res<StarConfig>, boundary: Res<Bo
     let mut rng = rand::thread_rng();
 
     for _ in 0..config.star_count {
-        let point = {
-            let u: f32 = rng.gen_range(0.0..1.0);
-            let v: f32 = rng.gen_range(0.0..1.0);
-            let theta = u * std::f32::consts::PI * 2.0;
-            let phi = (2.0 * v - 1.0).acos();
-            let r = rng.gen_range(inner_sphere_radius..outer_sphere_radius);
-
-            let x = r * theta.cos() * phi.sin();
-            let y = r * theta.sin() * phi.sin();
-            let z = r * phi.cos();
-
-            Vec3::new(x, y, z)
-        };
-
-        let emissive = Vec4::new(
-            rng.gen_range(8.0..15.0),
-            rng.gen_range(8.0..15.0),
-            rng.gen_range(8.0..15.0),
-            rng.gen_range(8.0..15.0),
-        );
-
+        let point = get_star_position(inner_sphere_radius, outer_sphere_radius, &mut rng);
         let radius = rng.gen_range(config.star_radius_min..config.star_radius_max);
+        let emissive = get_star_color(&config, &mut rng);
 
         commands.spawn((
             Star {
@@ -208,6 +199,77 @@ fn spawn_stars(mut commands: Commands, config: Res<StarConfig>, boundary: Res<Bo
             RenderLayers::from_layers(RenderLayer::Stars.layers()),
         ));
     }
+}
+
+fn get_star_position(
+    inner_sphere_radius: f32,
+    outer_sphere_radius: f32,
+    rng: &mut ThreadRng,
+) -> Vec3 {
+    let u: f32 = rng.gen_range(0.0..1.0);
+    let v: f32 = rng.gen_range(0.0..1.0);
+    let theta = u * std::f32::consts::PI * 2.0;
+    let phi = (2.0 * v - 1.0).acos();
+    let r = rng.gen_range(inner_sphere_radius..outer_sphere_radius);
+
+    let x = r * theta.cos() * phi.sin();
+    let y = r * theta.sin() * phi.sin();
+    let z = r * phi.cos();
+
+    Vec3::new(x, y, z)
+}
+
+// fn get_star_color(config: &StarConfig, rng: &mut impl Rng) -> Vec4 {
+//     let end = config.star_color.end;
+//     let color_start = config.star_color.start;
+//     let white_start = end * config.star_color_white_start_ratio; // 80% of
+// end value
+//
+//     let start = if rng.gen::<f32>() < config.star_color_white_probability {
+//         white_start
+//     } else {
+//         color_start
+//     };
+//
+//     Vec4::new(
+//         rng.gen_range(start..end),
+//         rng.gen_range(start..end),
+//         rng.gen_range(start..end),
+//         rng.gen_range(start..end),
+//     )
+// }
+
+fn get_star_color(config: &StarConfig, rng: &mut impl Rng) -> Vec4 {
+    let end = config.star_color.end;
+    let color_start = config.star_color.start;
+    let white_start = end * config.star_color_white_start_ratio;
+
+    let start = if rng.gen::<f32>() < config.star_color_white_probability {
+        white_start
+    } else {
+        color_start
+    };
+
+    // Generate initial color components
+    let mut r = rng.gen_range(start..end);
+    let mut g = rng.gen_range(start..end);
+    let mut b = rng.gen_range(start..end);
+
+    // Ensure minimum brightness
+    let min_brightness = start + (end - start) * 0.2; // 20% above start
+    let current_brightness = r.max(g).max(b);
+
+    if current_brightness < min_brightness {
+        let scale = min_brightness / current_brightness;
+        r *= scale;
+        g *= scale;
+        b *= scale;
+    }
+
+    // Alpha can remain as is
+    let a = rng.gen_range(start..end);
+
+    Vec4::new(r, g, b, a)
 }
 
 // add the emissive standard material generated randomly in spawn_stars

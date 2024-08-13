@@ -16,6 +16,7 @@ use bevy::prelude::{
     Resource,
     *,
 };
+use bevy_rapier3d::prelude::DebugRenderContext;
 use leafwing_input_manager::action_state::ActionState;
 
 pub struct DebugPlugin;
@@ -24,11 +25,17 @@ impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
         app
             // puts us in debug mode which can be checked anywhere
-            .init_resource::<AabbMode>()
             .init_resource::<DebugMode>()
-            .init_resource::<InspectorMode>()
             .add_systems(Startup, register_debug_resources)
-            .add_systems(Update, (toggle_debug, toggle_inspector, toggle_aabb_mode));
+            .add_systems(
+                Update,
+                (
+                    toggle_aabb_mode,
+                    toggle_debug,
+                    toggle_inspector,
+                    toggle_physics_debug,
+                ),
+            );
     }
 }
 
@@ -47,45 +54,44 @@ fn register_debug_resources(world: &mut World) {
 #[derive(Reflect, Resource, Default)]
 #[reflect(Resource)]
 pub struct DebugMode {
-    pub enabled: bool,
+    pub aabb_enabled:      bool,
+    pub debug_enabled:     bool,
+    pub inspector_enabled: bool,
 }
 
 fn toggle_debug(user_input: Res<ActionState<GlobalAction>>, mut debug_mode: ResMut<DebugMode>) {
     if user_input.just_pressed(&GlobalAction::Debug) {
-        debug_mode.enabled = !debug_mode.enabled;
-        println!("DebugMode: {}", debug_mode.enabled);
+        debug_mode.debug_enabled = !debug_mode.debug_enabled;
+        println!("DebugMode: {}", debug_mode.debug_enabled);
     }
 }
 
-#[derive(Resource, Reflect, Debug, Default)]
-#[reflect(Resource)]
-pub struct InspectorMode {
-    pub enabled: bool,
-}
+pub fn inspector_mode_enabled(debug_mode: Res<DebugMode>) -> bool { debug_mode.inspector_enabled }
 
-pub fn inspector_mode_enabled(inspector_mode: Res<InspectorMode>) -> bool { inspector_mode.enabled }
-
-fn toggle_inspector(
-    user_input: Res<ActionState<GlobalAction>>,
-    mut inspector_mode: ResMut<InspectorMode>,
-) {
+fn toggle_inspector(user_input: Res<ActionState<GlobalAction>>, mut debug_mode: ResMut<DebugMode>) {
     if user_input.just_pressed(&GlobalAction::Inspector) {
-        inspector_mode.enabled = !inspector_mode.enabled;
-        println!("InspectorMode: {}", inspector_mode.enabled);
+        debug_mode.inspector_enabled = !debug_mode.inspector_enabled;
+        println!("InspectorMode: {}", debug_mode.inspector_enabled);
     }
 }
 
-#[derive(Resource, Reflect, Debug, Default)]
-#[reflect(Resource)]
-pub struct AabbMode {
-    pub enabled: bool,
+pub fn aabb_mode_enabled(debug_mode: Res<DebugMode>) -> bool { debug_mode.aabb_enabled }
+
+fn toggle_aabb_mode(user_input: Res<ActionState<GlobalAction>>, mut debug_mode: ResMut<DebugMode>) {
+    if user_input.just_pressed(&GlobalAction::AABBs) {
+        debug_mode.aabb_enabled = !debug_mode.aabb_enabled;
+        println!("AabbMode: {}", debug_mode.aabb_enabled);
+    }
 }
 
-pub fn aabb_mode_enabled(aabb_mode: Res<AabbMode>) -> bool { aabb_mode.enabled }
-
-fn toggle_aabb_mode(user_input: Res<ActionState<GlobalAction>>, mut aabb_mode: ResMut<AabbMode>) {
-    if user_input.just_pressed(&GlobalAction::AABBs) {
-        aabb_mode.enabled = !aabb_mode.enabled;
-        println!("AabbMode: {}", aabb_mode.enabled);
+// this is the only one of our debug modes that maintains a separate enabled
+// resource
+fn toggle_physics_debug(
+    user_input: Res<ActionState<GlobalAction>>,
+    mut rapier_debug: ResMut<DebugRenderContext>,
+) {
+    if user_input.just_pressed(&GlobalAction::Physics) {
+        rapier_debug.enabled = !rapier_debug.enabled;
+        println!("DebugMode: {}", rapier_debug.enabled);
     }
 }

@@ -9,12 +9,12 @@ use bevy_rapier3d::prelude::*;
 use crate::{
     asset_loader::SceneAssets,
     boundary::Boundary,
+    camera::RenderLayer,
     collider_config::ColliderConfig,
     collision_detection::{
         GROUP_ASTEROID,
         GROUP_MISSILE,
     },
-    config::RenderLayer,
     health::{
         CollisionDamage,
         Health,
@@ -206,7 +206,7 @@ fn spawn_missile(
             collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
             mass: missile_config.mass,
             model: SceneBundle {
-                scene: res.scene_assets.missiles.clone(),
+                scene: res.scene_assets.missile.clone(),
                 transform: Transform::from_translation(missile.last_position)
                     .with_scale(Vec3::splat(missile_config.scalar))
                     .with_rotation(spaceship_transform.rotation),
@@ -222,7 +222,7 @@ fn spawn_missile(
         .insert(WallApproachVisual::default())
         .id();
 
-    name_entity(commands, missile, missile_config.name);
+    name_entity(commands, missile, missile_config.name.to_owned());
 }
 
 /// we update missile movement so that it can be despawned after it has traveled

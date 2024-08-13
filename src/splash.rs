@@ -1,8 +1,6 @@
 use crate::{
-    config::{
-        AppearanceConfig,
-        RenderLayer,
-    },
+    camera::RenderLayer,
+    config::AppearanceConfig,
     state::GameState,
 };
 use bevy::{

@@ -1,12 +1,14 @@
 use crate::{
     asset_loader::SceneAssets,
-    camera::PrimaryCamera,
+    camera::{
+        PrimaryCamera,
+        RenderLayer,
+    },
     collider_config::ColliderConfig,
     collision_detection::{
         GROUP_ASTEROID,
         GROUP_SPACESHIP,
     },
-    config::RenderLayer,
     health::{
         CollisionDamage,
         Health,
@@ -37,10 +39,6 @@ use crate::{
 };
 use leafwing_input_manager::prelude::*;
 
-// const SPACESHIP_MAX_SPEED: f32 = 40.0;
-//const SPACESHIP_ROLL_SPEED: f32 = 2.5;
-//const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, -20.0, 0.0);
-
 #[derive(Component, Debug)]
 pub struct Spaceship;
 
@@ -54,26 +52,32 @@ pub struct SpaceshipPlugin;
 impl Plugin for SpaceshipPlugin {
     // make sure this is done after asset_loader has run
     fn build(&self, app: &mut App) {
-        // we can come into InGame a couple of ways - when we do, spawn a spaceship
-        // either when we exit splash, or when we enter GameOver
-        app.add_systems(OnExit(GameState::Splash), spawn_spaceship)
-            .add_systems(OnExit(GameState::GameOver), spawn_spaceship)
-            .add_systems(
-                Update,
-                (
-                    spaceship_movement_controls,
-                    spaceship_shield_controls,
-                    toggle_continuous_fire,
-                )
-                    .chain()
-                    .in_set(InGameSet::UserInput),
+        // we can enter InGame a couple of ways - when we do, spawn a spaceship
+        app.add_systems(
+            OnExit(GameState::Splash),
+            (spawn_spaceship, apply_emissive_material).chain(),
+        )
+        .add_systems(
+            OnExit(GameState::GameOver),
+            (spawn_spaceship, apply_emissive_material).chain(),
+        )
+        .add_systems(
+            Update,
+            (
+                spaceship_movement_controls,
+                spaceship_shield_controls,
+                toggle_continuous_fire,
             )
-            // check if spaceship is destroyed...this will change the GameState
-            .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
+                .chain()
+                .in_set(InGameSet::UserInput),
+        )
+        // check if spaceship is destroyed...this will change the GameState
+        .add_systems(Update, spaceship_destroyed.in_set(InGameSet::EntityUpdates));
     }
 }
 
-// todo: how can i avoid setting this allow
+// todo: how can i avoid setting this allow - i'm guessing a system param would
+// be just as problematic
 #[allow(clippy::type_complexity)]
 fn toggle_continuous_fire(
     mut commands: Commands,
@@ -95,6 +99,45 @@ fn toggle_continuous_fire(
                 println!("adding continuous");
                 commands.entity(entity).insert(ContinuousFire);
             }
+        }
+    }
+}
+
+// Add this new component
+#[derive(Component)]
+struct NeedsEmissiveMaterial(LinearRgba);
+
+// Add this new system to your SpaceshipPlugin
+// Update the apply_emissive_material system
+fn apply_emissive_material(
+    mut commands: Commands,
+    query: Query<(Entity, &NeedsEmissiveMaterial)>,
+    children: Query<&Children>,
+    meshes: Query<&Handle<StandardMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    for (entity, needs_emissive) in query.iter() {
+        apply_material_recursive(entity, needs_emissive.0, &children, &meshes, &mut materials);
+        commands.entity(entity).remove::<NeedsEmissiveMaterial>();
+    }
+}
+
+fn apply_material_recursive(
+    entity: Entity,
+    emissive_color: LinearRgba,
+    children: &Query<&Children>,
+    meshes: &Query<&Handle<StandardMaterial>>,
+    materials: &mut Assets<StandardMaterial>,
+) {
+    if let Ok(material_handle) = meshes.get(entity) {
+        if let Some(material) = materials.get_mut(material_handle) {
+            material.emissive = emissive_color;
+        }
+    }
+
+    if let Ok(child_entities) = children.get(entity) {
+        for child in child_entities.iter() {
+            apply_material_recursive(*child, emissive_color, children, meshes, materials);
         }
     }
 }
@@ -141,9 +184,14 @@ fn spawn_spaceship(
         })
         .insert(spaceship_input)
         .insert(WallApproachVisual::default())
+        .insert(NeedsEmissiveMaterial(LinearRgba::new(1., 0., 0., 1.)))
         .id();
 
-    name_entity(&mut commands, spaceship, collider_config.spaceship.name);
+    name_entity(
+        &mut commands,
+        spaceship,
+        collider_config.spaceship.name.to_owned(),
+    );
 }
 
 fn spaceship_movement_controls(

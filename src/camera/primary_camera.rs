@@ -1,11 +1,11 @@
 use crate::{
     boundary::Boundary,
-    camera::StarsCamera,
-    config::{
-        AppearanceConfig,
+    camera::{
         CameraOrder,
         RenderLayer,
+        StarsCamera,
     },
+    config::AppearanceConfig,
     input::CameraMovement,
     orientation::CameraOrientation,
     schedule::InGameSet,

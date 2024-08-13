@@ -5,6 +5,7 @@ use crate::{
         BoundaryGizmos,
     },
     movement::Teleporter,
+    orientation::CameraOrientation,
     state::GameState,
 };
 use bevy::{
@@ -18,17 +19,32 @@ pub struct BoundaryPlugin;
 
 impl Plugin for BoundaryPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Boundary>().add_systems(
-            Update,
-            (
-                draw_boundary,
-                wall_approach_system,
-                draw_approaching_circles,
-                draw_emerging_circles,
-            )
-                .run_if(in_state(GameState::InGame).or_else(in_state(GameState::Paused))),
-        );
+        app.init_resource::<Boundary>()
+            .add_systems(Startup, spawn_lighting)
+            .add_systems(
+                Update,
+                (
+                    draw_boundary,
+                    wall_approach_system,
+                    draw_approaching_circles,
+                    draw_emerging_circles,
+                )
+                    .run_if(in_state(GameState::InGame).or_else(in_state(GameState::Paused))),
+            );
     }
+}
+
+fn spawn_lighting(mut commands: Commands, camera_orientation: Res<CameraOrientation>) {
+    commands.spawn(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            color: Color::from(tailwind::AMBER_400),
+            illuminance: 12_000.,
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform::from_translation(camera_orientation.config.nexus),
+        ..default()
+    });
 }
 
 #[derive(Reflect, Resource, Debug)]

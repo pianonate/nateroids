@@ -4,11 +4,11 @@ use crate::{
         Boundary,
         WallApproachVisual,
     },
+    camera::RenderLayer,
     collider_config::{
         ColliderConfig,
         ColliderConstant,
     },
-    config::RenderLayer,
     health::{
         CollisionDamage,
         Health,
@@ -98,7 +98,7 @@ fn spawn_nateroid(
         .insert(WallApproachVisual::default())
         .id();
 
-    name_entity(&mut commands, nateroid, nateroid_config.name);
+    name_entity(&mut commands, nateroid, nateroid_config.name.to_owned());
 }
 
 fn should_spawn_nateroid(collider_config: &mut ResMut<ColliderConfig>, time: Res<Time>) -> bool {

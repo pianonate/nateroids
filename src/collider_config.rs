@@ -1,6 +1,8 @@
-use crate::asset_loader::SceneAssets;
+use crate::asset_loader::{
+    AssetsState,
+    SceneAssets,
+};
 use bevy::{
-    asset::LoadState,
     prelude::*,
     render::mesh::{
         Mesh,
@@ -25,12 +27,14 @@ const BLENDER_SCALE: f32 = 100.;
 pub struct ColliderConfigPlugin;
 impl Plugin for ColliderConfigPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<AssetsState>()
-            .add_systems(
-                Update,
-                check_asset_loading.run_if(in_state(AssetsState::Loading)),
-            )
-            .add_systems(OnEnter(AssetsState::Loaded), extract_model_dimensions);
+        app.init_state::<AssetsState>().add_systems(
+            OnEnter(AssetsState::Loaded),
+            (initialize_configuration /* apply_emissive_materials */,).chain(),
+        );
+        // .add_systems(
+        //     Update,
+        //     update_emissive_materials.
+        // run_if(resource_exists::<ColliderConfig>), );
     }
 }
 
@@ -53,6 +57,7 @@ struct InitialColliderConstant {
     angvel:              Option<f32>,
     collider_type:       ColliderType,
     damage:              f32,
+    // emissive:            LinearRgba,
     health:              f32,
     mass:                ColliderMassProperties,
     name:                &'static str,
@@ -64,6 +69,108 @@ struct InitialColliderConstant {
     velocity:            f32,
 }
 
+impl Default for InitialColliderConfig {
+    fn default() -> Self {
+        Self {
+            missile:   InitialColliderConstant {
+                acceleration:        None,
+                angvel:              None,
+                collider_type:       ColliderType::Cuboid,
+                damage:              50.,
+                // emissive:            LinearRgba::new(0., 0., 0., 0.),
+                health:              1.,
+                mass:                Mass(0.001),
+                name:                "missile",
+                rotation_speed:      0.,
+                scalar:              2.5,
+                spawn_point:         Vec3::new(0.5, 0., 0.),
+                spawn_timer_seconds: Some(1.0 / 20.0),
+                spawnable:           true,
+                velocity:            85.,
+            },
+            nateroid:  InitialColliderConstant {
+                acceleration:        None,
+                angvel:              Some(4.),
+                collider_type:       ColliderType::Ball,
+                damage:              10.,
+                //  emissive:            LinearRgba::new(0., 0., 0., 0.),
+                health:              50.,
+                mass:                Mass(1.0),
+                name:                "nateroid",
+                rotation_speed:      0.,
+                scalar:              1.,
+                spawn_point:         Vec3::ZERO,
+                spawn_timer_seconds: Some(2.),
+                spawnable:           true,
+                velocity:            30.,
+            },
+            spaceship: InitialColliderConstant {
+                acceleration:        Some(60.),
+                angvel:              None,
+                collider_type:       ColliderType::Cuboid,
+                damage:              100.,
+                //    emissive:            LinearRgba::new(1., 0., 0., 0.),
+                health:              100.,
+                mass:                Mass(3.0),
+                name:                "spaceship",
+                rotation_speed:      5.,
+                scalar:              0.8,
+                spawn_point:         Vec3::new(0.0, -20.0, 0.0),
+                spawn_timer_seconds: None,
+                spawnable:           true,
+                velocity:            80.,
+            },
+        }
+    }
+}
+
+impl InitialColliderConstant {
+    fn initialize(&self, aabb: Aabb) -> ColliderConstant {
+        let original_aabb = aabb;
+        let adjusted_aabb = original_aabb.scale(BLENDER_SCALE);
+
+        // Calculate the size based on the adjusted AABB
+        let size = adjusted_aabb.size();
+        let half_extents = adjusted_aabb.half_extents();
+
+        let collider = match self.collider_type {
+            ColliderType::Ball => {
+                let radius = size.length() / 3.;
+                println!("Creating Ball collider with radius: {}", radius);
+                Collider::ball(radius)
+            },
+            ColliderType::Cuboid => {
+                println!(
+                    "Creating Cuboid collider with half extents: {:?}",
+                    size / 2.0
+                );
+                Collider::cuboid(half_extents.x, half_extents.y, half_extents.z)
+            },
+        };
+
+        let spawn_timer = self
+            .spawn_timer_seconds
+            .map(|seconds| Timer::from_seconds(seconds, TimerMode::Repeating));
+
+        ColliderConstant {
+            aabb: adjusted_aabb,
+            acceleration: self.acceleration,
+            angular_velocity: self.angvel,
+            collider,
+            damage: self.damage,
+            // emissive: self.emissive,
+            health: self.health,
+            mass: self.mass,
+            name: self.name.to_string(),
+            rotation_speed: self.rotation_speed,
+            scalar: self.scalar,
+            spawn_point: self.spawn_point,
+            spawn_timer,
+            spawnable: self.spawnable,
+            velocity: self.velocity,
+        }
+    }
+}
 #[derive(Debug, Clone, Reflect, Resource)]
 #[reflect(Resource)]
 pub struct ColliderConfig {
@@ -81,12 +188,12 @@ pub struct ColliderConstant {
     #[reflect(ignore)]
     pub collider:         Collider,
     pub damage:           f32,
+    // pub emissive:         LinearRgba,
     pub health:           f32,
     pub mass:             ColliderMassProperties,
-    pub name:             &'static str,
+    pub name:             String,
     pub rotation_speed:   f32,
     pub scalar:           f32,
-    pub size:             Vec3,
     pub spawn_point:      Vec3,
     #[reflect(ignore)]
     pub spawn_timer:      Option<Timer>,
@@ -155,109 +262,107 @@ impl ColliderConstant {
     }
 }
 
-impl Default for InitialColliderConfig {
-    fn default() -> Self {
-        Self {
-            missile:   InitialColliderConstant {
-                acceleration:        None,
-                angvel:              None,
-                collider_type:       ColliderType::Cuboid,
-                damage:              50.,
-                health:              1.,
-                mass:                Mass(0.001),
-                name:                "missile",
-                rotation_speed:      0.,
-                scalar:              1.5,
-                spawn_point:         Vec3::new(0.5, 0., 0.),
-                spawn_timer_seconds: Some(1.0 / 20.0),
-                spawnable:           true,
-                velocity:            85.,
-            },
-            nateroid:  InitialColliderConstant {
-                acceleration:        None,
-                angvel:              Some(4.),
-                collider_type:       ColliderType::Ball,
-                damage:              10.,
-                health:              50.,
-                mass:                Mass(1.0),
-                name:                "nateroid",
-                rotation_speed:      0.,
-                scalar:              1.,
-                spawn_point:         Vec3::ZERO,
-                spawn_timer_seconds: Some(2.),
-                spawnable:           true,
-                velocity:            30.,
-            },
-            spaceship: InitialColliderConstant {
-                acceleration:        Some(60.),
-                angvel:              None,
-                collider_type:       ColliderType::Cuboid,
-                damage:              100.,
-                health:              100.,
-                mass:                Mass(3.0),
-                name:                "spaceship",
-                rotation_speed:      5.,
-                scalar:              0.8,
-                spawn_point:         Vec3::new(0.0, -20.0, 0.0),
-                spawn_timer_seconds: None,
-                spawnable:           true,
-                velocity:            80.,
-            },
-        }
-    }
-}
-impl InitialColliderConstant {
-    fn initialize(&self, aabb: Aabb) -> ColliderConstant {
-        let original_aabb = aabb;
-        let adjusted_aabb = original_aabb.scale(BLENDER_SCALE);
+// fn apply_emissive_materials(
+//     collider_config: Res<ColliderConfig>,
+//     mut materials: ResMut<Assets<StandardMaterial>>,
+//     mut scenes: ResMut<Assets<Scene>>,
+//     scene_assets: Res<SceneAssets>,
+// ) {
+//     apply_emissive_impl(collider_config, &mut materials, &mut scenes,
+// &scene_assets); }
+//
+// fn update_emissive_materials(
+//     collider_config: Res<ColliderConfig>,
+//     mut materials: ResMut<Assets<StandardMaterial>>,
+//     mut scenes: ResMut<Assets<Scene>>,
+//     scene_assets: Res<SceneAssets>,
+// ) {
+//
+//         apply_emissive_impl(collider_config, &mut materials, &mut scenes,
+// &scene_assets); }
 
-        // Calculate the size based on the adjusted AABB
-        let size = adjusted_aabb.size();
-        let half_extents = adjusted_aabb.half_extents();
+// fn apply_emissive_impl(
+//     collider_config: Res<ColliderConfig>,
+//     materials: &mut ResMut<Assets<StandardMaterial>>,
+//     scenes: &mut ResMut<Assets<Scene>>,
+//     scene_assets: &Res<SceneAssets>,
+// ) {
+//     apply_material_to_scene(
+//         scenes,
+//         &scene_assets.spaceship,
+//         collider_config.spaceship.emissive,
+//         materials,
+//     );
+//     apply_material_to_scene(
+//         scenes,
+//         &scene_assets.nateroid,
+//         collider_config.nateroid.emissive,
+//         materials,
+//     );
+//     apply_material_to_scene(
+//         scenes,
+//         &scene_assets.missile,
+//         collider_config.missile.emissive,
+//         materials,
+//     );
+// }
 
-        let collider = match self.collider_type {
-            ColliderType::Ball => {
-                let radius = size.length() / 3.;
-                println!("Creating Ball collider with radius: {}", radius);
-                Collider::ball(radius)
-            },
-            ColliderType::Cuboid => {
-                println!(
-                    "Creating Cuboid collider with half extents: {:?}",
-                    size / 2.0
-                );
-                Collider::cuboid(half_extents.x, half_extents.y, half_extents.z)
-            },
-        };
+// fn apply_material_to_scene(
+//     scenes: &mut Assets<Scene>,
+//     scene_handle: &Handle<Scene>,
+//     linear_rgba: LinearRgba,
+//     materials: &mut ResMut<Assets<StandardMaterial>>,
+// ) {
+//     let configured_material_handle = materials.add(StandardMaterial {
+//         emissive: linear_rgba,
+//         ..default()
+//     });
+//
+//     if let Some(scene) = scenes.get_mut(scene_handle) {
+//         let mut query = scene.world.query::<&mut Handle<StandardMaterial>>();
+//         for mut material in query.iter_mut(&mut scene.world) {
+//             *material = configured_material_handle.clone();
+//         }
+//     }
+// }
 
-        let spawn_timer = self
-            .spawn_timer_seconds
-            .map(|seconds| Timer::from_seconds(seconds, TimerMode::Repeating));
+// fn apply_material_to_scene(
+//     scenes: &mut Assets<Scene>,
+//     scene_handle: &Handle<Scene>,
+//     linear_rgba: LinearRgba,
+//     materials: &mut Assets<StandardMaterial>,
+// ) {
+//     if let Some(scene) = scenes.get_mut(scene_handle) {
+//         // First pass: Collect information
+//         let mut updates = Vec::new();
+//         {
+//             let mut query = scene.world.query::<(Entity,
+// &Handle<StandardMaterial>)>();             for (entity, material_handle) in
+// query.iter(&scene.world) {                 if let Some(original_material) =
+// materials.get(material_handle) {                     updates.push((entity,
+// original_material.base_color));                 }
+//             }
+//         }
+//
+//         // Second pass: Apply updates
+//         for (entity, base_color) in updates {
+//             let new_material = StandardMaterial {
+//                 base_color,
+//                 emissive: linear_rgba,
+//                 ..StandardMaterial::default()
+//             };
+//             let new_material_handle = materials.add(new_material);
+//             if let Some(mut entity_mut) = scene.world.get_entity_mut(entity)
+// {                 entity_mut.insert(new_material_handle);
+//             }
+//         }
+//     }
+// }
 
-        ColliderConstant {
-            aabb: adjusted_aabb,
-            acceleration: self.acceleration,
-            angular_velocity: self.angvel,
-            collider,
-            damage: self.damage,
-            health: self.health,
-            mass: self.mass,
-            name: self.name,
-            rotation_speed: self.rotation_speed,
-            scalar: self.scalar,
-            size,
-            spawn_point: self.spawn_point,
-            spawn_timer,
-            spawnable: self.spawnable,
-            velocity: self.velocity,
-        }
-    }
-}
-
-pub fn extract_model_dimensions(
+fn initialize_configuration(
     mut commands: Commands,
-    scenes: Res<Assets<Scene>>,
     meshes: Res<Assets<Mesh>>,
+    scenes: Res<Assets<Scene>>,
     scene_assets: Res<SceneAssets>,
 ) {
     let initial_config = InitialColliderConfig::default();
@@ -266,7 +371,7 @@ pub fn extract_model_dimensions(
         missile:   initial_config.missile.initialize(get_scene_aabb(
             &scenes,
             &meshes,
-            &scene_assets.missiles,
+            &scene_assets.missile,
         )),
         nateroid:  initial_config.nateroid.initialize(get_scene_aabb(
             &scenes,
@@ -307,31 +412,6 @@ impl Aabb {
             max: self.max * scale,
         }
     }
-}
-
-pub fn check_asset_loading(
-    mut next_state: ResMut<NextState<AssetsState>>,
-    asset_server: Res<AssetServer>,
-    scene_assets: Res<SceneAssets>,
-) {
-    let missile_loaded =
-        asset_server.get_load_state(scene_assets.missiles.id()) == Some(LoadState::Loaded);
-    let nateroid_loaded =
-        asset_server.get_load_state(scene_assets.nateroid.id()) == Some(LoadState::Loaded);
-    let spaceship_loaded =
-        asset_server.get_load_state(scene_assets.spaceship.id()) == Some(LoadState::Loaded);
-
-    if missile_loaded && nateroid_loaded && spaceship_loaded {
-        // println!("All assets loaded, transitioning to Loaded state");
-        next_state.set(AssetsState::Loaded);
-    }
-}
-
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
-pub enum AssetsState {
-    #[default]
-    Loading,
-    Loaded,
 }
 
 fn get_scene_aabb(scenes: &Assets<Scene>, meshes: &Assets<Mesh>, handle: &Handle<Scene>) -> Aabb {

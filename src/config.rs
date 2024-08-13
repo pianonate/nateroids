@@ -1,3 +1,7 @@
+use crate::{
+    camera::RenderLayer,
+    inspector::AmbientLightBrightness,
+};
 use bevy::{
     color::{
         palettes::{
@@ -7,13 +11,8 @@ use bevy::{
         Color::Srgba,
     },
     prelude::*,
-    render::view::{
-        Layer,
-        RenderLayers,
-    },
+    render::view::RenderLayers,
 };
-
-use crate::inspector::AmbientLightBrightness;
 
 pub struct ConfigPlugin;
 
@@ -74,7 +73,7 @@ pub struct AppearanceConfig {
 impl Default for AppearanceConfig {
     fn default() -> Self {
         Self {
-            ambient_light_brightness:       1000.,
+            ambient_light_brightness:       0.,
             bloom_intensity:                0.9,
             bloom_low_frequency_boost:      0.5,
             bloom_high_pass_frequency:      0.5,
@@ -106,46 +105,5 @@ fn update_appearance_config(
             color:      default(),
             brightness: appearance_config.ambient_light_brightness,
         })
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CameraOrder {
-    Game,
-    Stars,
-}
-
-impl CameraOrder {
-    pub const fn order(self) -> isize {
-        match self {
-            CameraOrder::Game => 1,
-            CameraOrder::Stars => 0,
-        }
-    }
-}
-
-// todo: how can i get PBRs to actually render on RenderLayer 1 so i could
-// choose to have some       affected by bloom and some not...
-// weird - if i put game on render layer 1 and stars on render layer 0,
-// to line up with the camera order, the PBRs on render layer 1 are still
-// showing on render layer 0 even though i don't think i asked for that
-
-// used for both camera order and render layer
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RenderLayer {
-    Both,
-    Game,
-    Stars,
-}
-
-// returning the array rather than just one in case we have more complex
-// situations in the future that require overlapping layers
-impl RenderLayer {
-    pub const fn layers(self) -> &'static [Layer] {
-        match self {
-            RenderLayer::Both => &[0, 1],
-            RenderLayer::Game => &[0],
-            RenderLayer::Stars => &[1],
-        }
     }
 }

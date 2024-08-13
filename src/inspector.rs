@@ -1,9 +1,10 @@
 use crate::{
     camera::PrimaryCamera,
+    collider_config::ColliderConfig,
     config::AppearanceConfig,
     debug::{
         inspector_mode_enabled,
-        InspectorMode,
+        DebugMode,
     },
     input::GlobalAction,
     state::GameState,
@@ -191,22 +192,41 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                 ui.label("GameState");
                 ui_for_state::<GameState>(self.world, ui);
                 ui.add_space(8.0);
-                if let Some(mut ambient_light_value) =
-                    self.world.get_resource_mut::<AmbientLightBrightness>()
-                {
-                    let label = "ambient light value:";
-                    let min = 200.;
-                    let max = 3000.;
-                    let step_by = 200.;
+                // if let Some(mut ambient_light_value) =
+                //     self.world.get_resource_mut::<AmbientLightBrightness>()
+                // {
+                //     let label = "ambient light value:";
+                //     let min = 200.;
+                //     let max = 3000.;
+                //     let step_by = 200.;
+                //
+                //     ui.label(label);
+                //     ui.add(
+                //         egui::Slider::new(&mut ambient_light_value.0, min..=max)
+                //             .step_by(step_by)
+                //             .custom_formatter(|n, _| format!("{:.2}", n))
+                //             .custom_parser(|s| s.parse::<f64>().ok()),
+                //     );
+                // }
+                // if let Some(mut collider_config) =
+                // self.world.get_resource_mut::<ColliderConfig>() {
+                //     ui.add(egui::Checkbox::new(
+                //         &mut collider_config.nateroid.spawnable,
+                //         "spawn nateroid",
+                //     ));
+                //     bevy_inspector::ui_for_value(&mut collider_config.nateroid.spawnable, ui,
+                // self.world); };
+                self.world
+                    .resource_scope(|_world, mut collider_config: Mut<ColliderConfig>| {
+                        ui.add(egui::Checkbox::new(
+                            &mut collider_config.nateroid.spawnable,
+                            "spawn nateroid",
+                        ));
+                        // ui.label("spaceship emissive");
+                        // ui_for_value(&mut collider_config.spaceship.emissive,
+                        // ui, world);
+                    });
 
-                    ui.label(label);
-                    ui.add(
-                        egui::Slider::new(&mut ambient_light_value.0, min..=max)
-                            .step_by(step_by)
-                            .custom_formatter(|n, _| format!("{:.2}", n))
-                            .custom_parser(|s| s.parse::<f64>().ok()),
-                    );
-                }
                 egui::CollapsingHeader::new("entities")
                     .default_open(false)
                     .show(ui, |ui| {
@@ -239,11 +259,11 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 // make camera render to full window
 fn reset_camera_viewport(
     mut cameras: Query<&mut Camera, With<PrimaryCamera>>,
-    inspector_mode: Res<InspectorMode>,
+    inspector_mode: Res<DebugMode>,
 ) {
     println!("resetting primary_camera_viewport running");
 
-    if !inspector_mode.enabled {
+    if !inspector_mode.inspector_enabled {
         if let Ok(mut primary_camera) = cameras.get_single_mut() {
             primary_camera.viewport = None;
             println!("resetting primary_camera_viewport back to normal")

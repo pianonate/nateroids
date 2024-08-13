@@ -76,8 +76,6 @@ fn start_twinkling(
         return;
     }
 
-    let mut rng = rand::thread_rng();
-
     let indices = get_random_indices(config.twinkle_choose_multiple_count, config.star_count);
 
     //todo: #bevy_question - I've tried a bunch of different implementations
@@ -98,6 +96,8 @@ fn start_twinkling(
     let all_stars: Vec<(Entity, &Handle<StandardMaterial>)> = stars.iter().collect();
     let filtered_stars = extract_elements_at_indices(&all_stars, &indices);
 
+    let mut rng = rand::thread_rng();
+
     for (entity, material_handle) in filtered_stars {
         if let Some(material) = materials.get(material_handle) {
             let original_emissive = Vec4::new(
@@ -107,9 +107,11 @@ fn start_twinkling(
                 material.emissive.alpha,
             );
             let intensity =
-                rng.gen_range(config.twinkle_intensity_min..config.twinkle_intensity_max);
+                rng.gen_range(config.twinkle_intensity.start..config.twinkle_intensity.end);
             let target_emissive = original_emissive * intensity;
-            let duration = rng.gen_range(config.twinkle_duration_min..config.twinkle_duration_max);
+
+            let duration =
+                rng.gen_range(config.twinkle_duration.start..config.twinkle_duration.end);
 
             commands.entity(entity).insert(Twinkling {
                 original_emissive,
