@@ -38,10 +38,6 @@ impl Plugin for PrimaryCameraPlugin {
                 .clear_color
                 .darker(appearance.clear_color_darkening_factor),
         ))
-        .insert_resource(AmbientLight {
-            color:      default(),
-            brightness: appearance.ambient_light_brightness,
-        })
         .add_systems(Startup, spawn_primary_camera)
         .add_systems(
             Update,
@@ -63,16 +59,10 @@ impl Plugin for PrimaryCameraPlugin {
 // this allows us to use Inspector reflection to manually update ClearColor to
 // different values while the game is running from the ui_for_resources provided
 // by bevy_inspector_egui
-fn update_clear_color(
-    app_clear_color: Res<AppearanceConfig>,
-    mut clear_color: ResMut<ClearColor>,
-    mut ambient_light: ResMut<AmbientLight>,
-) {
+fn update_clear_color(app_clear_color: Res<AppearanceConfig>, mut clear_color: ResMut<ClearColor>) {
     clear_color.0 = app_clear_color
         .clear_color
         .darker(app_clear_color.clear_color_darkening_factor);
-
-    ambient_light.brightness = app_clear_color.ambient_light_brightness;
 }
 
 #[derive(Component, Debug)]

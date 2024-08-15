@@ -1,11 +1,13 @@
+mod planes;
+
 use crate::{
+    boundary::planes::PlanesPlugin,
     collider_config::Aabb,
     config::{
         AppearanceConfig,
         BoundaryGizmos,
     },
     movement::Teleporter,
-    orientation::CameraOrientation,
     state::GameState,
 };
 use bevy::{
@@ -13,14 +15,18 @@ use bevy::{
     prelude::*,
 };
 use bevy_rapier3d::prelude::Velocity;
-use std::cell::Cell;
+use std::{
+    cell::Cell,
+};
+
+pub use planes::PlaneConfig;
 
 pub struct BoundaryPlugin;
 
 impl Plugin for BoundaryPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Boundary>()
-            .add_systems(Startup, spawn_lighting)
+        app.add_plugins(PlanesPlugin)
+            .init_resource::<Boundary>()
             .add_systems(
                 Update,
                 (
@@ -32,19 +38,6 @@ impl Plugin for BoundaryPlugin {
                     .run_if(in_state(GameState::InGame).or_else(in_state(GameState::Paused))),
             );
     }
-}
-
-fn spawn_lighting(mut commands: Commands, camera_orientation: Res<CameraOrientation>) {
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            color: Color::from(tailwind::AMBER_400),
-            illuminance: 12_000.,
-            shadows_enabled: true,
-            ..default()
-        },
-        transform: Transform::from_translation(camera_orientation.config.nexus),
-        ..default()
-    });
 }
 
 #[derive(Reflect, Resource, Debug)]

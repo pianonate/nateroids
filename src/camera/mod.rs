@@ -2,26 +2,29 @@ use bevy::{
     prelude::*,
     render::view::Layer,
 };
+
+use lights::DirectionalLightsPlugin;
+pub use lights::LightConfig;
+pub use primary_camera::PrimaryCamera;
 use primary_camera::PrimaryCameraPlugin;
 use star_twinkling::StarTwinklingPlugin;
 use stars::StarsPlugin;
-
-pub mod primary_camera;
-pub use primary_camera::PrimaryCamera; /* make this name available to inspector for ease of
-                                        * use */
 pub use stars::{
     StarConfig,
     StarsCamera,
 };
 
+mod lights;
+mod primary_camera;
 mod star_twinkling;
-pub mod stars;
+mod stars;
 
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(PrimaryCameraPlugin)
+        app.add_plugins(DirectionalLightsPlugin)
+            .add_plugins(PrimaryCameraPlugin)
             .add_plugins(StarsPlugin)
             .add_plugins(StarTwinklingPlugin);
     }
@@ -42,12 +45,11 @@ impl CameraOrder {
     }
 }
 
-// todo: how can i get PBRs to actually render on RenderLayer 1 so i could
-// choose to have some       affected by bloom and some not...
+// todo: #bevyquestion - how can i get PBRs to actually render on RenderLayer 1
+// so i could choose to have some affected by bloom and some not...
 // weird - if i put game on render layer 1 and stars on render layer 0,
 // to line up with the camera order, the PBRs on render layer 1 are still
 // showing on render layer 0 even though i don't think i asked for that
-
 // used for both camera order and render layer
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RenderLayer {

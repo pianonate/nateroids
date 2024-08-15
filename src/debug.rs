@@ -1,6 +1,12 @@
 use crate::{
-    boundary::Boundary,
-    camera::StarConfig,
+    boundary::{
+        Boundary,
+        PlaneConfig,
+    },
+    camera::{
+        LightConfig,
+        StarConfig,
+    },
     collider_config::ColliderConfig,
     config::AppearanceConfig,
     input::GlobalAction,
@@ -43,10 +49,12 @@ fn register_debug_resources(world: &mut World) {
     let type_registry = world.resource::<AppTypeRegistry>().0.clone();
     type_registry.write().register::<AppearanceConfig>();
     type_registry.write().register::<Boundary>();
-    type_registry.write().register::<DebugMode>();
-    type_registry.write().register::<ColliderConfig>();
-    type_registry.write().register::<OrientationConfig>();
     type_registry.write().register::<CameraOrientation>();
+    type_registry.write().register::<ColliderConfig>();
+    type_registry.write().register::<DebugMode>();
+    type_registry.write().register::<LightConfig>();
+    type_registry.write().register::<OrientationConfig>();
+    type_registry.write().register::<PlaneConfig>();
     type_registry.write().register::<StarConfig>();
 }
 

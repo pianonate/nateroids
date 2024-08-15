@@ -1,7 +1,6 @@
 use crate::{
     camera::PrimaryCamera,
     collider_config::ColliderConfig,
-    config::AppearanceConfig,
     debug::{
         inspector_mode_enabled,
         DebugMode,
@@ -46,15 +45,16 @@ pub struct InspectorPlugin;
 
 impl Plugin for InspectorPlugin {
     fn build(&self, app: &mut App) {
-        let default_config = AppearanceConfig::default();
+        if !app.is_plugin_added::<EguiPlugin>() {
+            app.add_plugins(EguiPlugin);
+        }
 
-        app.add_plugins(EguiPlugin)
-            .add_plugins(DefaultInspectorConfigPlugin)
-            .add_plugins(FrameTimeDiagnosticsPlugin)
+        if !app.is_plugin_added::<DefaultInspectorConfigPlugin>() {
+            app.add_plugins(DefaultInspectorConfigPlugin);
+        }
+
+        app.add_plugins(FrameTimeDiagnosticsPlugin)
             .insert_resource(UiState::new())
-            .insert_resource(AmbientLightBrightness(
-                default_config.ambient_light_brightness,
-            ))
             .add_systems(
                 PostUpdate,
                 show_ui_system
@@ -75,10 +75,6 @@ impl Plugin for InspectorPlugin {
             );
     }
 }
-
-#[derive(Resource)]
-pub struct AmbientLightBrightness(pub f32);
-
 fn show_ui_system(world: &mut World) {
     let Ok(egui_context) = world
         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
@@ -192,39 +188,13 @@ impl egui_dock::TabViewer for TabViewer<'_> {
                 ui.label("GameState");
                 ui_for_state::<GameState>(self.world, ui);
                 ui.add_space(8.0);
-                // if let Some(mut ambient_light_value) =
-                //     self.world.get_resource_mut::<AmbientLightBrightness>()
-                // {
-                //     let label = "ambient light value:";
-                //     let min = 200.;
-                //     let max = 3000.;
-                //     let step_by = 200.;
-                //
-                //     ui.label(label);
-                //     ui.add(
-                //         egui::Slider::new(&mut ambient_light_value.0, min..=max)
-                //             .step_by(step_by)
-                //             .custom_formatter(|n, _| format!("{:.2}", n))
-                //             .custom_parser(|s| s.parse::<f64>().ok()),
-                //     );
-                // }
-                // if let Some(mut collider_config) =
-                // self.world.get_resource_mut::<ColliderConfig>() {
-                //     ui.add(egui::Checkbox::new(
-                //         &mut collider_config.nateroid.spawnable,
-                //         "spawn nateroid",
-                //     ));
-                //     bevy_inspector::ui_for_value(&mut collider_config.nateroid.spawnable, ui,
-                // self.world); };
+
                 self.world
                     .resource_scope(|_world, mut collider_config: Mut<ColliderConfig>| {
                         ui.add(egui::Checkbox::new(
                             &mut collider_config.nateroid.spawnable,
                             "spawn nateroid",
                         ));
-                        // ui.label("spaceship emissive");
-                        // ui_for_value(&mut collider_config.spaceship.emissive,
-                        // ui, world);
                     });
 
                 egui::CollapsingHeader::new("entities")

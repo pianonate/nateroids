@@ -1,7 +1,4 @@
-use crate::{
-    camera::RenderLayer,
-    inspector::AmbientLightBrightness,
-};
+use crate::camera::RenderLayer;
 use bevy::{
     color::{
         palettes::{
@@ -20,8 +17,7 @@ impl Plugin for ConfigPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<AppearanceConfig>()
             .init_gizmo_group::<BoundaryGizmos>()
-            .add_systems(Startup, init_gizmo_configs)
-            .add_systems(Update, update_appearance_config);
+            .add_systems(Startup, init_gizmo_configs);
     }
 }
 
@@ -48,7 +44,6 @@ fn init_gizmo_configs(
 #[derive(Resource, Reflect, Debug)]
 #[reflect(Resource)]
 pub struct AppearanceConfig {
-    pub ambient_light_brightness:       f32,
     pub bloom_intensity:                f32,
     pub bloom_low_frequency_boost:      f32,
     pub bloom_high_pass_frequency:      f32,
@@ -73,7 +68,6 @@ pub struct AppearanceConfig {
 impl Default for AppearanceConfig {
     fn default() -> Self {
         Self {
-            ambient_light_brightness:       0.,
             bloom_intensity:                0.9,
             bloom_low_frequency_boost:      0.5,
             bloom_high_pass_frequency:      0.5,
@@ -91,19 +85,5 @@ impl Default for AppearanceConfig {
             zoom_sensitivity_pinch:         100.,
             zoom_sensitivity_mouse:         5.,
         }
-    }
-}
-
-fn update_appearance_config(
-    mut commands: Commands,
-    ambient_light: Res<AmbientLightBrightness>,
-    mut appearance_config: ResMut<AppearanceConfig>,
-) {
-    if ambient_light.is_changed() {
-        appearance_config.ambient_light_brightness = ambient_light.0;
-        commands.insert_resource(AmbientLight {
-            color:      default(),
-            brightness: appearance_config.ambient_light_brightness,
-        })
     }
 }
