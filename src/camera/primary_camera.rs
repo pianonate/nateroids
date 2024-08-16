@@ -1,6 +1,7 @@
 use crate::{
     boundary::Boundary,
     camera::{
+        CameraConfig,
         CameraOrder,
         RenderLayer,
         StarsCamera,
@@ -8,7 +9,6 @@ use crate::{
     config::AppearanceConfig,
     input::CameraMovement,
     orientation::CameraOrientation,
-    schedule::InGameSet,
 };
 use bevy::{
     core_pipeline::tonemapping::Tonemapping,
@@ -31,38 +31,33 @@ pub struct PrimaryCameraPlugin;
 
 impl Plugin for PrimaryCameraPlugin {
     fn build(&self, app: &mut App) {
-        let appearance = AppearanceConfig::default();
-
-        app.insert_resource(ClearColor(
-            appearance
-                .clear_color
-                .darker(appearance.clear_color_darkening_factor),
-        ))
-        .add_systems(Startup, spawn_primary_camera)
-        .add_systems(
-            Update,
-            (
-                // order matters because we hack around the input manager
-                // that doesn't yet support trackpads
-                home_camera,
-                pinch_to_zoom,
-                zoom_camera,
-                orbit_camera,
-                pan_camera,
+        app.add_systems(Startup, spawn_primary_camera)
+            .add_systems(
+                Update,
+                (
+                    // order matters because we hack around the input manager
+                    // that doesn't yet support trackpads
+                    home_camera,
+                    pinch_to_zoom,
+                    zoom_camera,
+                    orbit_camera,
+                    pan_camera,
+                )
+                    .chain(), // .in_set(InGameSet::UserInput),
             )
-                .chain(), // .in_set(InGameSet::UserInput),
-        )
-        .add_systems(Update, update_clear_color.in_set(InGameSet::EntityUpdates));
+            .add_systems(Update, update_clear_color);
     }
 }
 
 // this allows us to use Inspector reflection to manually update ClearColor to
 // different values while the game is running from the ui_for_resources provided
 // by bevy_inspector_egui
-fn update_clear_color(app_clear_color: Res<AppearanceConfig>, mut clear_color: ResMut<ClearColor>) {
-    clear_color.0 = app_clear_color
-        .clear_color
-        .darker(app_clear_color.clear_color_darkening_factor);
+fn update_clear_color(camera_config: Res<CameraConfig>, mut clear_color: ResMut<ClearColor>) {
+    if camera_config.is_changed() {
+        clear_color.0 = camera_config
+            .clear_color
+            .darker(camera_config.darkening_factor);
+    }
 }
 
 #[derive(Component, Debug)]
@@ -83,13 +78,12 @@ fn home_camera(
 }
 
 pub fn spawn_primary_camera(
+    camera_config: Res<CameraConfig>,
     boundary: Res<Boundary>,
     mut commands: Commands,
     mut orientation: ResMut<CameraOrientation>,
     mut q_stars_camera: Query<Entity, With<StarsCamera>>,
 ) {
-    let clear_color = Color::srgba(0., 0., 0., 0.);
-
     // we know we have one because we spawn the stars camera prior to this system
     // we're going to attach it to the primary as a child so it always has the same
     // view as the primary camera but can show the stars with bloom while the
@@ -102,7 +96,11 @@ pub fn spawn_primary_camera(
         camera: Camera {
             hdr: true,
             order: CameraOrder::Game.order(),
-            clear_color: ClearColorConfig::Custom(clear_color),
+            clear_color: ClearColorConfig::Custom(
+                camera_config
+                    .clear_color
+                    .darker(camera_config.darkening_factor),
+            ),
             ..default()
         },
         tonemapping: Tonemapping::TonyMcMapface,
@@ -258,24 +256,25 @@ fn should_pan(
 // i couldn't get this to work without hitting gimbal lock when consulting with
 // chatGPT 4.o claude Sonnet 3.5 got it right on the first try - holy shit!
 fn orbit_camera(
-    mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
+    mut q_camera: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
+    camera_config: Res<CameraConfig>,
     keycode: Res<ButtonInput<KeyCode>>,
     orientation: Res<CameraOrientation>,
 ) {
-    if let Ok((mut camera_transform, mut action_state)) = query.get_single_mut() {
+    if let Ok((mut camera_transform, mut action_state)) = q_camera.get_single_mut() {
         let orbit_vector = match should_orbit(keycode, &mut action_state) {
             Some(value) => value,
             None => return,
         };
 
-        let rotation_speed = 0.005;
-        // Assuming the target is at the origin - this may change in the future
-        // as the target could be the ship when we move into flying behind the ship
+        let rotation_speed = camera_config.rotation_speed; //0.005;
+                                                           // Assuming the target is at the origin - this may change in the future
+                                                           // as the target could be the ship when we move into flying behind the ship
         let target = orientation.config.nexus;
 
         // this will change if we change our up vector to Z for FPSpaceship mode
-        let up = orientation.config.axis_mundi;
-        let right = camera_transform.right().as_vec3();
+        let up = orientation.config.axis_mundi.normalize();
+        let right = camera_transform.right().normalize();
 
         // Create rotation quaternions
         let pitch_rotation = Quat::from_axis_angle(right, -orbit_vector.y * rotation_speed);

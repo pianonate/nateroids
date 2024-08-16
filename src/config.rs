@@ -1,12 +1,6 @@
 use crate::camera::RenderLayer;
 use bevy::{
-    color::{
-        palettes::{
-            css,
-            tailwind,
-        },
-        Color::Srgba,
-    },
+    color::palettes::tailwind,
     prelude::*,
     render::view::RenderLayers,
 };
@@ -44,17 +38,12 @@ fn init_gizmo_configs(
 #[derive(Resource, Reflect, Debug)]
 #[reflect(Resource)]
 pub struct AppearanceConfig {
-    pub bloom_intensity:                f32,
-    pub bloom_low_frequency_boost:      f32,
-    pub bloom_high_pass_frequency:      f32,
     pub boundary_color:                 Color,
     pub boundary_distance_approach:     f32,
     pub boundary_distance_shrink:       f32,
     pub boundary_line_width:            f32,
     pub boundary_cell_count:            UVec3,
     pub boundary_scalar:                f32,
-    pub clear_color:                    Color,
-    pub clear_color_darkening_factor:   f32,
     pub missile_forward_spawn_distance: f32,
     pub smallest_teleport_circle:       f32,
     pub splash_timer:                   f32,
@@ -68,17 +57,12 @@ pub struct AppearanceConfig {
 impl Default for AppearanceConfig {
     fn default() -> Self {
         Self {
-            bloom_intensity:                0.9,
-            bloom_low_frequency_boost:      0.5,
-            bloom_high_pass_frequency:      0.5,
             boundary_color:                 Color::from(tailwind::BLUE_300),
             boundary_distance_approach:     0.5,
             boundary_distance_shrink:       0.25,
             boundary_line_width:            4.,
             boundary_cell_count:            UVec3::new(2, 1, 1),
             boundary_scalar:                110.,
-            clear_color:                    Srgba(css::MIDNIGHT_BLUE),
-            clear_color_darkening_factor:   0.019,
             missile_forward_spawn_distance: 5.6,
             smallest_teleport_circle:       5.,
             splash_timer:                   2.,

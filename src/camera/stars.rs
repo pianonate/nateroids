@@ -1,7 +1,6 @@
 use crate::{
     boundary::Boundary,
     camera::primary_camera::spawn_primary_camera,
-    config::AppearanceConfig,
     input::GlobalAction,
 };
 use bevy::{
@@ -15,6 +14,7 @@ use bevy::{
 use std::ops::Range;
 
 use crate::camera::{
+    CameraConfig,
     CameraOrder,
     RenderLayer,
 };
@@ -28,8 +28,7 @@ pub struct StarsPlugin;
 
 impl Plugin for StarsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<StarBloom>()
-            .add_systems(Startup, spawn_star_camera.before(spawn_primary_camera))
+        app.add_systems(Startup, spawn_star_camera.before(spawn_primary_camera))
             .add_systems(Startup, (spawn_stars, setup_star_rendering).chain())
             .add_systems(Update, (toggle_stars, update_bloom_settings));
     }
@@ -75,54 +74,30 @@ impl Default for StarConfig {
     }
 }
 
-#[derive(Resource, Clone)]
-struct StarBloom {
-    settings: BloomSettings,
-}
-
-impl Default for StarBloom {
-    fn default() -> Self {
-        let config = AppearanceConfig::default();
-        let mut bloom_settings = BloomSettings::NATURAL;
-        bloom_settings.intensity = config.bloom_intensity;
-        bloom_settings.low_frequency_boost = config.bloom_low_frequency_boost;
-        bloom_settings.high_pass_frequency = config.bloom_high_pass_frequency;
-        Self {
-            settings: bloom_settings,
-        }
-    }
-}
-
-// allows Appearance settings to propagate back to StarBloom.settings so
-// that on changes we can apply a clone of those settings back to
-// the camera
-impl StarBloom {
-    fn update_from_config(&mut self, config: &AppearanceConfig) {
-        self.settings.intensity = config.bloom_intensity;
-        self.settings.low_frequency_boost = config.bloom_low_frequency_boost;
-        self.settings.high_pass_frequency = config.bloom_high_pass_frequency;
-    }
-}
-
-// if Appearance changes (ignore the fact that anything can change - that's
-// fine) then propagate bloom settings back to the resource, and then clone it
-// back onto the camera
+// propagate bloom settings back to the camera
 fn update_bloom_settings(
-    mut star_bloom: ResMut<StarBloom>,
-    appearance_config: Res<AppearanceConfig>,
-    mut query: Query<&mut BloomSettings, With<StarsCamera>>,
+    camera_config: Res<CameraConfig>,
+    mut q_current_settings: Query<&mut BloomSettings, With<StarsCamera>>,
 ) {
-    if appearance_config.is_changed() {
-        star_bloom.update_from_config(&appearance_config);
-        for mut bloom_settings in query.iter_mut() {
-            *bloom_settings = star_bloom.settings.clone();
+    if camera_config.is_changed() {
+        if let Ok(mut old_bloom_settings) = q_current_settings.get_single_mut() {
+            *old_bloom_settings = get_bloom_settings(camera_config);
         }
     }
+}
+
+fn get_bloom_settings(camera_config: Res<CameraConfig>) -> BloomSettings {
+    let mut new_bloom_settings = BloomSettings::NATURAL;
+
+    new_bloom_settings.intensity = camera_config.bloom_intensity;
+    new_bloom_settings.low_frequency_boost = camera_config.bloom_low_frequency_boost;
+    new_bloom_settings.high_pass_frequency = camera_config.bloom_high_pass_frequency;
+    new_bloom_settings.clone()
 }
 
 // star camera uses bloom so it needs to be in its own layer as we don't
 // want that effect on the colliders
-fn spawn_star_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
+fn spawn_star_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
     let camera3d = Camera3dBundle {
         camera: Camera {
             order: CameraOrder::Stars.order(),
@@ -136,7 +111,7 @@ fn spawn_star_camera(mut commands: Commands, star_bloom: Res<StarBloom>) {
     commands
         .spawn(camera3d)
         .insert(RenderLayers::from_layers(RenderLayer::Stars.layers()))
-        .insert(star_bloom.settings.clone())
+        .insert(get_bloom_settings(camera_config))
         .insert(StarsCamera);
 }
 
@@ -149,7 +124,7 @@ fn toggle_stars(
     mut commands: Commands,
     mut camera: Query<(Entity, Option<&mut BloomSettings>), With<StarsCamera>>,
     user_input: Res<ActionState<GlobalAction>>,
-    star_bloom: Res<StarBloom>,
+    camera_config: Res<CameraConfig>,
 ) {
     let current_bloom_settings = camera.single_mut();
 
@@ -163,7 +138,9 @@ fn toggle_stars(
         (entity, None) => {
             if user_input.just_pressed(&GlobalAction::Stars) {
                 println!("stars on");
-                commands.entity(entity).insert(star_bloom.settings.clone());
+                commands
+                    .entity(entity)
+                    .insert(get_bloom_settings(camera_config));
             }
         },
     }
@@ -218,26 +195,6 @@ fn get_star_position(
 
     Vec3::new(x, y, z)
 }
-
-// fn get_star_color(config: &StarConfig, rng: &mut impl Rng) -> Vec4 {
-//     let end = config.star_color.end;
-//     let color_start = config.star_color.start;
-//     let white_start = end * config.star_color_white_start_ratio; // 80% of
-// end value
-//
-//     let start = if rng.gen::<f32>() < config.star_color_white_probability {
-//         white_start
-//     } else {
-//         color_start
-//     };
-//
-//     Vec4::new(
-//         rng.gen_range(start..end),
-//         rng.gen_range(start..end),
-//         rng.gen_range(start..end),
-//         rng.gen_range(start..end),
-//     )
-// }
 
 fn get_star_color(config: &StarConfig, rng: &mut impl Rng) -> Vec4 {
     let end = config.star_color.end;

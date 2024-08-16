@@ -9,18 +9,20 @@ use bevy::prelude::{
         KeyA,
         KeyC,
         KeyD,
+        KeyF,
+        KeyL,
+        KeyP,
         KeyS,
         KeyW,
         ShiftLeft,
+        ShiftRight,
         Space,
         F1,
-        F10,
+        F12,
         F2,
         F3,
-        F4,
-        F5,
     },
-    MouseButton::Middle,
+    MouseButton,
     *,
 };
 use leafwing_input_manager::prelude::*;
@@ -53,7 +55,7 @@ pub enum CameraMovement {
 
 impl CameraMovement {
     pub fn camera_input_map() -> InputMap<Self> {
-        let pan_chord = ButtonlikeChord::new([ShiftLeft]).with(Middle);
+        let pan_chord = ButtonlikeChord::new([ShiftLeft]).with(MouseButton::Middle);
 
         // this is my attempt to setup camera controls for a PanOrbit-style camera
         // a la the way blender works - it's a pain in the ass and it only works so so
@@ -62,10 +64,10 @@ impl CameraMovement {
         InputMap::default()
             // Orbit:  mouse wheel pressed with mouse move
             .with(CameraMovement::Home, Home)
-            .with(CameraMovement::Home, F5)
+            .with(CameraMovement::Home, F12)
             .with_dual_axis(
                 CameraMovement::Orbit,
-                DualAxislikeChord::new(Middle, MouseMove::default()),
+                DualAxislikeChord::new(MouseButton::Middle, MouseMove::default()),
             )
             // Orbit: scrolling on the trackpad
             .with_dual_axis(CameraMovement::Orbit, MouseScroll::default())
@@ -78,6 +80,12 @@ impl CameraMovement {
                 CameraMovement::Pan,
                 DualAxislikeChord::new(pan_chord, MouseScroll::default()),
             )
+            // you could pan with left mouse click if this was enabled...
+            // todo: #bevyquestion - how can we stop egui from passing mouse events through to the
+            // main game? .with_dual_axis(
+            //     CameraMovement::Pan,
+            //     DualAxislikeChord::new(MouseButton::Left, MouseMove::default()),
+            // )
             // zoom: Mouse Scroll Wheel - Y axis
             .with_axis(CameraMovement::Zoom, MouseScrollAxis::Y)
     }
@@ -106,6 +114,9 @@ pub enum SpaceshipAction {
     TurnRight,
 }
 
+// #todo #bug - i can't use Shift-C as it invokes ContinuousFire even thought
+// the              ClashStrategy::PrioritizeLongest is on by default (and i
+// tried explicitly)
 impl SpaceshipAction {
     pub fn spaceship_input_map() -> InputMap<Self> {
         let mut input_map = InputMap::default();
@@ -113,7 +124,7 @@ impl SpaceshipAction {
         input_map.insert(Self::Accelerate, KeyW);
         input_map.insert(Self::Accelerate, ArrowUp);
 
-        input_map.insert(Self::ContinuousFire, KeyC);
+        input_map.insert(Self::ContinuousFire, KeyF);
 
         input_map.insert(Self::Decelerate, KeyS);
         input_map.insert(Self::Decelerate, ArrowDown);
@@ -133,36 +144,48 @@ impl SpaceshipAction {
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum GlobalAction {
     AABBs,
-    Diagnostics,
+    CameraInspector,
     Debug,
-    Inspector,
+    LightsInspector,
     Physics,
+    PlanesInspector,
     Pause,
     Stars,
 }
 
-/// Use Debug like this - pull it into a system as follows:
+/// Use Debug like this - invoke it with a system as follows:
 /// ```rust
-/// fn some_system(
-///    debug: Res<DebugEnabled>,
-/// )
+/// app.add_systems(Update, my_debug_system.run_if(toggle_active(false, GlobalAction::Debug))
 /// ```
-/// DebugEnabled is a simple tuple struct with a boolean so the first (.0)
-/// parameter tells you if it's enabled or not
-/// ```rust
-///    if debug.enabled() {
-///       println!("Debug action was just pressed!");
-///    }
+/// useful when you want to limit the amount of info that is being emitted
+///
+/// similarly you can also ask for the GlobalAction and use it in your code
+/// directly ```rust
+/// fn my_system(user_input: Res<ActionState<GlobalAction>>) {
+///    if user_input.pressed(&GlobalAction::Debug) {
+///       // whatever debug statements you're using will only happen while you
+/// press it    }
+/// }
 /// ```
 impl GlobalAction {
     pub fn global_input_map() -> InputMap<Self> {
         let mut input_map = InputMap::default();
+
+        let create_dual_input =
+            |action: GlobalAction, key: KeyCode, input_map: &mut InputMap<GlobalAction>| {
+                input_map.insert(action, ButtonlikeChord::new([ShiftLeft]).with(key));
+                input_map.insert(action, ButtonlikeChord::new([ShiftRight]).with(key));
+            };
+
         input_map.insert(Self::AABBs, F1);
-        input_map.insert(Self::Debug, F10);
-        input_map.insert(Self::Inspector, F4);
+        create_dual_input(Self::CameraInspector, KeyC, &mut input_map);
+        create_dual_input(Self::Debug, KeyD, &mut input_map);
+        create_dual_input(Self::LightsInspector, KeyL, &mut input_map);
         input_map.insert(Self::Pause, Escape);
+        create_dual_input(Self::PlanesInspector, KeyP, &mut input_map);
         input_map.insert(Self::Physics, F2);
         input_map.insert(Self::Stars, F3);
+
         input_map
     }
 }

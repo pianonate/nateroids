@@ -4,8 +4,10 @@ use crate::{
     schedule::InGameSet,
 };
 
-use crate::debug::aabb_mode_enabled;
-
+use crate::{
+    input::GlobalAction,
+    utils::toggle_active,
+};
 use bevy::{
     color::palettes::tailwind,
     prelude::*,
@@ -47,7 +49,10 @@ impl Plugin for MovementPlugin {
         );
 
         // app.add_systems(Update, debug_spaceship);
-        app.add_systems(Update, draw_aabb_system.run_if(aabb_mode_enabled));
+        app.add_systems(
+            Update,
+            draw_aabb_system.run_if(toggle_active(false, GlobalAction::AABBs)),
+        );
     }
 }
 

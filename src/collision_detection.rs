@@ -21,7 +21,7 @@ pub struct CollisionDetectionPlugin;
 impl Plugin for CollisionDetectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Update,
+            FixedUpdate,
             handle_collision_events.in_set(InGameSet::CollisionDetection),
         );
     }

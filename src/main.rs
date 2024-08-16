@@ -8,7 +8,6 @@ use crate::{
     debug::DebugPlugin,
     despawn::DespawnPlugin,
     input::InputPlugin,
-    inspector::InspectorPlugin,
     missile::MissilePlugin,
     movement::MovementPlugin,
     nateroid::NateroidPlugin,
@@ -38,7 +37,6 @@ mod debug;
 mod despawn;
 mod health;
 mod input;
-mod inspector;
 mod missile;
 mod movement;
 mod nateroid;
@@ -70,24 +68,29 @@ fn main() {
             }),
     );
 
-    app.add_plugins(AssetLoaderPlugin)
-        .add_plugins(BoundaryPlugin)
-        .add_plugins(CameraPlugin)
-        .add_plugins(CollisionDetectionPlugin)
-        .add_plugins(ConfigPlugin)
-        .add_plugins(ColliderConfigPlugin)
-        .add_plugins(DebugPlugin)
-        .add_plugins(DespawnPlugin)
-        .add_plugins(InputPlugin)
-        .add_plugins(InspectorPlugin)
-        .add_plugins(MovementPlugin)
-        .add_plugins(MissilePlugin)
-        .add_plugins(NateroidPlugin)
-        .add_plugins(OrientationPlugin)
-        .add_plugins(PhysicsPlugin)
-        .add_plugins(SchedulePlugin)
-        .add_plugins(SpaceshipPlugin)
-        .add_plugins(SplashPlugin)
-        .add_plugins(StatePlugin)
-        .run();
+    // there's a limit to the tuple size so
+    // i just split them in 2
+    app.add_plugins((
+        AssetLoaderPlugin,
+        BoundaryPlugin,
+        CameraPlugin,
+        CollisionDetectionPlugin,
+        ConfigPlugin,
+        ColliderConfigPlugin,
+        DebugPlugin,
+        DespawnPlugin,
+        InputPlugin,
+    ))
+    .add_plugins((
+        MovementPlugin,
+        MissilePlugin,
+        NateroidPlugin,
+        OrientationPlugin,
+        PhysicsPlugin,
+        SchedulePlugin,
+        SpaceshipPlugin,
+        SplashPlugin,
+        StatePlugin,
+    ))
+    .run();
 }

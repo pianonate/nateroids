@@ -11,9 +11,11 @@ use bevy::{
     scene::Scene,
 };
 use bevy_rapier3d::prelude::{
+    CoefficientCombineRule,
     Collider,
     ColliderMassProperties,
     ColliderMassProperties::Mass,
+    Restitution,
 };
 use rand::Rng;
 use std::{
@@ -54,6 +56,7 @@ struct InitialColliderConstant {
     health:              f32,
     mass:                ColliderMassProperties,
     name:                &'static str,
+    restitution:         f32,
     rotation_speed:      f32,
     scalar:              f32,
     spawn_point:         Vec3,
@@ -69,10 +72,11 @@ impl Default for InitialColliderConfig {
                 acceleration:        None,
                 angvel:              None,
                 collider_type:       ColliderType::Cuboid,
-                damage:              40.,
+                damage:              50.,
                 health:              1.,
                 mass:                Mass(0.001),
                 name:                "missile",
+                restitution:         0.,
                 rotation_speed:      0.,
                 scalar:              2.5,
                 spawn_point:         Vec3::new(0.5, 0., 0.),
@@ -85,9 +89,10 @@ impl Default for InitialColliderConfig {
                 angvel:              Some(4.),
                 collider_type:       ColliderType::Ball,
                 damage:              10.,
-                health:              100.,
+                health:              200.,
                 mass:                Mass(1.0),
                 name:                "nateroid",
+                restitution:         1.0,
                 rotation_speed:      0.,
                 scalar:              1.,
                 spawn_point:         Vec3::ZERO,
@@ -99,10 +104,11 @@ impl Default for InitialColliderConfig {
                 acceleration:        Some(60.),
                 angvel:              None,
                 collider_type:       ColliderType::Cuboid,
-                damage:              100.,
+                damage:              50.,
                 health:              500.,
                 mass:                Mass(3.0),
                 name:                "spaceship",
+                restitution:         0.3,
                 rotation_speed:      5.,
                 scalar:              0.8,
                 spawn_point:         Vec3::new(0.0, -20.0, 0.0),
@@ -126,14 +132,9 @@ impl InitialColliderConstant {
         let collider = match self.collider_type {
             ColliderType::Ball => {
                 let radius = size.length() / 3.;
-                println!("Creating Ball collider with radius: {}", radius);
                 Collider::ball(radius)
             },
             ColliderType::Cuboid => {
-                println!(
-                    "Creating Cuboid collider with half extents: {:?}",
-                    size / 2.0
-                );
                 Collider::cuboid(half_extents.x, half_extents.y, half_extents.z)
             },
         };
@@ -141,6 +142,11 @@ impl InitialColliderConstant {
         let spawn_timer = self
             .spawn_timer_seconds
             .map(|seconds| Timer::from_seconds(seconds, TimerMode::Repeating));
+
+        let restitution = Restitution {
+            coefficient:  self.restitution,
+            combine_rule: CoefficientCombineRule::Min,
+        };
 
         ColliderConstant {
             aabb: adjusted_aabb,
@@ -151,6 +157,7 @@ impl InitialColliderConstant {
             health: self.health,
             mass: self.mass,
             name: self.name.to_string(),
+            restitution,
             rotation_speed: self.rotation_speed,
             scalar: self.scalar,
             spawn_point: self.spawn_point,
@@ -180,6 +187,8 @@ pub struct ColliderConstant {
     pub health:           f32,
     pub mass:             ColliderMassProperties,
     pub name:             String,
+    #[reflect(ignore)]
+    pub restitution:      Restitution,
     pub rotation_speed:   f32,
     pub scalar:           f32,
     pub spawn_point:      Vec3,

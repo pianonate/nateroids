@@ -1,10 +1,10 @@
 use crate::{
+    input::GlobalAction,
     orientation::CameraOrientation,
-    state::GameState,
+    utils::toggle_active,
 };
 use bevy::{
     color::palettes::tailwind,
-    input::common_conditions::input_toggle_active,
     prelude::*,
 };
 use bevy_inspector_egui::{
@@ -22,11 +22,11 @@ impl Plugin for DirectionalLightsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(
             ResourceInspectorPlugin::<LightConfig>::default()
-                .run_if(input_toggle_active(false, KeyCode::F6)),
+                .run_if(toggle_active(false, GlobalAction::LightsInspector)),
         )
         .init_resource::<AmbientLight>()
         .init_resource::<LightConfig>()
-        .add_systems(Update, manage_lighting.run_if(in_state(GameState::InGame)));
+        .add_systems(Update, manage_lighting);
     }
 }
 
@@ -150,7 +150,7 @@ impl LightConfig {
     }
 }
 
-// looked this up on github - so I it doesn't really matter where it's placed...
+// looked this up on github - so it doesn't really matter where it's placed...
 //
 // Directional light sources are modelled to be at infinity and have parallel
 // rays. As such they do not have a position in practical terms and only the
@@ -209,7 +209,6 @@ fn manage_lighting(
                 commands.entity(entity).despawn();
             },
             (None, true) => {
-                println!("spawning with color {:?}", settings.color);
                 // Spawn new light
                 commands.spawn((
                     DirectionalLightBundle {

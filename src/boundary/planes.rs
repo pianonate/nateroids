@@ -1,13 +1,13 @@
 use crate::{
     boundary::Boundary,
+    input::GlobalAction,
     orientation::{
         CameraOrientation,
         OrientationConfig,
     },
-    state::GameState,
+    utils::toggle_active,
 };
 use bevy::{
-    input::common_conditions::input_toggle_active,
     prelude::*,
     render::render_resource::Face,
 };
@@ -26,16 +26,16 @@ impl Plugin for PlanesPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(
             ResourceInspectorPlugin::<PlaneConfig>::default()
-                .run_if(input_toggle_active(false, KeyCode::F11)),
+                .run_if(toggle_active(false, GlobalAction::PlanesInspector)),
         )
         .init_resource::<PlaneConfig>()
-        .add_systems(
-            Update,
-            manage_box_planes.run_if(in_state(GameState::InGame)),
-        );
+        .add_systems(Update, manage_box_planes);
     }
 }
 
+// you can't use an #[inspector()] w/attenuation_distance
+// because you have to use a logarithmic range to reach f32::INFINITY which is
+// its default problem for another day...
 #[derive(Resource, Reflect, InspectorOptions, Debug, PartialEq, Clone, Copy)]
 #[reflect(Resource, InspectorOptions)]
 pub struct PlaneConfig {
@@ -51,9 +51,8 @@ pub struct PlaneConfig {
     cull_mode:             Option<Face>,
     double_sided:          bool,
     emissive:              LinearRgba,
-    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
     attenuation_distance:  f32,
-    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    #[inspector(min = 1.0, max = 3.0, display = NumberDisplay::Slider)]
     ior:                   f32,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
     diffuse_transmission:  f32,
@@ -66,7 +65,7 @@ pub struct PlaneConfig {
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
     specular_transmission: f32,
     #[inspector(min = 0.001, max = 10.0, display = NumberDisplay::Slider)]
-    thickness:             f32, // used for both the plane depth and the material thickness
+    thickness:             f32,
 }
 
 impl Default for PlaneConfig {
@@ -78,14 +77,14 @@ impl Default for PlaneConfig {
             right:                 false,
             top:                   false,
             bottom:                false,
-            alpha_mode:            None, // Some(AlphaMode::Blend),
-            attenuation_distance:  0.0,  // f32::INFINITY,
+            alpha_mode:            None,
+            attenuation_distance:  f32::INFINITY,
             base_color:            Color::from(LinearRgba::new(1., 1., 1., 1.)),
             cull_mode:             Some(Face::Back),
             diffuse_transmission:  0.,
             double_sided:          false,
             emissive:              LinearRgba::BLACK,
-            ior:                   0.0,
+            ior:                   1.5,
             metallic:              0.,
             perceptual_roughness:  0.5,
             reflectance:           0.5,
@@ -180,6 +179,7 @@ fn manage_box_planes(
 
         if enabled {
             let existing_entity = existing_plane.map(|(entity, _)| entity);
+           
             create_or_update_plane(
                 &mut commands,
                 &mut meshes,
@@ -191,6 +191,7 @@ fn manage_box_planes(
                 plane_type,
                 existing_entity,
             );
+
         } else if let Some((entity, _)) = existing_plane {
             commands.entity(entity).despawn();
         }
@@ -258,6 +259,7 @@ fn get_plane_material(
         cull_mode: config.cull_mode,
         diffuse_transmission: config.diffuse_transmission,
         double_sided: config.double_sided,
+        emissive: config.emissive,
         ior: config.ior,
         metallic: config.metallic,
         perceptual_roughness: config.perceptual_roughness,

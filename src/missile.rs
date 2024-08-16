@@ -212,6 +212,7 @@ fn spawn_missile(
                     .with_rotation(spaceship_transform.rotation),
                 ..default()
             },
+            restitution: missile_config.restitution,
             velocity: Velocity {
                 linvel: missile.velocity,
                 angvel: Default::default(),
@@ -281,81 +282,6 @@ fn missile_party(
         }
     }
 }
-
-// fn draw_missile_targets(
-//     gizmos: &mut Gizmos,
-//     missile: &Missile,
-//     boundary: &Res<Boundary>,
-//     config: &AppearanceConfig,
-// ) {
-//     let current_position = missile.last_position;
-//
-//     if let Some(next_boundary) = boundary.find_edge_point(current_position,
-// missile.velocity) {         if missile.remaining_distance <
-// current_position.distance(next_boundary) {             let end_point =
-//                 current_position + missile.velocity.normalize() *
-// missile.remaining_distance;             let circle_normal =
-// Dir3::new(-missile.velocity.normalize()).unwrap_or(Dir3::NEG_Z);
-//
-//             draw_variable_size_circle(
-//                 config,
-//                 gizmos,
-//                 end_point,
-//                 circle_normal,
-//                 Color::from(tailwind::GREEN_800),
-//                 missile.remaining_distance,
-//             );
-//         }
-//     }
-// }
-
-// fn draw_missile_targets(
-//     gizmos: &mut Gizmos,
-//     missile: &Missile,
-//     boundary: &Res<Boundary>,
-//     config: &AppearanceConfig,
-// ) {
-//     let current_position = missile.last_position;
-//
-//     if let Some(next_boundary) = boundary.find_edge_point(current_position,
-// missile.velocity) {         let (position, normal, color, remaining_distance)
-// =             if missile.remaining_distance <
-// current_position.distance(next_boundary) {                 let end_point =
-//                     current_position + missile.velocity.normalize() *
-// missile.remaining_distance;                 let circle_normal =
-// Dir3::new(-missile.velocity.normalize()).unwrap_or(Dir3::NEG_Z);
-// (                     end_point,
-//                     circle_normal,
-//                     Color::from(tailwind::GREEN_800),
-//                     missile.remaining_distance,
-//                 )
-//             } else {
-//                 let boundary_normal =
-// boundary.get_normal_for_position(next_boundary);                 let distance
-// = current_position.distance(next_boundary);                 (
-//                     next_boundary,
-//                     boundary_normal,
-//                     Color::from(tailwind::BLUE_600),
-//                     distance,
-//                 )
-//             };
-//
-//         draw_variable_size_circle(config, gizmos, position, normal, color,
-// remaining_distance);     }
-//
-//     // Draw sphere at the last teleport position if it exists
-//     if let Some(last_teleport_position) = missile.last_teleport_position {
-//         let teleport_normal =
-// boundary.get_normal_for_position(last_teleport_position);
-//
-//         gizmos.circle(
-//             last_teleport_position,
-//             teleport_normal,
-//             config.missile_circle_radius,
-//             Color::from(tailwind::YELLOW_600),
-//         );
-//     }
-// }
 
 fn draw_variable_size_circle(
     config: &Res<AppearanceConfig>,

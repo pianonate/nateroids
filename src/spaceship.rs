@@ -135,6 +135,7 @@ fn spawn_spaceship(
                 },
                 ..default()
             },
+            restitution: spaceship_config.restitution,
             ..default()
         })
         .insert(spaceship_input)
@@ -250,6 +251,7 @@ fn apply_acceleration(
         velocity.linvel = proposed_velocity;
     }
 
+    //todo: #handl3d
     match orientation.orientation {
         // in 3d we can accelerate in all dirs
         OrientationType::BehindSpaceship3D => (),

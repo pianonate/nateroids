@@ -15,9 +15,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_rapier3d::prelude::Velocity;
-use std::{
-    cell::Cell,
-};
+use std::cell::Cell;
 
 pub use planes::PlaneConfig;
 

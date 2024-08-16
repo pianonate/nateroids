@@ -25,8 +25,10 @@ use bevy::{
 use bevy_rapier3d::prelude::Velocity;
 use rand::Rng;
 
-#[derive(Component, Debug)]
 pub struct NateroidPlugin;
+
+#[derive(Component, Debug)]
+pub struct Nateroid;
 
 impl Plugin for NateroidPlugin {
     fn build(&self, app: &mut App) {
@@ -78,7 +80,7 @@ fn spawn_nateroid(
     let collider = nateroid_config.collider.clone();
 
     let nateroid = commands
-        .spawn(NateroidPlugin)
+        .spawn(Nateroid)
         .insert(HealthBundle {
             collision_damage: CollisionDamage(nateroid_config.damage),
             health:           Health(nateroid_config.health),
@@ -88,6 +90,7 @@ fn spawn_nateroid(
             collider,
             mass: nateroid_config.mass,
             model: nateroid_model,
+            restitution: nateroid_config.restitution,
             velocity: Velocity {
                 linvel: random_velocity,
                 angvel: random_angular_velocity,
