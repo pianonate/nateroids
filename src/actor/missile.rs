@@ -27,10 +27,7 @@ pub struct MissilePlugin;
 impl Plugin for MissilePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, fire_missile.in_set(InGameSet::UserInput))
-            .add_systems(
-                Update,
-                missile_movement.in_set(InGameSet::EntityUpdates),
-            );
+            .add_systems(Update, missile_movement.in_set(InGameSet::EntityUpdates));
     }
 }
 

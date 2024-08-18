@@ -195,9 +195,61 @@ impl GlobalAction {
         create_dual_input(Self::PlanesInspector, KeyP, &mut input_map);
         input_map.insert(Self::Physics, F2);
         create_dual_input(Self::SpaceshipInspector, KeyCode::Digit3, &mut input_map);
-        create_dual_input(Self::SpaceshipMovementInspector, KeyCode::Digit4, &mut input_map);
+        create_dual_input(
+            Self::SpaceshipMovementInspector,
+            KeyCode::Digit4,
+            &mut input_map,
+        );
         input_map.insert(Self::Stars, F3);
 
         input_map
+    }
+}
+
+#[derive(Default)]
+pub struct ToggleState {
+    pub state: bool,
+}
+
+// todo: #doc document how to use toggle action and why it's cool
+// i couldn't have made this without gpt help - here's what it's telling me
+//
+// Each use of toggle_active() gets its own Local<ToggleState>.
+//
+// The Res<ActionState<GlobalAction>> is shared across the app, but each closure
+// gets its own reference to it.
+//
+// Bevy's dependency injection system automatically provides these resources
+// when the closure is executed, based on the types specified in the closure's
+// signature.
+//
+// the impl Fn(..) piece is the key in that we're telling rust
+// that "this function returns some type that implements the Fn(...) trait".
+// so instead of a concrete type, we're specifying a trait that the
+// returned type implements
+// rust infers the actual concrete type based on the function body - in this
+// case, a closure
+// so:  toggle_active takes normal args and returns
+//      * something that is a function (impl Fn)
+//      * takes these two other params that bevy can dependency inject just like
+//        systems
+//      * returns a bool
+//
+// this is crazy to me
+pub fn toggle_active(
+    default: bool,
+    action: GlobalAction,
+) -> impl Fn(Res<ActionState<GlobalAction>>, Local<ToggleState>) -> bool {
+    move |action_state: Res<ActionState<GlobalAction>>,
+          mut state: Local<ToggleState>| {
+        if action_state.just_pressed(&action) {
+            state.state = !state.state;
+        }
+
+        if state.state {
+            !default
+        } else {
+            default
+        }
     }
 }

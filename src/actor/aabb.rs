@@ -1,7 +1,4 @@
-use crate::{
-    input::GlobalAction,
-    utils::toggle_active,
-};
+use crate::input::{toggle_active, GlobalAction};
 use bevy::{
     color::palettes::tailwind,
     prelude::*,

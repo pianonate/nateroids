@@ -2,6 +2,7 @@ use crate::{
     actor::{
         actor_spawner::spawn_actor,
         actor_template::SpaceshipConfig,
+        spaceship_movement::SpaceshipMovementConfig,
     },
     boundary::Boundary,
     camera::PrimaryCamera,
@@ -16,7 +17,6 @@ use crate::{
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::Velocity;
 use leafwing_input_manager::prelude::*;
-use crate::actor::spaceship_movement::SpaceshipMovementConfig;
 
 #[derive(Component, Debug)]
 pub struct Spaceship;
@@ -76,7 +76,8 @@ fn toggle_continuous_fire(
     }
 }
 
-//todo: #bug - you don't need to bring boundary in except for nateroids spawning
+//todo: #bug - you don't need to bring boundary in except for nateroids
+// spawning
 // - make it optional
 fn spawn_spaceship(
     mut commands: Commands,
@@ -107,7 +108,6 @@ fn spaceship_movement_controls(
         // we can use this because there is only exactly one spaceship - so we're not
         // looping over the query
         if let Ok((mut spaceship_transform, mut velocity)) = q_spaceship.get_single_mut() {
-
             // dynamically update from inspector while game is running to change size
             spaceship_transform.scale = Vec3::splat(spaceship_config.0.scalar);
 
@@ -139,7 +139,6 @@ fn spaceship_movement_controls(
 
             let max_speed = movement_config.max_speed;
             let accel = movement_config.acceleration;
-               
 
             if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
                 apply_acceleration(

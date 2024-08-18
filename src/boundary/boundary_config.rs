@@ -9,10 +9,7 @@ use bevy_inspector_egui::{
     quick::ResourceInspectorPlugin,
 };
 
-use crate::{
-    input::GlobalAction,
-    utils::toggle_active,
-};
+use crate::input::{toggle_active, GlobalAction};
 
 pub struct BoundaryConfigPlugin;
 

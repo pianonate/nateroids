@@ -1,7 +1,9 @@
 use crate::{
     camera::lights::LightPosition,
-    input::GlobalAction,
-    utils::toggle_active,
+    input::{
+        toggle_active,
+        GlobalAction,
+    },
 };
 use bevy::{
     color::{

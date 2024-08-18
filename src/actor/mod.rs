@@ -6,8 +6,8 @@ pub(crate) mod health;
 pub mod missile;
 mod nateroid;
 mod spaceship;
-mod teleport;
 mod spaceship_movement;
+mod teleport;
 
 use crate::actor::{
     aabb::AabbPlugin,
@@ -16,9 +16,9 @@ use crate::actor::{
     missile::MissilePlugin,
     nateroid::NateroidPlugin,
     spaceship::SpaceshipPlugin,
+    spaceship_movement::SpaceshipMovementPlugin,
     teleport::TeleportPlugin,
 };
-use crate::actor::spaceship_movement::SpaceshipMovementPlugin;
 pub use crate::actor::{
     aabb::{
         get_scene_aabb,
@@ -27,7 +27,6 @@ pub use crate::actor::{
     actor_spawner::ColliderType,
     teleport::Teleporter,
 };
-
 
 use bevy::prelude::*;
 

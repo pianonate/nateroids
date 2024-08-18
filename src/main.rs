@@ -10,7 +10,6 @@ mod physics;
 mod schedule;
 mod splash;
 mod state;
-mod utils;
 
 use crate::{
     actor::ActorPlugin,

@@ -23,10 +23,6 @@ use crate::{
     },
     camera::RenderLayer,
     input::GlobalAction,
-    utils::{
-        random_vec3,
-        toggle_active,
-    },
 };
 use bevy::{
     ecs::system::EntityCommands,
@@ -40,7 +36,11 @@ use bevy_inspector_egui::{
 };
 use bevy_rapier3d::prelude::*;
 use rand::Rng;
-use std::fmt;
+use std::{
+    fmt,
+    ops::Range,
+};
+use crate::input::toggle_active;
 
 // this is how far off we are from blender for the assets we're loading
 // we need to get them scaled up to generate a usable aabb
@@ -422,6 +422,27 @@ fn initialize_actor_config(
     config.spawn_timer = spawn_timer;
     config.scene = scene_handle.clone();
     config
+}
+
+pub fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {
+    let mut rng = rand::thread_rng();
+    let x = if range_x.start < range_x.end {
+        rng.gen_range(range_x)
+    } else {
+        0.0
+    };
+    let y = if range_y.start < range_y.end {
+        rng.gen_range(range_y)
+    } else {
+        0.0
+    };
+    let z = if range_z.start < range_z.end {
+        rng.gen_range(range_z)
+    } else {
+        0.0
+    };
+
+    Vec3::new(x, y, z)
 }
 
 pub fn spawn_actor<'a>(
