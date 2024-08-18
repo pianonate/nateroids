@@ -1,6 +1,6 @@
 mod aabb;
 mod actor_config;
-mod initial_actor_config;
+mod ensemble_template;
 pub(crate) mod missile;
 mod movement;
 mod nateroid;

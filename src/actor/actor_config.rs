@@ -1,7 +1,7 @@
 use crate::{
     actor::{
         get_scene_aabb,
-        initial_actor_config::InitialEnsembleConfig,
+        ensemble_template::EnsembleTemplate,
         Aabb,
         Teleporter,
     },
@@ -130,11 +130,11 @@ pub struct ActorConfig {
     #[reflect(ignore)]
     pub collider:                 Collider,
     pub collider_type:            ColliderType,
-    pub collision_damage:         CollisionDamage,
+    pub collision_damage:         f32,
     #[reflect(ignore)]
     pub collision_groups:         CollisionGroups,
     pub gravity_scale:            f32,
-    pub health:                   Health,
+    pub health:                   f32,
     pub locked_axes:              LockedAxes,
     #[inspector(min = 0.0, max = 20.0, display = NumberDisplay::Slider)]
     pub mass:                     f32,
@@ -160,10 +160,10 @@ impl Default for ActorConfig {
             aabb:                     Aabb::default(),
             collider:                 Collider::cuboid(0.5, 0.5, 0.5),
             collider_type:            ColliderType::Cuboid,
-            collision_damage:         CollisionDamage(0.),
+            collision_damage:         0.,
             collision_groups:         CollisionGroups::default(),
             gravity_scale:            0.,
-            health:                   Health(0.),
+            health:                   0.,
             locked_axes:              LockedAxes::TRANSLATION_LOCKED_Z,
             mass:                     1.,
             render_layer:             RenderLayer::Both,
@@ -254,10 +254,10 @@ impl ActorBundle {
             aabb: config.aabb.clone(),
             active_events: ActiveEvents::COLLISION_EVENTS,
             collider: config.collider.clone(),
-            collision_damage: config.collision_damage.clone(),
+            collision_damage: CollisionDamage(config.collision_damage),
             collision_groups: config.collision_groups,
             gravity_scale: GravityScale(config.gravity_scale),
-            health: config.health.clone(),
+            health: Health(config.health),
             locked_axes: config.locked_axes,
             rigid_body: config.rigid_body,
             restitution: Restitution {
@@ -353,23 +353,23 @@ fn initialize_ensemble_config(
     scenes: Res<Assets<Scene>>,
     scene_assets: Res<SceneAssets>,
 ) {
-    let initial_config = InitialEnsembleConfig::default();
+    let actor_template = EnsembleTemplate::default();
 
     let ensemble_config = EnsembleConfig {
         spaceship: initialize_actor_config(
-            initial_config.spaceship,
+            actor_template.spaceship,
             &scenes,
             &meshes,
             &scene_assets.spaceship,
         ),
         nateroid:  initialize_actor_config(
-            initial_config.nateroid,
+            actor_template.nateroid,
             &scenes,
             &meshes,
             &scene_assets.nateroid,
         ),
         missile:   initialize_actor_config(
-            initial_config.missile,
+            actor_template.missile,
             &scenes,
             &meshes,
             &scene_assets.missile,

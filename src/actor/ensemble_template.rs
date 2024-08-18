@@ -17,7 +17,7 @@ use bevy::prelude::*;
 use bevy_rapier3d::dynamics::LockedAxes;
 
 #[derive(Resource, Clone, Debug)]
-pub struct InitialEnsembleConfig {
+pub struct EnsembleTemplate {
     pub spaceship: ActorConfig,
     pub nateroid:  ActorConfig,
     pub missile:   ActorConfig,
@@ -25,13 +25,13 @@ pub struct InitialEnsembleConfig {
 
 // todo: #rustquestion - why isn't rustfmt lining these up? it does if i get rid
 // of ..default()...
-impl Default for InitialEnsembleConfig {
+impl Default for EnsembleTemplate {
     fn default() -> Self {
         Self {
             missile:   ActorConfig {
                 actor_type: ActorType::Missile,
-                collision_damage: CollisionDamage(50.),
-                health: Health(1.),
+                collision_damage: 50.,
+                health: 1.,
                 mass: 0.1,
                 spawn_position_behavior: SpawnPositionBehavior::RelativeToParent {
                     offset: Vec3::new(0.5, 0., 0.),
@@ -47,8 +47,8 @@ impl Default for InitialEnsembleConfig {
             nateroid:  ActorConfig {
                 actor_type: ActorType::Nateroid,
                 collider_type: ColliderType::Cuboid,
-                collision_damage: CollisionDamage(10.),
-                health: Health(200.),
+                collision_damage: 10.,
+                health: 200.,
                 mass: 1.0,
                 restitution: 0.3,
                 // todo: handle3d - right now you're stopping the spawning in the z here
@@ -65,8 +65,8 @@ impl Default for InitialEnsembleConfig {
             },
             spaceship: ActorConfig {
                 actor_type: ActorType::Spaceship,
-                collision_damage: CollisionDamage(50.),
-                health: Health(500.),
+                collision_damage: 50.,
+                health: 500.,
                 mass: 10.0,
                 locked_axes: LockedAxes::ROTATION_LOCKED_X
                     | LockedAxes::ROTATION_LOCKED_Y
