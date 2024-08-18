@@ -7,9 +7,3 @@ pub struct Health(pub f32);
 
 #[derive(Reflect, Component, Clone, Debug)]
 pub struct CollisionDamage(pub f32);
-
-#[derive(Bundle)]
-pub struct HealthBundle {
-    pub(crate) collision_damage: CollisionDamage,
-    pub(crate) health:           Health,
-}

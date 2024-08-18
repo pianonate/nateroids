@@ -155,6 +155,7 @@ pub enum GlobalAction {
     PlanesInspector,
     Pause,
     SpaceshipInspector,
+    SpaceshipMovementInspector,
     Stars,
 }
 
@@ -173,6 +174,7 @@ pub enum GlobalAction {
 /// }
 /// ```
 impl GlobalAction {
+    //todo: #bug - do this with an enum to make sure you cover all types
     pub fn global_input_map() -> InputMap<Self> {
         let mut input_map = InputMap::default();
 
@@ -193,6 +195,7 @@ impl GlobalAction {
         create_dual_input(Self::PlanesInspector, KeyP, &mut input_map);
         input_map.insert(Self::Physics, F2);
         create_dual_input(Self::SpaceshipInspector, KeyCode::Digit3, &mut input_map);
+        create_dual_input(Self::SpaceshipMovementInspector, KeyCode::Digit4, &mut input_map);
         input_map.insert(Self::Stars, F3);
 
         input_map

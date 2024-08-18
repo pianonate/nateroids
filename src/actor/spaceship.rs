@@ -1,21 +1,10 @@
 use crate::{
     actor::{
-        movement::MovingObjectBundle,
-        GROUP_ASTEROID,
-        GROUP_SPACESHIP,
+        actor_spawner::spawn_actor,
+        actor_template::SpaceshipConfig,
     },
-    asset_loader::SceneAssets,
-    boundary::WallApproachVisual,
-    camera::{
-        PrimaryCamera,
-        RenderLayer,
-    },
-    collider_config::ColliderConfig,
-    health::{
-        CollisionDamage,
-        Health,
-        HealthBundle,
-    },
+    boundary::Boundary,
+    camera::PrimaryCamera,
     input::SpaceshipAction,
     orientation::{
         CameraOrientation,
@@ -24,16 +13,10 @@ use crate::{
     schedule::InGameSet,
     state::GameState,
 };
-use bevy::{
-    prelude::*,
-    render::view::visibility::RenderLayers,
-};
-use bevy_rapier3d::prelude::{
-    CollisionGroups,
-    LockedAxes,
-    Velocity,
-};
+use bevy::prelude::*;
+use bevy_rapier3d::prelude::Velocity;
 use leafwing_input_manager::prelude::*;
+use crate::actor::spaceship_movement::SpaceshipMovementConfig;
 
 #[derive(Component, Debug)]
 pub struct Spaceship;
@@ -93,63 +76,30 @@ fn toggle_continuous_fire(
     }
 }
 
+//todo: #bug - you don't need to bring boundary in except for nateroids spawning
+// - make it optional
 fn spawn_spaceship(
     mut commands: Commands,
-    collider_config: Res<ColliderConfig>,
-    scene_assets: Res<SceneAssets>,
+    spaceship_config: Res<SpaceshipConfig>,
+    boundary: Res<Boundary>,
 ) {
-    if !collider_config.spaceship.spawnable {
+    if !spaceship_config.0.spawnable {
         return;
     }
 
-    let spaceship_config = &collider_config.spaceship;
     let spaceship_input = InputManagerBundle::with_map(SpaceshipAction::spaceship_input_map());
 
-    let collider = spaceship_config.collider.clone();
-
-    let spaceship = commands
-        .spawn(Spaceship)
-        .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
-        .insert(HealthBundle {
-            collision_damage: CollisionDamage(spaceship_config.damage),
-            health:           Health(spaceship_config.health),
-        })
-        .insert(MovingObjectBundle {
-            aabb: spaceship_config.aabb.clone(),
-            collider,
-            collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
-            locked_axes: LockedAxes::TRANSLATION_LOCKED_Z
-                | LockedAxes::ROTATION_LOCKED_X
-                | LockedAxes::ROTATION_LOCKED_Y,
-            mass: spaceship_config.mass,
-            model: SceneBundle {
-                scene: scene_assets.spaceship.clone(),
-                transform: Transform {
-                    translation: spaceship_config.spawn_point,
-                    scale:       Vec3::splat(spaceship_config.scalar),
-                    rotation:    Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2),
-                },
-                ..default()
-            },
-            restitution: spaceship_config.restitution,
-            ..default()
-        })
+    spawn_actor(&mut commands, &spaceship_config.0, None, boundary)
         .insert(spaceship_input)
-        .insert(WallApproachVisual::default())
-        .id();
-
-    crate::actor::actor_spawner::name_entity(
-        &mut commands,
-        spaceship,
-        collider_config.spaceship.name.to_owned(),
-    );
+        .insert(Spaceship);
 }
 
 fn spaceship_movement_controls(
     mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
     q_camera: Query<&Transform, (With<PrimaryCamera>, Without<Spaceship>)>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
-    collider_config: Res<ColliderConfig>,
+    spaceship_config: Res<SpaceshipConfig>,
+    movement_config: Res<SpaceshipMovementConfig>,
     time: Res<Time>,
     orientation_mode: Res<CameraOrientation>,
 ) {
@@ -157,16 +107,15 @@ fn spaceship_movement_controls(
         // we can use this because there is only exactly one spaceship - so we're not
         // looping over the query
         if let Ok((mut spaceship_transform, mut velocity)) = q_spaceship.get_single_mut() {
-            let spaceship_config = &collider_config.spaceship;
 
-            // dynamically update from inspector while game is running
-            spaceship_transform.scale = Vec3::splat(spaceship_config.scalar);
+            // dynamically update from inspector while game is running to change size
+            spaceship_transform.scale = Vec3::splat(spaceship_config.0.scalar);
 
             let spaceship_action = q_input_map.single();
 
             let mut rotation = 0.0;
             let delta_seconds = time.delta_seconds();
-            let rotation_speed = spaceship_config.rotation_speed;
+            let rotation_speed = movement_config.rotation_speed;
 
             if spaceship_action.pressed(&SpaceshipAction::TurnRight) {
                 // right
@@ -188,11 +137,9 @@ fn spaceship_movement_controls(
             // rotate around the z-axis
             spaceship_transform.rotate_z(rotation);
 
-            let max_speed = spaceship_config.linear_velocity;
-
-            let accel = spaceship_config
-                .acceleration
-                .expect("did you delete spaceship acceleration?");
+            let max_speed = movement_config.max_speed;
+            let accel = movement_config.acceleration;
+               
 
             if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
                 apply_acceleration(

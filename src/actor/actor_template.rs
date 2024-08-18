@@ -69,8 +69,7 @@ impl Default for NateroidConfig {
             mass: 1.0,
             restitution: 0.3,
             spawn_position_behavior: SpawnPositionBehavior::RandomWithinBounds {
-                scale_factor:    Vec3::new(0.5, 0.5, 0.0),
-                random_rotation: true,
+                scale_factor: Vec3::new(0.5, 0.5, 0.0),
             },
             velocity_behavior: VelocityBehavior::Random {
                 linvel: 30.0,
@@ -94,6 +93,7 @@ impl Default for SpaceshipConfig {
                 | LockedAxes::ROTATION_LOCKED_Y
                 | LockedAxes::TRANSLATION_LOCKED_Z,
             restitution: 0.1,
+            rotation: Some(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
             scalar: 0.8,
             spawn_position_behavior: SpawnPositionBehavior::Fixed(Vec3::new(0.0, -20.0, 0.0)),
             velocity_behavior: VelocityBehavior::Fixed(Vec3::ZERO),

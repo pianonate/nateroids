@@ -1,11 +1,8 @@
 use bevy::prelude::*;
-use bevy_rapier3d::{
-    geometry::Group,
-    prelude::CollisionEvent,
-};
+use bevy_rapier3d::prelude::CollisionEvent;
 
 use crate::{
-    health::{
+    actor::health::{
         CollisionDamage,
         Health,
     },

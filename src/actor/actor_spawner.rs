@@ -6,6 +6,10 @@ use crate::{
             SpaceshipConfig,
         },
         get_scene_aabb,
+        health::{
+            CollisionDamage,
+            Health,
+        },
         Aabb,
         Teleporter,
     },
@@ -18,10 +22,6 @@ use crate::{
         WallApproachVisual,
     },
     camera::RenderLayer,
-    health::{
-        CollisionDamage,
-        Health,
-    },
     input::GlobalAction,
     utils::{
         random_vec3,
@@ -80,13 +80,8 @@ pub enum ColliderType {
 #[derive(Reflect, Debug, Clone)]
 pub enum SpawnPositionBehavior {
     Fixed(Vec3),
-    RandomWithinBounds {
-        scale_factor:    Vec3,
-        random_rotation: bool,
-    },
-    ForwardFromParent {
-        distance: f32,
-    },
+    RandomWithinBounds { scale_factor: Vec3 },
+    ForwardFromParent { distance: f32 },
 }
 
 #[derive(Reflect, Debug, Clone)]
@@ -159,6 +154,7 @@ pub struct ActorConfig {
     pub restitution:              f32,
     pub restitution_combine_rule: CoefficientCombineRule,
     pub rigid_body:               RigidBody,
+    pub rotation:                 Option<Quat>,
     #[inspector(min = 0.1, max = 10.0, display = NumberDisplay::Slider)]
     pub scalar:                   f32,
     #[reflect(ignore)]
@@ -188,6 +184,7 @@ impl Default for ActorConfig {
             restitution:              1.,
             restitution_combine_rule: CoefficientCombineRule::Max,
             rigid_body:               RigidBody::Dynamic,
+            rotation:                 None,
             scalar:                   1.,
             scene:                    Handle::default(),
             spawn_position_behavior:  SpawnPositionBehavior::Fixed(Vec3::ZERO),
@@ -204,15 +201,10 @@ impl ActorConfig {
         parent: Option<(&Transform, &Aabb)>,
         boundary: Res<Boundary>,
     ) -> Transform {
-        match &self.spawn_position_behavior {
-            SpawnPositionBehavior::Fixed(position) => {
-                Transform::from_translation(*position).with_scale(Vec3::splat(self.scalar))
-            },
+        let transform = match &self.spawn_position_behavior {
+            SpawnPositionBehavior::Fixed(position) => Transform::from_translation(*position),
 
-            SpawnPositionBehavior::RandomWithinBounds {
-                scale_factor,
-                random_rotation,
-            } => {
+            SpawnPositionBehavior::RandomWithinBounds { scale_factor } => {
                 let bounds = Transform {
                     translation: boundary.transform.translation,
                     scale: boundary.transform.scale * *scale_factor,
@@ -220,12 +212,9 @@ impl ActorConfig {
                 };
                 let position = get_random_position_within_bounds(&bounds);
 
-                let mut transform =
-                    Transform::from_translation(position).with_scale(Vec3::splat(self.scalar));
+                let mut transform = Transform::from_translation(position);
 
-                if *random_rotation {
-                    transform.rotation = get_random_rotation();
-                }
+                transform.rotation = get_random_rotation();
 
                 transform
             },
@@ -240,12 +229,18 @@ impl ActorConfig {
                     let spawn_position =
                         parent_transform.translation + forward * (forward_extent + *distance);
                     Transform::from_translation(spawn_position)
-                        .with_rotation(parent_transform.rotation)
-                        .with_scale(Vec3::splat(self.scalar))
                 } else {
-                    Transform::from_translation(Vec3::ZERO).with_scale(Vec3::splat(self.scalar))
+                    Transform::from_translation(Vec3::ZERO)
                 }
             },
+        };
+
+        if let Some(rotation) = self.rotation {
+            transform
+                .with_rotation(rotation)
+                .with_scale(Vec3::splat(self.scalar))
+        } else {
+            transform.with_scale(Vec3::splat(self.scalar))
         }
     }
 }
@@ -429,18 +424,6 @@ fn initialize_actor_config(
     config
 }
 
-// pub fn spawn_actor(
-//     commands: &mut Commands,
-//     config: &ActorConfig,
-//     parent: Option<(&Transform, &Velocity)>,
-//     boundary: Res<Boundary>,
-// ) {
-//     let bundle = ActorBundle::new(config, parent, boundary);
-//
-//     let entity = commands.spawn(bundle).id();
-//
-//     name_entity(commands, entity, config.actor_kind.to_string());
-// }
 pub fn spawn_actor<'a>(
     commands: &'a mut Commands,
     config: &ActorConfig,
@@ -455,11 +438,4 @@ pub fn spawn_actor<'a>(
         .id();
 
     commands.entity(entity)
-}
-
-// provides a way to name entities that includes their entity id - for debugging
-pub fn name_entity(commands: &mut Commands, entity: Entity, name: String) {
-    commands
-        .entity(entity)
-        .insert(Name::new(format!("{} {}", name, entity)));
 }

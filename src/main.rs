@@ -3,10 +3,7 @@ mod actor;
 mod asset_loader;
 mod boundary;
 mod camera;
-mod collider_config;
-mod collision_detection;
 mod despawn;
-mod health;
 mod input;
 mod orientation;
 mod physics;
@@ -20,8 +17,6 @@ use crate::{
     asset_loader::AssetLoaderPlugin,
     boundary::BoundaryPlugin,
     camera::CameraPlugin,
-    collider_config::ColliderConfigPlugin,
-    collision_detection::CollisionDetectionPlugin,
     despawn::DespawnPlugin,
     input::InputPlugin,
     orientation::OrientationPlugin,
@@ -64,8 +59,6 @@ fn main() {
         AssetLoaderPlugin,
         BoundaryPlugin,
         CameraPlugin,
-        CollisionDetectionPlugin,
-        ColliderConfigPlugin,
         ActorPlugin,
         DespawnPlugin,
         InputPlugin,

@@ -29,7 +29,7 @@ impl Plugin for MissilePlugin {
         app.add_systems(Update, fire_missile.in_set(InGameSet::UserInput))
             .add_systems(
                 Update,
-                (missile_movement/* , missile_party */).in_set(InGameSet::EntityUpdates),
+                missile_movement.in_set(InGameSet::EntityUpdates),
             );
     }
 }
