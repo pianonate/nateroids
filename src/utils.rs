@@ -4,13 +4,6 @@ use leafwing_input_manager::action_state::ActionState;
 use rand::Rng;
 use std::ops::Range;
 
-// provides a way to name entities that includes their entity id - for debugging
-pub fn name_entity(commands: &mut Commands, entity: Entity, name: String) {
-    commands
-        .entity(entity)
-        .insert(Name::new(format!("{} {}", name, entity)));
-}
-
 #[derive(Default)]
 pub struct ToggleState {
     pub state: bool,

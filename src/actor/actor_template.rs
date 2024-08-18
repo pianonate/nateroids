@@ -15,7 +15,16 @@ use crate::actor::{
 };
 use bevy::prelude::*;
 use bevy_inspector_egui::InspectorOptions;
-use bevy_rapier3d::dynamics::LockedAxes;
+use bevy_rapier3d::{
+    dynamics::LockedAxes,
+    geometry::Group,
+    prelude::CollisionGroups,
+};
+
+pub const GROUP_SPACESHIP: Group = Group::GROUP_1;
+pub const GROUP_ASTEROID: Group = Group::GROUP_2;
+pub const GROUP_MISSILE: Group = Group::GROUP_3;
+
 #[derive(Resource, Reflect, InspectorOptions, Debug, Clone)]
 #[reflect(Resource)]
 pub struct MissileConfig(pub ActorConfig);
@@ -35,11 +44,10 @@ impl Default for MissileConfig {
         Self(ActorConfig {
             actor_kind: ActorKind::Missile,
             collision_damage: 50.,
+            collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
             health: 1.,
             mass: 0.1,
-            spawn_position_behavior: SpawnPositionBehavior::RelativeToParent {
-                offset: Vec3::new(0.5, 0., 0.),
-            },
+            spawn_position_behavior: SpawnPositionBehavior::ForwardFromParent { distance: 0.5 },
             scalar: 2.5,
             spawn_timer_seconds: Some(1.0 / 20.0),
             velocity_behavior: VelocityBehavior::RelativeToParent {
@@ -79,6 +87,7 @@ impl Default for SpaceshipConfig {
         Self(ActorConfig {
             actor_kind: ActorKind::Spaceship,
             collision_damage: 50.,
+            collision_groups: CollisionGroups::new(GROUP_SPACESHIP, GROUP_ASTEROID),
             health: 500.,
             mass: 10.0,
             locked_axes: LockedAxes::ROTATION_LOCKED_X

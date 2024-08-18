@@ -4,10 +4,7 @@ mod visuals;
 mod wall_approach;
 
 pub use crate::boundary::{
-    boundary_config::{
-        BoundaryConfig,
-        PlaneConfig,
-    },
+    boundary_config::PlaneConfig,
     visuals::Boundary,
     wall_approach::WallApproachVisual,
 };

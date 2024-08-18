@@ -12,10 +12,6 @@ use crate::{
     schedule::InGameSet,
 };
 
-pub const GROUP_SPACESHIP: Group = Group::GROUP_1;
-pub const GROUP_ASTEROID: Group = Group::GROUP_2;
-pub const GROUP_MISSILE: Group = Group::GROUP_3;
-
 pub struct CollisionDetectionPlugin;
 
 impl Plugin for CollisionDetectionPlugin {

@@ -21,6 +21,10 @@ pub use crate::actor::{
         Aabb,
     },
     actor_spawner::ColliderType,
+    actor_template::{
+        GROUP_ASTEROID,
+        GROUP_SPACESHIP,
+    },
     teleport::Teleporter,
 };
 

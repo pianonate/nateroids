@@ -24,12 +24,12 @@ use crate::{
     },
     input::GlobalAction,
     utils::{
-        name_entity,
         random_vec3,
         toggle_active,
     },
 };
 use bevy::{
+    ecs::system::EntityCommands,
     prelude::*,
     render::view::RenderLayers,
 };
@@ -84,8 +84,8 @@ pub enum SpawnPositionBehavior {
         scale_factor:    Vec3,
         random_rotation: bool,
     },
-    RelativeToParent {
-        offset: Vec3,
+    ForwardFromParent {
+        distance: f32,
     },
 }
 
@@ -199,7 +199,11 @@ impl Default for ActorConfig {
 }
 
 impl ActorConfig {
-    fn calculate_spawn_transform(&self, boundary: Res<Boundary>) -> Transform {
+    fn calculate_spawn_transform(
+        &self,
+        parent: Option<(&Transform, &Aabb)>,
+        boundary: Res<Boundary>,
+    ) -> Transform {
         match &self.spawn_position_behavior {
             SpawnPositionBehavior::Fixed(position) => {
                 Transform::from_translation(*position).with_scale(Vec3::splat(self.scalar))
@@ -226,9 +230,21 @@ impl ActorConfig {
                 transform
             },
 
-            SpawnPositionBehavior::RelativeToParent { offset } => {
-                // Implementation remains the same
-                Transform::from_translation(*offset).with_scale(Vec3::splat(self.scalar))
+            SpawnPositionBehavior::ForwardFromParent { distance } => {
+                if let Some((parent_transform, parent_aabb)) = parent {
+                    let forward = -parent_transform.forward();
+                    let half_extents = parent_aabb.half_extents();
+                    let world_half_extents =
+                        parent_transform.rotation * (half_extents * parent_transform.scale);
+                    let forward_extent = forward.dot(world_half_extents);
+                    let spawn_position =
+                        parent_transform.translation + forward * (forward_extent + *distance);
+                    Transform::from_translation(spawn_position)
+                        .with_rotation(parent_transform.rotation)
+                        .with_scale(Vec3::splat(self.scalar))
+                } else {
+                    Transform::from_translation(Vec3::ZERO).with_scale(Vec3::splat(self.scalar))
+                }
             },
         }
     }
@@ -258,11 +274,15 @@ pub struct ActorBundle {
 impl ActorBundle {
     pub fn new(
         config: &ActorConfig,
-        parent: Option<(&Transform, &Velocity)>,
+        parent: Option<(&Transform, &Velocity, &Aabb)>,
         boundary: Res<Boundary>,
     ) -> Self {
-        let (parent_transform, parent_velocity) = parent.unzip();
-        let transform = config.calculate_spawn_transform(boundary);
+        let parent_transform = parent.map(|(t, _, _)| t);
+        let parent_velocity = parent.map(|(_, v, _)| v);
+        let parent_aabb = parent.map(|(_, _, a)| a);
+
+        let transform =
+            config.calculate_spawn_transform(parent_transform.zip(parent_aabb), boundary);
         let velocity = config
             .velocity_behavior
             .calculate_velocity(parent_velocity, parent_transform);
@@ -409,15 +429,37 @@ fn initialize_actor_config(
     config
 }
 
-pub fn spawn_actor(
-    commands: &mut Commands,
+// pub fn spawn_actor(
+//     commands: &mut Commands,
+//     config: &ActorConfig,
+//     parent: Option<(&Transform, &Velocity)>,
+//     boundary: Res<Boundary>,
+// ) {
+//     let bundle = ActorBundle::new(config, parent, boundary);
+//
+//     let entity = commands.spawn(bundle).id();
+//
+//     name_entity(commands, entity, config.actor_kind.to_string());
+// }
+pub fn spawn_actor<'a>(
+    commands: &'a mut Commands,
     config: &ActorConfig,
-    parent: Option<(&Transform, &Velocity)>,
+    parent: Option<(&Transform, &Velocity, &Aabb)>,
     boundary: Res<Boundary>,
-) {
+) -> EntityCommands<'a> {
     let bundle = ActorBundle::new(config, parent, boundary);
 
-    let entity = commands.spawn(bundle).id();
+    let entity = commands
+        .spawn(bundle)
+        .insert(Name::new(config.actor_kind.to_string()))
+        .id();
 
-    name_entity(commands, entity, config.actor_kind.to_string());
+    commands.entity(entity)
+}
+
+// provides a way to name entities that includes their entity id - for debugging
+pub fn name_entity(commands: &mut Commands, entity: Entity, name: String) {
+    commands
+        .entity(entity)
+        .insert(Name::new(format!("{} {}", name, entity)));
 }

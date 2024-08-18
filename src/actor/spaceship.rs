@@ -1,23 +1,28 @@
 use crate::{
+    actor::{
+        movement::MovingObjectBundle,
+        GROUP_ASTEROID,
+        GROUP_SPACESHIP,
+    },
     asset_loader::SceneAssets,
+    boundary::WallApproachVisual,
     camera::{
         PrimaryCamera,
         RenderLayer,
     },
     collider_config::ColliderConfig,
-    collision_detection::{
-        GROUP_ASTEROID,
-        GROUP_SPACESHIP,
-    },
     health::{
         CollisionDamage,
         Health,
         HealthBundle,
     },
     input::SpaceshipAction,
+    orientation::{
+        CameraOrientation,
+        OrientationType,
+    },
     schedule::InGameSet,
     state::GameState,
-    utils::name_entity,
 };
 use bevy::{
     prelude::*,
@@ -27,15 +32,6 @@ use bevy_rapier3d::prelude::{
     CollisionGroups,
     LockedAxes,
     Velocity,
-};
-
-use crate::{
-    actor::movement::MovingObjectBundle,
-    boundary::WallApproachVisual,
-    orientation::{
-        CameraOrientation,
-        OrientationType,
-    },
 };
 use leafwing_input_manager::prelude::*;
 
@@ -142,7 +138,7 @@ fn spawn_spaceship(
         .insert(WallApproachVisual::default())
         .id();
 
-    name_entity(
+    crate::actor::actor_spawner::name_entity(
         &mut commands,
         spaceship,
         collider_config.spaceship.name.to_owned(),
