@@ -29,10 +29,8 @@ use crate::{
 use crate::{
     actor::{
         aabb::Aabb,
-        actor_config::{
-            ActorConfig,
-            EnsembleConfig,
-        },
+        actor_spawner::ActorConfig,
+        actor_template::MissileConfig,
         movement::MovingObjectBundle,
         spaceship::{
             ContinuousFire,
@@ -46,6 +44,7 @@ use crate::{
     },
     collider_config::ColliderConstant,
 };
+
 use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
@@ -149,7 +148,7 @@ fn fire_missile(
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(&Transform, &Velocity, &Aabb, Option<&ContinuousFire>), With<Spaceship>>,
     collider_config: ResMut<ColliderConfig>,
-    mut ensemble_config: ResMut<EnsembleConfig>,
+    mut missile_config: ResMut<MissileConfig>,
 
     time: Res<Time>,
     res: FireResources,
@@ -158,7 +157,7 @@ fn fire_missile(
     //     return;
     // }
 
-    if !ensemble_config.missile.spawnable {
+    if !missile_config.0.spawnable {
         return;
     }
 
@@ -171,7 +170,7 @@ fn fire_missile(
     if !should_fire(
         continuous_fire,
         //&mut collider_config.missile,
-        &mut ensemble_config.missile,
+        &mut missile_config.0,
         time,
         q_input_map,
     ) {

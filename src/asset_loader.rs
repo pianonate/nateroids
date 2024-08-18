@@ -6,7 +6,8 @@ pub struct AssetLoaderPlugin;
 
 impl Plugin for AssetLoaderPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<SceneAssets>()
+        app.init_state::<AssetsState>() // necessary to tell if they've finished loading
+            .init_resource::<SceneAssets>()
             // make sure this loads before the spaceship uses it - right now that is
             // handled by running this PreStartup and spaceship in Startup
             .add_systems(PreStartup, load_assets)

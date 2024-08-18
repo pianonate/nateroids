@@ -14,10 +14,8 @@ use lights::DirectionalLightsPlugin;
 pub use primary_camera::PrimaryCamera;
 use primary_camera::PrimaryCameraPlugin;
 use star_twinkling::StarTwinklingPlugin;
+pub use stars::StarsCamera;
 use stars::StarsPlugin;
-pub use stars::{
-    StarsCamera,
-};
 
 pub struct CameraPlugin;
 

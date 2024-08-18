@@ -10,7 +10,6 @@ use bevy::prelude::{
         KeyB,
         KeyC,
         KeyD,
-        KeyE,
         KeyF,
         KeyL,
         KeyP,
@@ -149,11 +148,13 @@ pub enum GlobalAction {
     BoundaryInspector,
     CameraInspector,
     Debug,
-    ActorInspector,
     LightsInspector,
+    MissileInspector,
+    NateroidInspector,
     Physics,
     PlanesInspector,
     Pause,
+    SpaceshipInspector,
     Stars,
 }
 
@@ -185,11 +186,13 @@ impl GlobalAction {
         create_dual_input(Self::BoundaryInspector, KeyB, &mut input_map);
         create_dual_input(Self::CameraInspector, KeyC, &mut input_map);
         create_dual_input(Self::Debug, KeyD, &mut input_map);
-        create_dual_input(Self::ActorInspector, KeyE, &mut input_map);
         create_dual_input(Self::LightsInspector, KeyL, &mut input_map);
+        create_dual_input(Self::MissileInspector, KeyCode::Digit1, &mut input_map);
+        create_dual_input(Self::NateroidInspector, KeyCode::Digit2, &mut input_map);
         input_map.insert(Self::Pause, Escape);
         create_dual_input(Self::PlanesInspector, KeyP, &mut input_map);
         input_map.insert(Self::Physics, F2);
+        create_dual_input(Self::SpaceshipInspector, KeyCode::Digit3, &mut input_map);
         input_map.insert(Self::Stars, F3);
 
         input_map

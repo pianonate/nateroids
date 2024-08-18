@@ -1,6 +1,6 @@
 mod aabb;
-mod actor_config;
-mod ensemble_template;
+mod actor_spawner;
+mod actor_template;
 pub(crate) mod missile;
 mod movement;
 mod nateroid;
@@ -9,7 +9,7 @@ mod teleport;
 
 use crate::actor::{
     aabb::AabbPlugin,
-    actor_config::ActorConfigPlugin,
+    actor_spawner::ActorSpawner,
     missile::MissilePlugin,
     nateroid::NateroidPlugin,
     spaceship::SpaceshipPlugin,
@@ -20,9 +20,10 @@ pub use crate::actor::{
         get_scene_aabb,
         Aabb,
     },
-    actor_config::ColliderType,
+    actor_spawner::ColliderType,
     teleport::Teleporter,
 };
+
 use bevy::prelude::*;
 
 pub struct ActorPlugin;
@@ -30,7 +31,7 @@ pub struct ActorPlugin;
 impl Plugin for ActorPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(AabbPlugin)
-            .add_plugins(ActorConfigPlugin)
+            .add_plugins(ActorSpawner)
             .add_plugins(MissilePlugin)
             .add_plugins(NateroidPlugin)
             .add_plugins(SpaceshipPlugin)

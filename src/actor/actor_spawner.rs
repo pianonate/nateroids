@@ -1,7 +1,11 @@
 use crate::{
     actor::{
+        actor_template::{
+            MissileConfig,
+            NateroidConfig,
+            SpaceshipConfig,
+        },
         get_scene_aabb,
-        ensemble_template::EnsembleTemplate,
         Aabb,
         Teleporter,
     },
@@ -9,7 +13,10 @@ use crate::{
         AssetsState,
         SceneAssets,
     },
-    boundary::WallApproachVisual,
+    boundary::{
+        Boundary,
+        WallApproachVisual,
+    },
     camera::RenderLayer,
     health::{
         CollisionDamage,
@@ -34,7 +41,6 @@ use bevy_inspector_egui::{
 use bevy_rapier3d::prelude::*;
 use rand::Rng;
 use std::fmt;
-use crate::boundary::Boundary;
 
 // this is how far off we are from blender for the assets we're loading
 // we need to get them scaled up to generate a usable aabb
@@ -42,15 +48,25 @@ const BLENDER_SCALE: f32 = 100.;
 
 // call flow is to initialize the ensemble config which has the defaults
 // for an actor - configure defaults in initial_actor_config.rs
-pub struct ActorConfigPlugin;
-impl Plugin for ActorConfigPlugin {
+pub struct ActorSpawner;
+
+impl Plugin for ActorSpawner {
     fn build(&self, app: &mut App) {
-        app.init_state::<AssetsState>()
-            .register_type::<EnsembleConfig>()
-            .add_systems(OnEnter(AssetsState::Loaded), initialize_ensemble_config)
+        app.register_type::<MissileConfig>()
+            .register_type::<NateroidConfig>()
+            .register_type::<SpaceshipConfig>()
+            .add_systems(OnEnter(AssetsState::Loaded), initialize_actor_configs)
             .add_plugins(
-                ResourceInspectorPlugin::<EnsembleConfig>::default()
-                    .run_if(toggle_active(false, GlobalAction::ActorInspector)),
+                ResourceInspectorPlugin::<MissileConfig>::default()
+                    .run_if(toggle_active(false, GlobalAction::MissileInspector)),
+            )
+            .add_plugins(
+                ResourceInspectorPlugin::<NateroidConfig>::default()
+                    .run_if(toggle_active(false, GlobalAction::NateroidInspector)),
+            )
+            .add_plugins(
+                ResourceInspectorPlugin::<SpaceshipConfig>::default()
+                    .run_if(toggle_active(false, GlobalAction::SpaceshipInspector)),
             );
     }
 }
@@ -65,7 +81,7 @@ pub enum ColliderType {
 pub enum SpawnPositionBehavior {
     Fixed(Vec3),
     RandomWithinBounds {
-        scale_factor: Vec3,
+        scale_factor:    Vec3,
         random_rotation: bool,
     },
     RelativeToParent {
@@ -126,7 +142,7 @@ pub struct ActorConfig {
     #[reflect(ignore)]
     pub aabb:                     Aabb,
     #[reflect(ignore)]
-    pub actor_type:               ActorType,
+    pub actor_kind:               ActorKind,
     #[reflect(ignore)]
     pub collider:                 Collider,
     pub collider_type:            ColliderType,
@@ -145,6 +161,8 @@ pub struct ActorConfig {
     pub rigid_body:               RigidBody,
     #[inspector(min = 0.1, max = 10.0, display = NumberDisplay::Slider)]
     pub scalar:                   f32,
+    #[reflect(ignore)]
+    pub scene:                    Handle<Scene>,
     pub spawn_position_behavior:  SpawnPositionBehavior,
     pub spawn_timer_seconds:      Option<f32>,
     #[reflect(ignore)]
@@ -156,7 +174,7 @@ impl Default for ActorConfig {
     fn default() -> Self {
         Self {
             spawnable:                true,
-            actor_type:               ActorType::default(),
+            actor_kind:               ActorKind::default(),
             aabb:                     Aabb::default(),
             collider:                 Collider::cuboid(0.5, 0.5, 0.5),
             collider_type:            ColliderType::Cuboid,
@@ -171,6 +189,7 @@ impl Default for ActorConfig {
             restitution_combine_rule: CoefficientCombineRule::Max,
             rigid_body:               RigidBody::Dynamic,
             scalar:                   1.,
+            scene:                    Handle::default(),
             spawn_position_behavior:  SpawnPositionBehavior::Fixed(Vec3::ZERO),
             spawn_timer_seconds:      None,
             spawn_timer:              None,
@@ -181,31 +200,32 @@ impl Default for ActorConfig {
 
 impl ActorConfig {
     fn calculate_spawn_transform(&self, boundary: Res<Boundary>) -> Transform {
-       
         match &self.spawn_position_behavior {
             SpawnPositionBehavior::Fixed(position) => {
                 Transform::from_translation(*position).with_scale(Vec3::splat(self.scalar))
             },
-            
-            SpawnPositionBehavior::RandomWithinBounds { scale_factor, random_rotation } => {
-                
+
+            SpawnPositionBehavior::RandomWithinBounds {
+                scale_factor,
+                random_rotation,
+            } => {
                 let bounds = Transform {
                     translation: boundary.transform.translation,
                     scale: boundary.transform.scale * *scale_factor,
                     ..default()
                 };
                 let position = get_random_position_within_bounds(&bounds);
-                
-                let mut transform = Transform::from_translation(position)
-                    .with_scale(Vec3::splat(self.scalar));
-                
+
+                let mut transform =
+                    Transform::from_translation(position).with_scale(Vec3::splat(self.scalar));
+
                 if *random_rotation {
                     transform.rotation = get_random_rotation();
                 }
-                
+
                 transform
             },
-            
+
             SpawnPositionBehavior::RelativeToParent { offset } => {
                 // Implementation remains the same
                 Transform::from_translation(*offset).with_scale(Vec3::splat(self.scalar))
@@ -216,7 +236,7 @@ impl ActorConfig {
 
 #[derive(Bundle)]
 pub struct ActorBundle {
-    pub actor_type:       ActorType,
+    pub actor_kind:       ActorKind,
     pub aabb:             Aabb,
     pub active_events:    ActiveEvents,
     pub collider:         Collider,
@@ -238,10 +258,8 @@ pub struct ActorBundle {
 impl ActorBundle {
     pub fn new(
         config: &ActorConfig,
-        scene: Handle<Scene>,
         parent: Option<(&Transform, &Velocity)>,
         boundary: Res<Boundary>,
-
     ) -> Self {
         let (parent_transform, parent_velocity) = parent.unzip();
         let transform = config.calculate_spawn_transform(boundary);
@@ -250,7 +268,7 @@ impl ActorBundle {
             .calculate_velocity(parent_velocity, parent_transform);
 
         Self {
-            actor_type: config.actor_type,
+            actor_kind: config.actor_kind,
             aabb: config.aabb.clone(),
             active_events: ActiveEvents::COLLISION_EVENTS,
             collider: config.collider.clone(),
@@ -267,7 +285,7 @@ impl ActorBundle {
             mass_properties: ColliderMassProperties::Mass(config.mass),
             render_layers: RenderLayers::from_layers(config.render_layer.layers()),
             scene_bundle: SceneBundle {
-                scene,
+                scene: config.scene.clone(),
                 transform,
                 ..default()
             },
@@ -287,7 +305,7 @@ fn get_random_position_within_bounds(bounds: &Transform) -> Vec3 {
     Vec3::new(
         get_random_component(min.x, max.x, &mut rng),
         get_random_component(min.y, max.y, &mut rng),
-        get_random_component(min.z, max.z, &mut rng), 
+        get_random_component(min.z, max.z, &mut rng),
     )
 }
 
@@ -306,77 +324,57 @@ fn get_random_rotation() -> Quat {
         EulerRot::XYZ,
         rng.gen_range(-std::f32::consts::PI..std::f32::consts::PI),
         rng.gen_range(-std::f32::consts::PI..std::f32::consts::PI),
-        rng.gen_range(-std::f32::consts::PI..std::f32::consts::PI)
+        rng.gen_range(-std::f32::consts::PI..std::f32::consts::PI),
     )
 }
 
 #[derive(Component, Reflect, Copy, Clone, Debug, Default)]
-pub enum ActorType {
+pub enum ActorKind {
     #[default]
     Missile,
     Nateroid,
     Spaceship,
 }
 
-impl fmt::Display for ActorType {
+impl fmt::Display for ActorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ActorType::Missile => write!(f, "Missile"),
-            ActorType::Nateroid => write!(f, "Nateroid"),
-            ActorType::Spaceship => write!(f, "Spaceship"),
+            ActorKind::Missile => write!(f, "Missile"),
+            ActorKind::Nateroid => write!(f, "Nateroid"),
+            ActorKind::Spaceship => write!(f, "Spaceship"),
         }
     }
 }
 
-// Create configurations for different entity types
-#[derive(Resource, Reflect, InspectorOptions, Debug, Clone)]
-#[reflect(Resource, InspectorOptions)]
-pub struct EnsembleConfig {
-    pub(crate) missile:  ActorConfig,
-    pub(crate) nateroid: ActorConfig,
-    spaceship:           ActorConfig,
-}
-
-impl EnsembleConfig {
-    pub fn get_actor_config(&self, actor_type: ActorType) -> &ActorConfig {
-        match actor_type {
-            ActorType::Spaceship => &self.spaceship,
-            ActorType::Nateroid => &self.nateroid,
-            ActorType::Missile => &self.missile,
-        }
-    }
-}
-
-fn initialize_ensemble_config(
+fn initialize_actor_configs(
     mut commands: Commands,
     meshes: Res<Assets<Mesh>>,
     scenes: Res<Assets<Scene>>,
     scene_assets: Res<SceneAssets>,
 ) {
-    let actor_template = EnsembleTemplate::default();
+    let nateroid_config = initialize_actor_config(
+        NateroidConfig::default().0,
+        &scenes,
+        &meshes,
+        &scene_assets.nateroid,
+    );
+    commands.insert_resource(NateroidConfig(nateroid_config));
 
-    let ensemble_config = EnsembleConfig {
-        spaceship: initialize_actor_config(
-            actor_template.spaceship,
-            &scenes,
-            &meshes,
-            &scene_assets.spaceship,
-        ),
-        nateroid:  initialize_actor_config(
-            actor_template.nateroid,
-            &scenes,
-            &meshes,
-            &scene_assets.nateroid,
-        ),
-        missile:   initialize_actor_config(
-            actor_template.missile,
-            &scenes,
-            &meshes,
-            &scene_assets.missile,
-        ),
-    };
+    let missile_config = initialize_actor_config(
+        MissileConfig::default().0,
+        &scenes,
+        &meshes,
+        &scene_assets.missile,
+    );
+    commands.insert_resource(MissileConfig(missile_config));
 
-    commands.insert_resource(ensemble_config);
+    let spaceship_config = initialize_actor_config(
+        SpaceshipConfig::default().0,
+        &scenes,
+        &meshes,
+        &scene_assets.spaceship,
+    );
+    commands.insert_resource(SpaceshipConfig(spaceship_config));
 }
 
 fn initialize_actor_config(
@@ -407,24 +405,19 @@ fn initialize_actor_config(
     config.aabb = adjusted_aabb;
     config.collider = collider;
     config.spawn_timer = spawn_timer;
+    config.scene = scene_handle.clone();
     config
 }
 
 pub fn spawn_actor(
     commands: &mut Commands,
     config: &ActorConfig,
-    scene: Handle<Scene>,
-    parent: Option<(Entity, &Transform, &Velocity)>,
+    parent: Option<(&Transform, &Velocity)>,
     boundary: Res<Boundary>,
 ) {
-    let bundle = ActorBundle::new(
-        config,
-        scene,
-        parent.map(|(_, transform, velocity)| (transform, velocity)),
-        boundary,
-    );
+    let bundle = ActorBundle::new(config, parent, boundary);
 
     let entity = commands.spawn(bundle).id();
 
-    name_entity(commands, entity, config.actor_type.to_string());
+    name_entity(commands, entity, config.actor_kind.to_string());
 }
