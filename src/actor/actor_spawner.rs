@@ -6,10 +6,6 @@ use crate::{
             SpaceshipConfig,
         },
         get_scene_aabb,
-        health::{
-            CollisionDamage,
-            Health,
-        },
         Aabb,
         Teleporter,
     },
@@ -70,6 +66,12 @@ impl Plugin for ActorSpawner {
             );
     }
 }
+
+#[derive(Reflect, Component, Clone, Debug)]
+pub struct Health(pub f32);
+
+#[derive(Reflect, Component, Clone, Debug)]
+pub struct CollisionDamage(pub f32);
 
 #[derive(Reflect, Debug, Clone, PartialEq, Eq)]
 pub enum ColliderType {

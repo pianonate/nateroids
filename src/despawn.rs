@@ -1,6 +1,6 @@
 use crate::{
     actor::{
-        health::Health,
+        Health,
         missile::Missile,
     },
     schedule::InGameSet,

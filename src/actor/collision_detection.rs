@@ -2,12 +2,10 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::CollisionEvent;
 
 use crate::{
-    actor::health::{
-        CollisionDamage,
-        Health,
-    },
     schedule::InGameSet,
 };
+use crate::actor::actor_spawner::CollisionDamage;
+use crate::actor::Health;
 
 pub struct CollisionDetectionPlugin;
 

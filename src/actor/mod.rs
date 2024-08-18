@@ -2,7 +2,6 @@ mod aabb;
 mod actor_spawner;
 mod actor_template;
 mod collision_detection;
-pub(crate) mod health;
 pub mod missile;
 mod nateroid;
 mod spaceship;
@@ -24,7 +23,7 @@ pub use crate::actor::{
         get_scene_aabb,
         Aabb,
     },
-    actor_spawner::ColliderType,
+    actor_spawner::{ColliderType, Health},
     teleport::Teleporter,
 };
 
