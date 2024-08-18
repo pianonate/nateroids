@@ -1,6 +1,8 @@
 use crate::input::GlobalAction;
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionState;
+use rand::Rng;
+use std::ops::Range;
 
 // provides a way to name entities that includes their entity id - for debugging
 pub fn name_entity(commands: &mut Commands, entity: Entity, name: String) {
@@ -55,4 +57,25 @@ pub fn toggle_active(
             default
         }
     }
+}
+
+pub fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>) -> Vec3 {
+    let mut rng = rand::thread_rng();
+    let x = if range_x.start < range_x.end {
+        rng.gen_range(range_x)
+    } else {
+        0.0
+    };
+    let y = if range_y.start < range_y.end {
+        rng.gen_range(range_y)
+    } else {
+        0.0
+    };
+    let z = if range_z.start < range_z.end {
+        rng.gen_range(range_z)
+    } else {
+        0.0
+    };
+
+    Vec3::new(x, y, z)
 }

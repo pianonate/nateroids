@@ -1,3 +1,4 @@
+// #todo: #bug - missiles spawn rotated incorrectly center
 use bevy::{
     color::palettes::tailwind,
     ecs::system::SystemParam,
@@ -21,25 +22,29 @@ use crate::{
         HealthBundle,
     },
     input::SpaceshipAction,
-    movement::{
-        MovingObjectBundle,
-        Teleporter,
-    },
     schedule::InGameSet,
-    spaceship::{
-        ContinuousFire,
-        Spaceship,
-    },
     utils::name_entity,
 };
 
 use crate::{
-    boundary::WallApproachVisual,
-    collider_config::{
-        Aabb,
-        ColliderConstant,
+    actor::{
+        aabb::Aabb,
+        actor_config::{
+            ActorConfig,
+            EnsembleConfig,
+        },
+        movement::MovingObjectBundle,
+        spaceship::{
+            ContinuousFire,
+            Spaceship,
+        },
+        Teleporter,
     },
-    config::AppearanceConfig,
+    boundary::{
+        BoundaryConfig,
+        WallApproachVisual,
+    },
+    collider_config::ColliderConstant,
 };
 use leafwing_input_manager::prelude::*;
 
@@ -77,7 +82,7 @@ impl Missile {
     ) -> Self {
         let forward = -spaceship_transform.forward();
 
-        let missile_velocity = forward * missile_config.velocity;
+        let missile_velocity = forward * missile_config.linear_velocity;
 
         // add spaceship velocity so that the missile fires in the direction the
         // spaceship is going - without it, they only have the missile velocity
@@ -107,7 +112,7 @@ impl Missile {
 /// we're holding down the fire button
 fn should_fire(
     continuous_fire: Option<&ContinuousFire>,
-    missile_config: &mut ColliderConstant,
+    missile_config: &mut ActorConfig,
     time: Res<Time>,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
 ) -> bool {
@@ -115,7 +120,10 @@ fn should_fire(
 
     if continuous_fire.is_some() {
         // We know the timer exists, so we can safely unwrap it
-        let timer = missile_config.spawn_timer.as_mut().unwrap();
+        let timer = missile_config
+            .spawn_timer
+            .as_mut()
+            .expect("configure missile spawn timer here: impl Default for InitialEnsembleConfig");
         timer.tick(time.delta());
         if !timer.just_finished() {
             return false;
@@ -125,7 +133,6 @@ fn should_fire(
         action_state.just_pressed(&SpaceshipAction::Fire)
     }
 }
-
 #[derive(SystemParam)]
 struct FireResources<'w> {
     boundary:     Res<'w, Boundary>,
@@ -141,11 +148,17 @@ fn fire_missile(
     mut commands: Commands,
     q_input_map: Query<&ActionState<SpaceshipAction>>,
     q_spaceship: Query<(&Transform, &Velocity, &Aabb, Option<&ContinuousFire>), With<Spaceship>>,
-    mut collider_config: ResMut<ColliderConfig>,
+    collider_config: ResMut<ColliderConfig>,
+    mut ensemble_config: ResMut<EnsembleConfig>,
+
     time: Res<Time>,
     res: FireResources,
 ) {
-    if !collider_config.missile.spawnable {
+    // if !collider_config.missile.spawnable {
+    //     return;
+    // }
+
+    if !ensemble_config.missile.spawnable {
         return;
     }
 
@@ -157,7 +170,8 @@ fn fire_missile(
 
     if !should_fire(
         continuous_fire,
-        &mut collider_config.missile,
+        //&mut collider_config.missile,
+        &mut ensemble_config.missile,
         time,
         q_input_map,
     ) {
@@ -259,7 +273,7 @@ fn missile_party(
     mut q_missile: Query<&mut Missile>,
     mut gizmos: Gizmos,
     boundary: Res<Boundary>,
-    config: Res<AppearanceConfig>,
+    config: Res<BoundaryConfig>,
 ) {
     for missile in q_missile.iter_mut() {
         let current_position = missile.last_position;
@@ -271,12 +285,12 @@ fn missile_party(
                 let circle_normal = Dir3::new(-missile.velocity.normalize()).unwrap_or(Dir3::NEG_Z);
 
                 draw_variable_size_circle(
-                    &config,
                     &mut gizmos,
                     end_point,
                     circle_normal,
                     Color::from(tailwind::GREEN_800),
                     missile.remaining_distance,
+                    config.smallest_teleport_circle,
                 );
             }
         }
@@ -284,15 +298,15 @@ fn missile_party(
 }
 
 fn draw_variable_size_circle(
-    config: &Res<AppearanceConfig>,
     gizmos: &mut Gizmos,
     position: Vec3,
     normal: Dir3,
     color: Color,
     remaining_distance: f32,
+    smallest_teleport_circle: f32,
 ) {
-    let min_radius = config.smallest_teleport_circle * 0.5; // Minimum radius to ensure visibility
-    let max_radius = config.smallest_teleport_circle; // Maximum radius (current fixed radius)
+    let min_radius = smallest_teleport_circle * 0.5; // Minimum radius to ensure visibility
+    let max_radius = smallest_teleport_circle; // Maximum radius (current fixed radius)
 
     // Define a distance threshold where the circle starts to shrink
     let shrink_threshold = 20.; // Adjust this value as needed

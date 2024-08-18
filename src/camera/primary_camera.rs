@@ -1,12 +1,11 @@
 use crate::{
     boundary::Boundary,
     camera::{
-        CameraConfig,
+        camera_config::CameraConfig,
         CameraOrder,
         RenderLayer,
         StarsCamera,
     },
-    config::AppearanceConfig,
     input::CameraMovement,
     orientation::CameraOrientation,
 };
@@ -125,7 +124,7 @@ pub fn spawn_primary_camera(
 fn pinch_to_zoom(
     mut query: Query<&mut Transform, With<PrimaryCamera>>,
     mut pinch_gesture_events: EventReader<PinchGesture>,
-    config: Res<AppearanceConfig>,
+    config: Res<CameraConfig>,
 ) {
     for event in pinch_gesture_events.read() {
         if let Ok(mut transform) = query.get_single_mut() {
@@ -137,7 +136,7 @@ fn pinch_to_zoom(
 fn zoom_camera(
     mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
-    config: Res<AppearanceConfig>,
+    config: Res<CameraConfig>,
 ) {
     if let Ok((mut transform, mut action_state)) = query.get_single_mut() {
         let zoom_delta = match should_zoom(&mut mouse_wheel_events, &mut action_state) {
@@ -267,9 +266,9 @@ fn orbit_camera(
             None => return,
         };
 
-        let rotation_speed = camera_config.rotation_speed; //0.005;
-                                                           // Assuming the target is at the origin - this may change in the future
-                                                           // as the target could be the ship when we move into flying behind the ship
+        let rotation_speed = camera_config.orbit_speed; //0.005;
+                                                        // Assuming the target is at the origin - this may change in the future
+                                                        // as the target could be the ship when we move into flying behind the ship
         let target = orientation.config.nexus;
 
         // this will change if we change our up vector to Z for FPSpaceship mode

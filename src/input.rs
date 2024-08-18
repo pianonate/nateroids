@@ -7,8 +7,10 @@ use bevy::prelude::{
         Escape,
         Home,
         KeyA,
+        KeyB,
         KeyC,
         KeyD,
+        KeyE,
         KeyF,
         KeyL,
         KeyP,
@@ -144,8 +146,10 @@ impl SpaceshipAction {
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum GlobalAction {
     AABBs,
+    BoundaryInspector,
     CameraInspector,
     Debug,
+    ActorInspector,
     LightsInspector,
     Physics,
     PlanesInspector,
@@ -178,8 +182,10 @@ impl GlobalAction {
             };
 
         input_map.insert(Self::AABBs, F1);
+        create_dual_input(Self::BoundaryInspector, KeyB, &mut input_map);
         create_dual_input(Self::CameraInspector, KeyC, &mut input_map);
         create_dual_input(Self::Debug, KeyD, &mut input_map);
+        create_dual_input(Self::ActorInspector, KeyE, &mut input_map);
         create_dual_input(Self::LightsInspector, KeyL, &mut input_map);
         input_map.insert(Self::Pause, Escape);
         create_dual_input(Self::PlanesInspector, KeyP, &mut input_map);

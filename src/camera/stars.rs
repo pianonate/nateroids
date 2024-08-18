@@ -14,7 +14,7 @@ use bevy::{
 use std::ops::Range;
 
 use crate::camera::{
-    CameraConfig,
+    camera_config::CameraConfig,
     CameraOrder,
     RenderLayer,
 };

@@ -15,7 +15,6 @@ use crate::{
         HealthBundle,
     },
     input::SpaceshipAction,
-    movement::MovingObjectBundle,
     schedule::InGameSet,
     state::GameState,
     utils::name_entity,
@@ -31,6 +30,7 @@ use bevy_rapier3d::prelude::{
 };
 
 use crate::{
+    actor::movement::MovingObjectBundle,
     boundary::WallApproachVisual,
     orientation::{
         CameraOrientation,
@@ -192,7 +192,7 @@ fn spaceship_movement_controls(
             // rotate around the z-axis
             spaceship_transform.rotate_z(rotation);
 
-            let max_speed = spaceship_config.velocity;
+            let max_speed = spaceship_config.linear_velocity;
 
             let accel = spaceship_config
                 .acceleration

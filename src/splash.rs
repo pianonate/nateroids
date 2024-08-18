@@ -1,6 +1,5 @@
 use crate::{
     camera::RenderLayer,
-    config::AppearanceConfig,
     state::GameState,
 };
 use bevy::{
@@ -10,6 +9,8 @@ use bevy::{
 };
 
 pub(crate) struct SplashPlugin;
+
+const SPLASH_TIME: f32 = 2.;
 
 #[derive(Component)]
 pub(crate) struct SplashText;
@@ -22,7 +23,7 @@ struct SplashTimer {
 impl Plugin for SplashPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SplashTimer {
-            timer: Timer::from_seconds(AppearanceConfig::default().splash_timer, TimerMode::Once),
+            timer: Timer::from_seconds(SPLASH_TIME, TimerMode::Once),
         })
         // not sure why i need this but it prevents a runtime warning
         .insert_resource(TextSettings {
