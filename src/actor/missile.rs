@@ -4,7 +4,6 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{
     boundary::Boundary,
-    input::SpaceshipAction,
     schedule::InGameSet,
 };
 
@@ -19,7 +18,10 @@ use crate::actor::{
     Teleporter,
 };
 
-use crate::actor::actor_spawner::spawn_actor;
+use crate::actor::{
+    actor_spawner::spawn_actor,
+    spaceship_control::SpaceshipControl,
+};
 use leafwing_input_manager::prelude::*;
 
 pub struct MissilePlugin;
@@ -63,7 +65,7 @@ fn should_fire(
     continuous_fire: Option<&ContinuousFire>,
     missile_config: &mut ActorConfig,
     time: Res<Time>,
-    q_input_map: Query<&ActionState<SpaceshipAction>>,
+    q_input_map: Query<&ActionState<SpaceshipControl>>,
 ) -> bool {
     if !missile_config.spawnable {
         return false;
@@ -81,9 +83,9 @@ InitialEnsembleConfig",
         if !timer.just_finished() {
             return false;
         }
-        action_state.pressed(&SpaceshipAction::Fire)
+        action_state.pressed(&SpaceshipControl::Fire)
     } else {
-        action_state.just_pressed(&SpaceshipAction::Fire)
+        action_state.just_pressed(&SpaceshipControl::Fire)
     }
 }
 
@@ -94,7 +96,7 @@ InitialEnsembleConfig",
 //                       fn or is having it here fine?
 fn fire_missile(
     mut commands: Commands,
-    q_input_map: Query<&ActionState<SpaceshipAction>>,
+    q_input_map: Query<&ActionState<SpaceshipControl>>,
     q_spaceship: Query<(&Transform, &Velocity, &Aabb, Option<&ContinuousFire>), With<Spaceship>>,
     boundary: Res<Boundary>,
     mut missile_config: ResMut<MissileConfig>,

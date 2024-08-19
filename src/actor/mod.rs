@@ -5,7 +5,7 @@ mod collision_detection;
 pub mod missile;
 mod nateroid;
 mod spaceship;
-mod spaceship_movement;
+mod spaceship_control;
 mod teleport;
 
 use crate::actor::{
@@ -15,7 +15,7 @@ use crate::actor::{
     missile::MissilePlugin,
     nateroid::NateroidPlugin,
     spaceship::SpaceshipPlugin,
-    spaceship_movement::SpaceshipMovementPlugin,
+    spaceship_control::SpaceshipControlPlugin,
     teleport::TeleportPlugin,
 };
 pub use crate::actor::{
@@ -23,7 +23,10 @@ pub use crate::actor::{
         get_scene_aabb,
         Aabb,
     },
-    actor_spawner::{ColliderType, Health},
+    actor_spawner::{
+        ColliderType,
+        Health,
+    },
     teleport::Teleporter,
 };
 
@@ -39,7 +42,7 @@ impl Plugin for ActorPlugin {
             .add_plugins(MissilePlugin)
             .add_plugins(NateroidPlugin)
             .add_plugins(SpaceshipPlugin)
-            .add_plugins(SpaceshipMovementPlugin)
+            .add_plugins(SpaceshipControlPlugin)
             .add_plugins(TeleportPlugin);
     }
 }

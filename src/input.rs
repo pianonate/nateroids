@@ -1,32 +1,9 @@
-use bevy::prelude::{
-    KeyCode::{
-        ArrowDown,
-        ArrowLeft,
-        ArrowRight,
-        ArrowUp,
-        Escape,
-        Home,
-        KeyA,
-        KeyB,
-        KeyC,
-        KeyD,
-        KeyF,
-        KeyL,
-        KeyP,
-        KeyS,
-        KeyW,
-        ShiftLeft,
-        ShiftRight,
-        Space,
-        F1,
-        F12,
-        F2,
-        F3,
-    },
-    MouseButton,
-    *,
-};
+use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use strum::{
+    EnumIter,
+    IntoEnumIterator,
+};
 
 pub struct InputPlugin;
 
@@ -35,10 +12,6 @@ impl Plugin for InputPlugin {
         app
             // camera will be added to the camera when it is spawned
             .add_plugins(InputManagerPlugin::<CameraMovement>::default())
-            // spaceship will have input attached to it when spawning a spaceship
-            .add_plugins(InputManagerPlugin::<SpaceshipAction>::default())
-            .init_resource::<ActionState<SpaceshipAction>>()
-            .insert_resource(SpaceshipAction::spaceship_input_map())
             // global actions such as Pause added as a resource to be used wherever
             .add_plugins(InputManagerPlugin::<GlobalAction>::default())
             .init_resource::<ActionState<GlobalAction>>()
@@ -56,7 +29,7 @@ pub enum CameraMovement {
 
 impl CameraMovement {
     pub fn camera_input_map() -> InputMap<Self> {
-        let pan_chord = ButtonlikeChord::new([ShiftLeft]).with(MouseButton::Middle);
+        let pan_chord = ButtonlikeChord::new([KeyCode::ShiftLeft]).with(MouseButton::Middle);
 
         // this is my attempt to setup camera controls for a PanOrbit-style camera
         // a la the way blender works - it's a pain in the ass and it only works so so
@@ -64,8 +37,8 @@ impl CameraMovement {
         // Camera       it might be something blender fans would like
         InputMap::default()
             // Orbit:  mouse wheel pressed with mouse move
-            .with(CameraMovement::Home, Home)
-            .with(CameraMovement::Home, F12)
+            .with(CameraMovement::Home, KeyCode::Home)
+            .with(CameraMovement::Home, KeyCode::F12)
             .with_dual_axis(
                 CameraMovement::Orbit,
                 DualAxislikeChord::new(MouseButton::Middle, MouseMove::default()),
@@ -75,7 +48,7 @@ impl CameraMovement {
             // Pan: LeftShift plus scrolling on the trackpad
             .with_dual_axis(
                 CameraMovement::Pan,
-                DualAxislikeChord::new(ShiftLeft, MouseScroll::default()),
+                DualAxislikeChord::new(KeyCode::ShiftLeft, MouseScroll::default()),
             )
             .with_dual_axis(
                 CameraMovement::Pan,
@@ -103,46 +76,7 @@ impl Actionlike for CameraMovement {
     }
 }
 
-// This is the list of "things I want the spaceship to be able to do based on
-// input"
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
-pub enum SpaceshipAction {
-    Accelerate,
-    ContinuousFire,
-    Decelerate,
-    Fire,
-    TurnLeft,
-    TurnRight,
-}
-
-// #todo #bug - i can't use Shift-C as it invokes ContinuousFire even thought
-// the              ClashStrategy::PrioritizeLongest is on by default (and i
-// tried explicitly)
-impl SpaceshipAction {
-    pub fn spaceship_input_map() -> InputMap<Self> {
-        let mut input_map = InputMap::default();
-
-        input_map.insert(Self::Accelerate, KeyW);
-        input_map.insert(Self::Accelerate, ArrowUp);
-
-        input_map.insert(Self::ContinuousFire, KeyF);
-
-        input_map.insert(Self::Decelerate, KeyS);
-        input_map.insert(Self::Decelerate, ArrowDown);
-
-        input_map.insert(Self::Fire, Space);
-
-        input_map.insert(Self::TurnLeft, KeyA);
-        input_map.insert(Self::TurnLeft, ArrowLeft);
-
-        input_map.insert(Self::TurnRight, KeyD);
-        input_map.insert(Self::TurnRight, ArrowRight);
-
-        input_map
-    }
-}
-
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, EnumIter, Reflect, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub enum GlobalAction {
     AABBs,
     BoundaryInspector,
@@ -155,10 +89,13 @@ pub enum GlobalAction {
     PlanesInspector,
     Pause,
     SpaceshipInspector,
-    SpaceshipMovementInspector,
+    SpaceshipControlInspector,
     Stars,
 }
 
+/// GlobalActions assign keys to do a lot of obvious stuff. Debug is less
+/// obvious.
+///
 /// Use Debug like this - invoke it with a system as follows:
 /// ```rust
 /// app.add_systems(Update, my_debug_system.run_if(toggle_active(false, GlobalAction::Debug))
@@ -174,74 +111,84 @@ pub enum GlobalAction {
 /// }
 /// ```
 impl GlobalAction {
-    //todo: #bug - do this with an enum to make sure you cover all types
     pub fn global_input_map() -> InputMap<Self> {
-        let mut input_map = InputMap::default();
+        fn insert_dual_input(map: &mut InputMap<GlobalAction>, action: GlobalAction, key: KeyCode) {
+            map.insert(action, ButtonlikeChord::new([KeyCode::ShiftLeft]).with(key));
+            map.insert(
+                action,
+                ButtonlikeChord::new([KeyCode::ShiftRight]).with(key),
+            );
+        }
 
-        let create_dual_input =
-            |action: GlobalAction, key: KeyCode, input_map: &mut InputMap<GlobalAction>| {
-                input_map.insert(action, ButtonlikeChord::new([ShiftLeft]).with(key));
-                input_map.insert(action, ButtonlikeChord::new([ShiftRight]).with(key));
-            };
-
-        input_map.insert(Self::AABBs, F1);
-        create_dual_input(Self::BoundaryInspector, KeyB, &mut input_map);
-        create_dual_input(Self::CameraInspector, KeyC, &mut input_map);
-        create_dual_input(Self::Debug, KeyD, &mut input_map);
-        create_dual_input(Self::LightsInspector, KeyL, &mut input_map);
-        create_dual_input(Self::MissileInspector, KeyCode::Digit1, &mut input_map);
-        create_dual_input(Self::NateroidInspector, KeyCode::Digit2, &mut input_map);
-        input_map.insert(Self::Pause, Escape);
-        create_dual_input(Self::PlanesInspector, KeyP, &mut input_map);
-        input_map.insert(Self::Physics, F2);
-        create_dual_input(Self::SpaceshipInspector, KeyCode::Digit3, &mut input_map);
-        create_dual_input(
-            Self::SpaceshipMovementInspector,
-            KeyCode::Digit4,
-            &mut input_map,
-        );
-        input_map.insert(Self::Stars, F3);
-
-        input_map
+        // while fold accumulates each pass - we just do an insert each time as a
+        // statement and then return the map at the end of each iteration so the
+        // accumulation works
+        Self::iter().fold(InputMap::default(), |mut map, action| {
+            match action {
+                Self::AABBs => {
+                    map.insert(action, KeyCode::F1);
+                },
+                Self::BoundaryInspector => {
+                    insert_dual_input(&mut map, action, KeyCode::KeyB);
+                },
+                Self::CameraInspector => {
+                    insert_dual_input(&mut map, action, KeyCode::KeyC);
+                },
+                Self::Debug => {
+                    insert_dual_input(&mut map, action, KeyCode::KeyD);
+                },
+                Self::LightsInspector => {
+                    insert_dual_input(&mut map, action, KeyCode::KeyL);
+                },
+                Self::MissileInspector => {
+                    insert_dual_input(&mut map, action, KeyCode::Digit1);
+                },
+                Self::NateroidInspector => {
+                    insert_dual_input(&mut map, action, KeyCode::Digit2);
+                },
+                Self::Physics => {
+                    map.insert(action, KeyCode::F2);
+                },
+                Self::PlanesInspector => {
+                    insert_dual_input(&mut map, action, KeyCode::KeyP);
+                },
+                Self::Pause => {
+                    map.insert(action, KeyCode::Escape);
+                },
+                Self::SpaceshipInspector => {
+                    insert_dual_input(&mut map, action, KeyCode::Digit3);
+                },
+                Self::SpaceshipControlInspector => {
+                    insert_dual_input(&mut map, action, KeyCode::Digit4);
+                },
+                Self::Stars => {
+                    map.insert(action, KeyCode::F3);
+                },
+            }
+            map
+        })
     }
 }
 
-#[derive(Default)]
-pub struct ToggleState {
-    pub state: bool,
-}
+// #todo: #bevyquestion #rustquestion - how does bevy know how to do the
+// dependency injection with this impl?        because it makes using
+// toggle_active super intuitive and useful
 
-// todo: #doc document how to use toggle action and why it's cool
-// i couldn't have made this without gpt help - here's what it's telling me
-//
-// Each use of toggle_active() gets its own Local<ToggleState>.
-//
-// The Res<ActionState<GlobalAction>> is shared across the app, but each closure
-// gets its own reference to it.
-//
-// Bevy's dependency injection system automatically provides these resources
-// when the closure is executed, based on the types specified in the closure's
-// signature.
-//
-// the impl Fn(..) piece is the key in that we're telling rust
-// that "this function returns some type that implements the Fn(...) trait".
-// so instead of a concrete type, we're specifying a trait that the
-// returned type implements
-// rust infers the actual concrete type based on the function body - in this
-// case, a closure
-// so:  toggle_active takes normal args and returns
-//      * something that is a function (impl Fn)
-//      * takes these two other params that bevy can dependency inject just like
-//        systems
-//      * returns a bool
-//
-// this is crazy to me
+/// ToggleActive allows us to do something cool - we can use it like the bevy
+/// input_toggle_active but it works with leafwing_input_manager input_map
+/// entries so we can have simple syntax for toggling systems as a run condition
+/// as follows:
+///
+/// ```
+/// .add_systems(Update, my_system.run_if(toggle_active(false, GlobalAction::AABBs)))
+/// ```
+/// cool, huh? the fact that the closure works with Bevy's dependency injection
+/// is rocket science to me- i don't know how it knows to do this but it does
 pub fn toggle_active(
     default: bool,
     action: GlobalAction,
 ) -> impl Fn(Res<ActionState<GlobalAction>>, Local<ToggleState>) -> bool {
-    move |action_state: Res<ActionState<GlobalAction>>,
-          mut state: Local<ToggleState>| {
+    move |action_state: Res<ActionState<GlobalAction>>, mut state: Local<ToggleState>| {
         if action_state.just_pressed(&action) {
             state.state = !state.state;
         }
@@ -252,4 +199,9 @@ pub fn toggle_active(
             default
         }
     }
+}
+
+#[derive(Default)]
+pub struct ToggleState {
+    pub state: bool,
 }

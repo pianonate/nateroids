@@ -1,8 +1,13 @@
 use crate::{
     boundary::boundary_config::BoundaryConfig,
     camera::RenderLayer,
-    state::GameState,
+    // computed states, so not using GameState directly
+    state::{
+        IsPaused,
+        PlayingGame,
+    },
 };
+
 use bevy::{
     prelude::*,
     render::view::RenderLayers,
@@ -18,8 +23,7 @@ impl Plugin for VisualsPlugin {
             .add_systems(Startup, init_gizmo_configs)
             .add_systems(
                 Update,
-                draw_boundary
-                    .run_if(in_state(GameState::InGame).or_else(in_state(GameState::Paused))),
+                draw_boundary.run_if(in_state(PlayingGame).or_else(in_state(IsPaused::Paused))),
             );
     }
 }

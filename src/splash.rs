@@ -30,7 +30,7 @@ impl Plugin for SplashPlugin {
             allow_dynamic_font_size: true,
             ..Default::default()
         })
-        .add_systems(Startup, splash_screen)
+        .add_systems(OnEnter(GameState::Splash), splash_screen)
         .add_systems(Update, run_splash.run_if(in_state(GameState::Splash)));
     }
 }
@@ -76,6 +76,6 @@ fn run_splash(
         text.sections[0].style.font_size += 1.0;
     }
     if spawn_timer.timer.just_finished() {
-        next_state.set(GameState::InGame);
+        next_state.set(GameState::InGame { paused: false });
     }
 }

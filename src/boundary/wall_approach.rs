@@ -7,7 +7,7 @@ use crate::{
         boundary_config::BoundaryConfig,
         Boundary,
     },
-    state::GameState,
+    state::PlayingGame,
 };
 use bevy::{
     app::{
@@ -45,7 +45,9 @@ impl Plugin for WallApproachPlugin {
                 draw_approaching_circles,
                 draw_emerging_circles,
             )
-                .run_if(in_state(GameState::InGame).or_else(in_state(GameState::Paused))),
+                .run_if(
+                    in_state(PlayingGame), /* .or_else(in_state(GameState::Paused)) */
+                ),
         );
     }
 }

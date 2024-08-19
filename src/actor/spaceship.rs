@@ -2,11 +2,13 @@ use crate::{
     actor::{
         actor_spawner::spawn_actor,
         actor_template::SpaceshipConfig,
-        spaceship_movement::SpaceshipMovementConfig,
+        spaceship_control::{
+            SpaceshipControl,
+            SpaceshipControlConfig,
+        },
     },
     boundary::Boundary,
     camera::PrimaryCamera,
-    input::SpaceshipAction,
     orientation::{
         CameraOrientation,
         OrientationType,
@@ -57,14 +59,14 @@ fn toggle_continuous_fire(
     q_spaceship: Query<
         (
             Entity,
-            &ActionState<SpaceshipAction>,
+            &ActionState<SpaceshipControl>,
             Option<&ContinuousFire>,
         ),
         With<Spaceship>,
     >,
 ) {
-    if let Ok((entity, spaceship_action, continuous)) = q_spaceship.get_single() {
-        if spaceship_action.just_pressed(&SpaceshipAction::ContinuousFire) {
+    if let Ok((entity, control, continuous)) = q_spaceship.get_single() {
+        if control.just_pressed(&SpaceshipControl::ContinuousFire) {
             if continuous.is_some() {
                 println!("removing continuous");
                 commands.entity(entity).remove::<ContinuousFire>();
@@ -88,7 +90,7 @@ fn spawn_spaceship(
         return;
     }
 
-    let spaceship_input = InputManagerBundle::with_map(SpaceshipAction::spaceship_input_map());
+    let spaceship_input = InputManagerBundle::with_map(SpaceshipControl::generate_input_map());
 
     spawn_actor(&mut commands, &spaceship_config.0, None, boundary)
         .insert(spaceship_input)
@@ -98,9 +100,9 @@ fn spawn_spaceship(
 fn spaceship_movement_controls(
     mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
     q_camera: Query<&Transform, (With<PrimaryCamera>, Without<Spaceship>)>,
-    q_input_map: Query<&ActionState<SpaceshipAction>>,
+    q_input_map: Query<&ActionState<SpaceshipControl>>,
     spaceship_config: Res<SpaceshipConfig>,
-    movement_config: Res<SpaceshipMovementConfig>,
+    movement_config: Res<SpaceshipControlConfig>,
     time: Res<Time>,
     orientation_mode: Res<CameraOrientation>,
 ) {
@@ -111,17 +113,17 @@ fn spaceship_movement_controls(
             // dynamically update from inspector while game is running to change size
             spaceship_transform.scale = Vec3::splat(spaceship_config.0.scalar);
 
-            let spaceship_action = q_input_map.single();
+            let controls = q_input_map.single();
 
             let mut rotation = 0.0;
             let delta_seconds = time.delta_seconds();
             let rotation_speed = movement_config.rotation_speed;
 
-            if spaceship_action.pressed(&SpaceshipAction::TurnRight) {
+            if controls.pressed(&SpaceshipControl::TurnRight) {
                 // right
                 velocity.angvel.z = 0.0;
                 rotation = rotation_speed * delta_seconds;
-            } else if spaceship_action.pressed(&SpaceshipAction::TurnLeft) {
+            } else if controls.pressed(&SpaceshipControl::TurnLeft) {
                 // left
                 velocity.angvel.z = 0.0;
                 rotation = -rotation_speed * delta_seconds;
@@ -140,19 +142,10 @@ fn spaceship_movement_controls(
             let max_speed = movement_config.max_speed;
             let accel = movement_config.acceleration;
 
-            if spaceship_action.pressed(&SpaceshipAction::Accelerate) {
+            if controls.pressed(&SpaceshipControl::Accelerate) {
                 apply_acceleration(
                     &mut velocity,
                     -spaceship_transform.forward().as_vec3(),
-                    accel,
-                    max_speed,
-                    delta_seconds,
-                    orientation_mode,
-                );
-            } else if spaceship_action.pressed(&SpaceshipAction::Decelerate) {
-                apply_acceleration(
-                    &mut velocity,
-                    spaceship_transform.forward().as_vec3(),
                     accel,
                     max_speed,
                     delta_seconds,

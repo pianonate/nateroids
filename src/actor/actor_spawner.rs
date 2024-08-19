@@ -18,7 +18,10 @@ use crate::{
         WallApproachVisual,
     },
     camera::RenderLayer,
-    input::GlobalAction,
+    input::{
+        toggle_active,
+        GlobalAction,
+    },
 };
 use bevy::{
     ecs::system::EntityCommands,
@@ -36,7 +39,6 @@ use std::{
     fmt,
     ops::Range,
 };
-use crate::input::toggle_active;
 
 // this is how far off we are from blender for the assets we're loading
 // we need to get them scaled up to generate a usable aabb

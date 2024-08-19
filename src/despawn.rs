@@ -1,7 +1,7 @@
 use crate::{
     actor::{
-        Health,
         missile::Missile,
+        Health,
     },
     schedule::InGameSet,
     state::GameState,
@@ -52,7 +52,6 @@ fn despawn_all_entities(mut commands: Commands, query: Query<Entity, With<Health
 }
 
 fn despawn_splash(mut commands: Commands, query: Query<Entity, With<crate::splash::SplashText>>) {
-    println!("Entering InGame");
     for entity in query.iter() {
         despawn(&mut commands, entity);
     }

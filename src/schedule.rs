@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::state::GameState;
+use crate::state::PlayingGame;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum InGameSet {
@@ -31,7 +31,7 @@ impl Plugin for SchedulePlugin {
                 // and we have a system that runs on state to watch for keyboard control
                 // that takes us in or out of InGame - i.e., pausing
                 // 1 line of code right here allows for pausing and starting the game!
-                .run_if(in_state(GameState::InGame)),
+                .run_if(in_state(PlayingGame)),
         )
         .add_systems(
             Update,
