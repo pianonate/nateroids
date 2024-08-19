@@ -1,4 +1,4 @@
-use crate::input::{
+use crate::global_input::{
     toggle_active,
     GlobalAction,
 };
@@ -25,9 +25,10 @@ impl Plugin for SpaceshipControlPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<SpaceshipControlConfig>()
             .add_plugins(
-                ResourceInspectorPlugin::<SpaceshipControlConfig>::default().run_if(
-                    toggle_active(false, GlobalAction::SpaceshipControlInspector),
-                ),
+                ResourceInspectorPlugin::<SpaceshipControlConfig>::default().run_if(toggle_active(
+                    false,
+                    GlobalAction::SpaceshipControlInspector,
+                )),
             )
             .init_resource::<SpaceshipControlConfig>()
             // spaceship will have input attached to it when spawning a spaceship
@@ -74,28 +75,18 @@ pub enum SpaceshipControl {
 //              tried explicitly)
 impl SpaceshipControl {
     pub fn generate_input_map() -> InputMap<Self> {
-        Self::iter().fold(InputMap::default(), |mut input_map, action| {
-            match action {
-                Self::Accelerate => {
-                    input_map.insert(action, KeyCode::KeyW);
-                    input_map.insert(action, KeyCode::ArrowUp);
-                },
-                Self::TurnLeft => {
-                    input_map.insert(action, KeyCode::KeyA);
-                    input_map.insert(action, KeyCode::ArrowLeft);
-                },
-                Self::TurnRight => {
-                    input_map.insert(action, KeyCode::KeyD);
-                    input_map.insert(action, KeyCode::ArrowRight);
-                },
-                Self::Fire => {
-                    input_map.insert(action, KeyCode::Space);
-                },
-                Self::ContinuousFire => {
-                    input_map.insert(action, KeyCode::KeyF);
-                },
-            }
-            input_map
+        Self::iter().fold(InputMap::default(), |input_map, action| match action {
+            Self::Accelerate => input_map
+                .with(action, KeyCode::KeyW)
+                .with(action, KeyCode::ArrowUp),
+            Self::TurnLeft => input_map
+                .with(action, KeyCode::KeyA)
+                .with(action, KeyCode::ArrowLeft),
+            Self::TurnRight => input_map
+                .with(action, KeyCode::KeyD)
+                .with(action, KeyCode::ArrowRight),
+            Self::Fire => input_map.with(action, KeyCode::Space),
+            Self::ContinuousFire => input_map.with(action, KeyCode::KeyF),
         })
     }
 }

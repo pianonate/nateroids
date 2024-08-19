@@ -23,9 +23,6 @@ use leafwing_input_manager::prelude::*;
 #[derive(Component, Debug)]
 pub struct Spaceship;
 
-#[derive(Component, Debug)]
-pub struct SpaceshipShield;
-
 #[derive(Component, Default)]
 pub struct ContinuousFire;
 
@@ -38,11 +35,7 @@ impl Plugin for SpaceshipPlugin {
             .add_systems(OnExit(GameState::GameOver), spawn_spaceship)
             .add_systems(
                 Update,
-                (
-                    spaceship_movement_controls,
-                    spaceship_shield_controls,
-                    toggle_continuous_fire,
-                )
+                (spaceship_movement_controls, toggle_continuous_fire)
                     .chain()
                     .in_set(InGameSet::UserInput),
             )
@@ -191,20 +184,6 @@ fn apply_acceleration(
         // in 3d we can accelerate in all dirs
         OrientationType::BehindSpaceship3D => (),
         _ => velocity.linvel.z = 0.0, // Force the `z` value of velocity.linvel to be 0
-    }
-}
-
-fn spaceship_shield_controls(
-    mut commands: Commands,
-    query: Query<Entity, With<Spaceship>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-) {
-    let Ok(spaceship) = query.get_single() else {
-        return;
-    };
-
-    if keyboard_input.pressed(KeyCode::Tab) {
-        commands.entity(spaceship).insert(SpaceshipShield);
     }
 }
 

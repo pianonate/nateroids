@@ -4,7 +4,7 @@ mod asset_loader;
 mod boundary;
 mod camera;
 mod despawn;
-mod input;
+mod global_input;
 mod orientation;
 mod physics;
 mod schedule;
@@ -17,7 +17,7 @@ use crate::{
     boundary::BoundaryPlugin,
     camera::CameraPlugin,
     despawn::DespawnPlugin,
-    input::InputPlugin,
+    global_input::InputPlugin,
     orientation::OrientationPlugin,
     physics::PhysicsPlugin,
     schedule::SchedulePlugin,

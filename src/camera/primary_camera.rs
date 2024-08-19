@@ -1,12 +1,14 @@
 use crate::{
     boundary::Boundary,
     camera::{
-        camera_config::CameraConfig,
+        camera_control::{
+            CameraConfig,
+            CameraControl,
+        },
         CameraOrder,
         RenderLayer,
         StarsCamera,
     },
-    input::CameraMovement,
     orientation::CameraOrientation,
 };
 use bevy::{
@@ -64,13 +66,10 @@ pub struct PrimaryCamera;
 
 fn home_camera(
     orientation: Res<CameraOrientation>,
-    mut camera_transform: Query<
-        (&mut Transform, &ActionState<CameraMovement>),
-        With<PrimaryCamera>,
-    >,
+    mut camera_transform: Query<(&mut Transform, &ActionState<CameraControl>), With<PrimaryCamera>>,
 ) {
     if let Ok((mut transform, action_state)) = camera_transform.get_single_mut() {
-        if action_state.just_pressed(&CameraMovement::Home) {
+        if action_state.just_pressed(&CameraControl::Home) {
             *transform = orientation.config.locus;
         }
     }
@@ -115,7 +114,7 @@ pub fn spawn_primary_camera(
         .spawn(primary_camera)
         .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
         .insert(InputManagerBundle::with_map(
-            CameraMovement::camera_input_map(),
+            CameraControl::camera_input_map(),
         ))
         .add_child(stars_camera_entity)
         .insert(PrimaryCamera);
@@ -134,7 +133,7 @@ fn pinch_to_zoom(
 }
 
 fn zoom_camera(
-    mut query: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
+    mut query: Query<(&mut Transform, &mut ActionState<CameraControl>), With<PrimaryCamera>>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
     config: Res<CameraConfig>,
 ) {
@@ -169,7 +168,7 @@ fn impl_zoom(sensitivity: f32, transform: &mut Mut<Transform>, zoom_delta: f32) 
 // an Option of it
 fn should_zoom(
     mouse_wheel_events: &mut EventReader<MouseWheel>,
-    action_state: &mut Mut<ActionState<CameraMovement>>,
+    action_state: &mut Mut<ActionState<CameraControl>>,
 ) -> Option<f32> {
     let mut trackpad = false;
 
@@ -187,7 +186,7 @@ fn should_zoom(
     // the axis data that would have come from the mouse - just for cleanliness
     // and as a reminder to get rid of this shite in the future
     if trackpad {
-        if let Some(axis_data) = action_state.axis_data_mut(&CameraMovement::Zoom) {
+        if let Some(axis_data) = action_state.axis_data_mut(&CameraControl::Zoom) {
             // println!("eliding axis data in zoom {:?}", axis_data);
             axis_data.value = 0.0;
             axis_data.update_value = 0.0;
@@ -198,7 +197,7 @@ fn should_zoom(
 
     //use the `action_value` method to extract the total net amount that the mouse
     // wheel has travelled
-    let zoom_delta = action_state.value(&CameraMovement::Zoom);
+    let zoom_delta = action_state.value(&CameraControl::Zoom);
 
     if zoom_delta == 0.0 {
         return None;
@@ -207,7 +206,7 @@ fn should_zoom(
 }
 
 fn pan_camera(
-    mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<PrimaryCamera>>,
+    mut query: Query<(&mut Transform, &ActionState<CameraControl>), With<PrimaryCamera>>,
     keycode: Res<ButtonInput<KeyCode>>,
     orientation: Res<CameraOrientation>,
 ) {
@@ -238,12 +237,12 @@ fn pan_camera(
 // from &CameraMovement::Pan
 fn should_pan(
     keycode: Res<ButtonInput<KeyCode>>,
-    action_state: &ActionState<CameraMovement>,
+    action_state: &ActionState<CameraControl>,
 ) -> Option<Vec2> {
     let pan_vector = if keycode.pressed(ShiftLeft) {
-        action_state.axis_pair(&CameraMovement::Orbit)
+        action_state.axis_pair(&CameraControl::Orbit)
     } else {
-        action_state.axis_pair(&CameraMovement::Pan)
+        action_state.axis_pair(&CameraControl::Pan)
     };
 
     if pan_vector == Vec2::ZERO {
@@ -255,7 +254,7 @@ fn should_pan(
 // i couldn't get this to work without hitting gimbal lock when consulting with
 // chatGPT 4.o claude Sonnet 3.5 got it right on the first try - holy shit!
 fn orbit_camera(
-    mut q_camera: Query<(&mut Transform, &mut ActionState<CameraMovement>), With<PrimaryCamera>>,
+    mut q_camera: Query<(&mut Transform, &mut ActionState<CameraControl>), With<PrimaryCamera>>,
     camera_config: Res<CameraConfig>,
     keycode: Res<ButtonInput<KeyCode>>,
     orientation: Res<CameraOrientation>,
@@ -301,10 +300,10 @@ fn orbit_camera(
 // we need to let that through as Pan is sequenced after this
 fn should_orbit(
     keycode: Res<ButtonInput<KeyCode>>,
-    action_state: &mut Mut<ActionState<CameraMovement>>,
+    action_state: &mut Mut<ActionState<CameraControl>>,
 ) -> Option<Vec2> {
-    let orbit_vector = action_state.axis_pair(&CameraMovement::Orbit);
-    let pan_vector = action_state.axis_pair(&CameraMovement::Pan);
+    let orbit_vector = action_state.axis_pair(&CameraControl::Orbit);
+    let pan_vector = action_state.axis_pair(&CameraControl::Pan);
 
     if orbit_vector == Vec2::ZERO || pan_vector != Vec2::ZERO || keycode.pressed(ShiftLeft) {
         return None;
@@ -319,9 +318,9 @@ fn should_orbit(
 // on pan and i can't get the Chords I want without this - a fix would be if
 // support for distinguishing between a touch pad scroll and a mouse scroll was
 // added
-fn elide_dual_axis_data(action_state: &mut Mut<ActionState<CameraMovement>>) {
+fn elide_dual_axis_data(action_state: &mut Mut<ActionState<CameraControl>>) {
     // so we definitely are using the mouse wheel so get rid of any dual_axis shite
-    if let Some(dual_axis_data) = action_state.dual_axis_data_mut(&CameraMovement::Orbit) {
+    if let Some(dual_axis_data) = action_state.dual_axis_data_mut(&CameraControl::Orbit) {
         //     println!("eliding orbit data in zoom {:?}", dual_axis_data);
 
         dual_axis_data.pair = Vec2::ZERO;

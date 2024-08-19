@@ -1,4 +1,4 @@
-use crate::input::{
+use crate::global_input::{
     toggle_active,
     GlobalAction,
 };

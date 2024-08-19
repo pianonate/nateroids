@@ -18,7 +18,7 @@ use crate::{
         WallApproachVisual,
     },
     camera::RenderLayer,
-    input::{
+    global_input::{
         toggle_active,
         GlobalAction,
     },

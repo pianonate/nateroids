@@ -1,4 +1,4 @@
-use crate::input::GlobalAction;
+use crate::global_input::GlobalAction;
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::{
     DebugRenderContext,

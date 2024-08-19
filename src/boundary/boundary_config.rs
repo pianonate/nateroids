@@ -9,7 +9,7 @@ use bevy_inspector_egui::{
     quick::ResourceInspectorPlugin,
 };
 
-use crate::input::{
+use crate::global_input::{
     toggle_active,
     GlobalAction,
 };

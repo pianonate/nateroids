@@ -1,7 +1,7 @@
 use crate::{
     boundary::Boundary,
     camera::primary_camera::spawn_primary_camera,
-    input::GlobalAction,
+    global_input::GlobalAction,
 };
 use bevy::{
     core_pipeline::{
@@ -14,7 +14,7 @@ use bevy::{
 use std::ops::Range;
 
 use crate::camera::{
-    camera_config::CameraConfig,
+    camera_control::CameraConfig,
     CameraOrder,
     RenderLayer,
 };

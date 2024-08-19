@@ -1,4 +1,4 @@
-use crate::input::GlobalAction;
+use crate::global_input::GlobalAction;
 use bevy::{
     dev_tools::states::*,
     prelude::*,

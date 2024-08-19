@@ -1,4 +1,4 @@
-mod camera_config;
+mod camera_control;
 mod lights;
 mod primary_camera;
 mod star_twinkling;
@@ -9,7 +9,7 @@ use bevy::{
     render::view::Layer,
 };
 
-use crate::camera::camera_config::CameraConfigPlugin;
+use crate::camera::camera_control::CameraControlPlugin;
 use lights::DirectionalLightsPlugin;
 pub use primary_camera::PrimaryCamera;
 use primary_camera::PrimaryCameraPlugin;
@@ -21,7 +21,7 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(CameraConfigPlugin)
+        app.add_plugins(CameraControlPlugin)
             .add_plugins(DirectionalLightsPlugin)
             .add_plugins(PrimaryCameraPlugin)
             .add_plugins(StarsPlugin)

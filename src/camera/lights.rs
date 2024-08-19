@@ -1,15 +1,101 @@
 use crate::{
-    camera::camera_config::LightConfig,
+    global_input::{
+        toggle_active,
+        GlobalAction,
+    },
     orientation::CameraOrientation,
 };
-use bevy::prelude::*;
+use bevy::{
+    color::palettes::tailwind,
+    prelude::*,
+};
+use bevy_inspector_egui::{
+    inspector_options::std_options::NumberDisplay,
+    prelude::*,
+    quick::ResourceInspectorPlugin,
+};
 
 pub struct DirectionalLightsPlugin;
 
 impl Plugin for DirectionalLightsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<AmbientLight>()
+            .add_plugins(
+                ResourceInspectorPlugin::<LightConfig>::default()
+                    .run_if(toggle_active(false, GlobalAction::LightsInspector)),
+            )
+            .init_resource::<LightConfig>()
+            .register_type::<LightConfig>()
             .add_systems(Update, manage_lighting);
+    }
+}
+
+#[derive(Resource, Reflect, InspectorOptions, Debug, PartialEq, Clone, Copy)]
+#[reflect(Resource, InspectorOptions)]
+pub struct LightSettings {
+    pub color:           Color,
+    pub enabled:         bool,
+    #[inspector(min = 0.0, max = 10_000.0, display = NumberDisplay::Slider)]
+    pub illuminance:     f32,
+    pub shadows_enabled: bool,
+}
+
+impl Default for LightSettings {
+    fn default() -> Self {
+        Self {
+            color:           Color::from(tailwind::AMBER_400),
+            enabled:         false,
+            illuminance:     3000.0,
+            shadows_enabled: false,
+        }
+    }
+}
+
+#[derive(Resource, Reflect, InspectorOptions, Debug, PartialEq, Clone)]
+#[reflect(Resource, InspectorOptions)]
+pub struct LightConfig {
+    #[inspector(min = 0.0, max = 1_000.0, display = NumberDisplay::Slider)]
+    pub ambient_light_brightness: f32,
+    pub ambient_light_color:      Color,
+    pub front:                    LightSettings,
+    pub back:                     LightSettings,
+    pub top:                      LightSettings,
+    pub bottom:                   LightSettings,
+    pub left:                     LightSettings,
+    pub right:                    LightSettings,
+}
+
+impl Default for LightConfig {
+    fn default() -> Self {
+        Self {
+            ambient_light_brightness: 100.0,
+            ambient_light_color:      Color::WHITE,
+            front:                    LightSettings {
+                enabled: true,
+                ..Default::default()
+            },
+            back:                     LightSettings {
+                enabled: true,
+                ..Default::default()
+            },
+            top:                      LightSettings::default(),
+            bottom:                   LightSettings::default(),
+            left:                     LightSettings::default(),
+            right:                    LightSettings::default(),
+        }
+    }
+}
+
+impl LightConfig {
+    pub fn get_light_settings(&self, position: LightPosition) -> &LightSettings {
+        match position {
+            LightPosition::Front => &self.front,
+            LightPosition::Back => &self.back,
+            LightPosition::Top => &self.top,
+            LightPosition::Bottom => &self.bottom,
+            LightPosition::Left => &self.left,
+            LightPosition::Right => &self.right,
+        }
     }
 }
 
