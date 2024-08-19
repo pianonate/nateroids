@@ -25,10 +25,8 @@ impl Plugin for SpaceshipControlPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<SpaceshipControlConfig>()
             .add_plugins(
-                ResourceInspectorPlugin::<SpaceshipControlConfig>::default().run_if(toggle_active(
-                    false,
-                    GlobalAction::SpaceshipControlInspector,
-                )),
+                ResourceInspectorPlugin::<SpaceshipControlConfig>::default()
+                    .run_if(toggle_active(false, GlobalAction::SpaceshipControlInspector)),
             )
             .init_resource::<SpaceshipControlConfig>()
             // spaceship will have input attached to it when spawning a spaceship

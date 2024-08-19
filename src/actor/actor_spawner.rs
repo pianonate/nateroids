@@ -117,9 +117,7 @@ impl VelocityBehavior {
                 base_velocity,
                 inherit_parent_velocity,
             } => {
-                if let (Some(parent_velocity), Some(parent_transform)) =
-                    (parent_velocity, parent_transform)
-                {
+                if let (Some(parent_velocity), Some(parent_transform)) = (parent_velocity, parent_transform) {
                     let forward = -parent_transform.forward();
                     let mut velocity = forward * *base_velocity;
                     if *inherit_parent_velocity {
@@ -280,8 +278,7 @@ impl ActorBundle {
         let parent_velocity = parent.map(|(_, v, _)| v);
         let parent_aabb = parent.map(|(_, _, a)| a);
 
-        let transform =
-            config.calculate_spawn_transform(parent_transform.zip(parent_aabb), boundary);
+        let transform = config.calculate_spawn_transform(parent_transform.zip(parent_aabb), boundary);
         let velocity = config
             .velocity_behavior
             .calculate_velocity(parent_velocity, parent_transform);

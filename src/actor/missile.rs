@@ -102,8 +102,7 @@ fn fire_missile(
     mut missile_config: ResMut<MissileConfig>,
     time: Res<Time>,
 ) {
-    let Ok((spaceship_transform, spaceship_velocity, aabb, continuous_fire)) =
-        q_spaceship.get_single()
+    let Ok((spaceship_transform, spaceship_velocity, aabb, continuous_fire)) = q_spaceship.get_single()
     else {
         return;
     };

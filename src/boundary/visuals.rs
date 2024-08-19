@@ -31,10 +31,7 @@ impl Plugin for VisualsPlugin {
 #[derive(Default, Reflect, GizmoConfigGroup)]
 pub struct BoundaryGizmos {}
 
-fn init_gizmo_configs(
-    mut config_store: ResMut<GizmoConfigStore>,
-    boundary_config: Res<BoundaryConfig>,
-) {
+fn init_gizmo_configs(mut config_store: ResMut<GizmoConfigStore>, boundary_config: Res<BoundaryConfig>) {
     for (_, any_config, _) in config_store.iter_mut() {
         any_config.render_layers = RenderLayers::from_layers(RenderLayer::Game.layers());
         any_config.line_width = 2.;
@@ -62,8 +59,7 @@ impl Default for Boundary {
         let config = BoundaryConfig::default();
 
         let cell_scale = config.boundary_scalar * config.boundary_cell_count.as_vec3();
-        let longest_diagonal =
-            (cell_scale.x.powi(2) + cell_scale.y.powi(2) + cell_scale.z.powi(2)).sqrt();
+        let longest_diagonal = (cell_scale.x.powi(2) + cell_scale.y.powi(2) + cell_scale.z.powi(2)).sqrt();
 
         let max_missile_distance = cell_scale.x.max(cell_scale.y).max(cell_scale.z);
 
@@ -195,13 +191,7 @@ impl Boundary {
     }
 }
 
-fn is_in_bounds(
-    point: Vec3,
-    start: f32,
-    origin: Vec3,
-    boundary_min: Vec3,
-    boundary_max: Vec3,
-) -> bool {
+fn is_in_bounds(point: Vec3, start: f32, origin: Vec3, boundary_min: Vec3, boundary_max: Vec3) -> bool {
     if start == origin.x {
         point.y >= boundary_min.y
             && point.y <= boundary_max.y

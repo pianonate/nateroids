@@ -80,9 +80,7 @@ impl GlobalAction {
             Self::PlanesInspector => insert_dual_input(input_map, action, KeyCode::KeyP),
             Self::Pause => input_map.with(action, KeyCode::Escape),
             Self::SpaceshipInspector => insert_dual_input(input_map, action, KeyCode::Digit3),
-            Self::SpaceshipControlInspector => {
-                insert_dual_input(input_map, action, KeyCode::Digit4)
-            },
+            Self::SpaceshipControlInspector => insert_dual_input(input_map, action, KeyCode::Digit4),
             Self::Stars => input_map.with(action, KeyCode::F3),
         })
     }

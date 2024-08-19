@@ -55,9 +55,7 @@ impl Plugin for PrimaryCameraPlugin {
 // by bevy_inspector_egui
 fn update_clear_color(camera_config: Res<CameraConfig>, mut clear_color: ResMut<ClearColor>) {
     if camera_config.is_changed() {
-        clear_color.0 = camera_config
-            .clear_color
-            .darker(camera_config.darkening_factor);
+        clear_color.0 = camera_config.clear_color.darker(camera_config.darkening_factor);
     }
 }
 
@@ -95,9 +93,7 @@ pub fn spawn_primary_camera(
             hdr: true,
             order: CameraOrder::Game.order(),
             clear_color: ClearColorConfig::Custom(
-                camera_config
-                    .clear_color
-                    .darker(camera_config.darkening_factor),
+                camera_config.clear_color.darker(camera_config.darkening_factor),
             ),
             ..default()
         },
@@ -113,9 +109,7 @@ pub fn spawn_primary_camera(
     commands
         .spawn(primary_camera)
         .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
-        .insert(InputManagerBundle::with_map(
-            CameraControl::camera_input_map(),
-        ))
+        .insert(InputManagerBundle::with_map(CameraControl::camera_input_map()))
         .add_child(stars_camera_entity)
         .insert(PrimaryCamera);
 }
@@ -235,10 +229,7 @@ fn pan_camera(
 // pressed hacky, hacky - but if LeafWing ever gets more sophisticated,
 // ShiftLeft as a sentinel, and the following can go away and we can just get it
 // from &CameraMovement::Pan
-fn should_pan(
-    keycode: Res<ButtonInput<KeyCode>>,
-    action_state: &ActionState<CameraControl>,
-) -> Option<Vec2> {
+fn should_pan(keycode: Res<ButtonInput<KeyCode>>, action_state: &ActionState<CameraControl>) -> Option<Vec2> {
     let pan_vector = if keycode.pressed(ShiftLeft) {
         action_state.axis_pair(&CameraControl::Orbit)
     } else {

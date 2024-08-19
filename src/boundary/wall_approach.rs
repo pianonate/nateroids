@@ -69,13 +69,7 @@ pub struct BoundaryWall {
 }
 
 fn wall_approach_system(
-    mut query: Query<(
-        &Aabb,
-        &Transform,
-        &Velocity,
-        &Teleporter,
-        &mut WallApproachVisual,
-    )>,
+    mut query: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
     boundary: Res<Boundary>,
     time: Res<Time>,
     boundary_config: Res<BoundaryConfig>,
@@ -90,9 +84,7 @@ fn wall_approach_system(
         // the max dimension of the aabb is actually the diameter - using it as the
         // radius has the circles start out twice as big and then shrink to fit
         // the size of the object minimum size for small objects is preserved
-        let radius = aabb
-            .max_dimension()
-            .max(boundary_config.smallest_teleport_circle);
+        let radius = aabb.max_dimension().max(boundary_config.smallest_teleport_circle);
 
         let position = transform.translation;
         let direction = velocity.linvel.normalize_or_zero();

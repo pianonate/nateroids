@@ -19,9 +19,7 @@ impl Plugin for PhysicsPlugin {
     }
 }
 
-fn disable_physics_debug(mut rapier_debug: ResMut<DebugRenderContext>) {
-    rapier_debug.enabled = false;
-}
+fn disable_physics_debug(mut rapier_debug: ResMut<DebugRenderContext>) { rapier_debug.enabled = false; }
 
 fn toggle_physics_debug(
     user_input: Res<ActionState<GlobalAction>>,

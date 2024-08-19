@@ -49,14 +49,7 @@ impl Plugin for SpaceshipPlugin {
 #[allow(clippy::type_complexity)]
 fn toggle_continuous_fire(
     mut commands: Commands,
-    q_spaceship: Query<
-        (
-            Entity,
-            &ActionState<SpaceshipControl>,
-            Option<&ContinuousFire>,
-        ),
-        With<Spaceship>,
-    >,
+    q_spaceship: Query<(Entity, &ActionState<SpaceshipControl>, Option<&ContinuousFire>), With<Spaceship>>,
 ) {
     if let Ok((entity, control, continuous)) = q_spaceship.get_single() {
         if control.just_pressed(&SpaceshipControl::ContinuousFire) {
@@ -74,11 +67,7 @@ fn toggle_continuous_fire(
 //todo: #bug - you don't need to bring boundary in except for nateroids
 // spawning
 // - make it optional
-fn spawn_spaceship(
-    mut commands: Commands,
-    spaceship_config: Res<SpaceshipConfig>,
-    boundary: Res<Boundary>,
-) {
+fn spawn_spaceship(mut commands: Commands, spaceship_config: Res<SpaceshipConfig>, boundary: Res<Boundary>) {
     if !spaceship_config.0.spawnable {
         return;
     }

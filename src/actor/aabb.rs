@@ -59,11 +59,7 @@ fn draw_aabb_system(mut gizmos: Gizmos, query: Query<(&Transform, &Aabb)>) {
     }
 }
 
-pub fn get_scene_aabb(
-    scenes: &Assets<Scene>,
-    meshes: &Assets<Mesh>,
-    handle: &Handle<Scene>,
-) -> Aabb {
+pub fn get_scene_aabb(scenes: &Assets<Scene>, meshes: &Assets<Mesh>, handle: &Handle<Scene>) -> Aabb {
     if let Some(scene) = scenes.get(handle) {
         let mut aabb = None;
         for entity in scene.world.iter_entities() {
@@ -90,9 +86,7 @@ pub fn get_scene_aabb(
 }
 
 fn get_mesh_aabb(mesh: &Mesh) -> Aabb {
-    if let Some(VertexAttributeValues::Float32x3(positions)) =
-        mesh.attribute(Mesh::ATTRIBUTE_POSITION)
-    {
+    if let Some(VertexAttributeValues::Float32x3(positions)) = mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
         let mut min = Vec3::splat(f32::MAX);
         let mut max = Vec3::splat(f32::MIN);
         for position in positions.iter() {

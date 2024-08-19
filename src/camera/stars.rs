@@ -138,9 +138,7 @@ fn toggle_stars(
         (entity, None) => {
             if user_input.just_pressed(&GlobalAction::Stars) {
                 println!("stars on");
-                commands
-                    .entity(entity)
-                    .insert(get_bloom_settings(camera_config));
+                commands.entity(entity).insert(get_bloom_settings(camera_config));
             }
         },
     }
@@ -178,11 +176,7 @@ fn spawn_stars(mut commands: Commands, config: Res<StarConfig>, boundary: Res<Bo
     }
 }
 
-fn get_star_position(
-    inner_sphere_radius: f32,
-    outer_sphere_radius: f32,
-    rng: &mut ThreadRng,
-) -> Vec3 {
+fn get_star_position(inner_sphere_radius: f32, outer_sphere_radius: f32, rng: &mut ThreadRng) -> Vec3 {
     let u: f32 = rng.gen_range(0.0..1.0);
     let v: f32 = rng.gen_range(0.0..1.0);
     let theta = u * std::f32::consts::PI * 2.0;
@@ -240,20 +234,14 @@ fn setup_star_rendering(
 
     for (entity, star) in stars.iter() {
         let material = materials.add(StandardMaterial {
-            emissive: LinearRgba::new(
-                star.emissive.x,
-                star.emissive.y,
-                star.emissive.z,
-                star.emissive.w,
-            ),
+            emissive: LinearRgba::new(star.emissive.x, star.emissive.y, star.emissive.z, star.emissive.w),
             ..default()
         });
 
         commands.entity(entity).insert(MaterialMeshBundle {
             mesh: mesh.clone(),
             material,
-            transform: Transform::from_translation(star.position)
-                .with_scale(Vec3::splat(star.radius)),
+            transform: Transform::from_translation(star.position).with_scale(Vec3::splat(star.radius)),
             ..default()
         });
     }

@@ -8,10 +8,7 @@ pub struct TeleportPlugin;
 
 impl Plugin for TeleportPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            teleport_at_boundary.in_set(InGameSet::EntityUpdates),
-        );
+        app.add_systems(FixedUpdate, teleport_at_boundary.in_set(InGameSet::EntityUpdates));
     }
 }
 
@@ -35,8 +32,7 @@ fn teleport_at_boundary(
             transform.translation = teleported_position;
             wrappable.just_teleported = true;
             wrappable.last_teleported_position = Some(teleported_position);
-            wrappable.last_teleported_normal =
-                Some(boundary.get_normal_for_position(teleported_position));
+            wrappable.last_teleported_normal = Some(boundary.get_normal_for_position(teleported_position));
         } else {
             wrappable.just_teleported = false;
             wrappable.last_teleported_position = None;
