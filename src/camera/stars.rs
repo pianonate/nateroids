@@ -1,7 +1,4 @@
-use crate::boundary::{
-    Boundary,
-    BoundaryConfig,
-};
+use crate::boundary::Boundary;
 use bevy::{
     prelude::*,
     render::view::RenderLayers,
@@ -69,7 +66,7 @@ pub struct Star {
 
 // just set up the entities with their positions - we'll add an emissive
 // StandardMaterial separately
-fn spawn_stars(mut commands: Commands, config: Res<StarConfig>, boundary_config: Res<BoundaryConfig>) {
+fn spawn_stars(mut commands: Commands, config: Res<StarConfig>, boundary_config: Res<Boundary>) {
     let longest_diagonal = boundary_config.longest_diagonal();
     let inner_sphere_radius = longest_diagonal + config.star_field_inner_diameter;
     let outer_sphere_radius = inner_sphere_radius + config.star_field_outer_diameter;

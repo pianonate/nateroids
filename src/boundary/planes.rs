@@ -1,19 +1,97 @@
 use crate::{
-    boundary::{
-        Boundary,
-        PlaneConfig,
+    boundary::Boundary,
+    global_input::{
+        toggle_active,
+        GlobalAction,
     },
     orientation::{
         CameraOrientation,
         OrientationConfig,
     },
 };
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::render_resource::Face,
+};
+use bevy_inspector_egui::{
+    inspector_options::std_options::NumberDisplay,
+    prelude::*,
+    quick::ResourceInspectorPlugin,
+};
 
 pub struct PlanesPlugin;
 
 impl Plugin for PlanesPlugin {
-    fn build(&self, app: &mut App) { app.add_systems(Update, manage_box_planes); }
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, manage_box_planes)
+            .register_type::<PlaneConfig>()
+            .init_resource::<PlaneConfig>()
+            .add_plugins(
+                ResourceInspectorPlugin::<PlaneConfig>::default()
+                    .run_if(toggle_active(false, GlobalAction::PlanesInspector)),
+            );
+    }
+}
+
+// you can't use an #[inspector()] w/attenuation_distance
+// because you have to use a logarithmic range to reach f32::INFINITY which is
+// its default problem for another day...
+#[derive(Resource, Reflect, InspectorOptions, Clone, Debug)]
+#[reflect(Resource, InspectorOptions)]
+pub struct PlaneConfig {
+    pub front:                 bool,
+    pub back:                  bool,
+    pub top:                   bool,
+    pub bottom:                bool,
+    pub left:                  bool,
+    pub right:                 bool,
+    pub alpha_mode:            Option<AlphaMode>,
+    pub base_color:            Color,
+    #[reflect(ignore)]
+    pub cull_mode:             Option<Face>,
+    pub double_sided:          bool,
+    pub emissive:              LinearRgba,
+    pub attenuation_distance:  f32,
+    #[inspector(min = 1.0, max = 3.0, display = NumberDisplay::Slider)]
+    pub ior:                   f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub diffuse_transmission:  f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub metallic:              f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub perceptual_roughness:  f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub reflectance:           f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub specular_transmission: f32,
+    #[inspector(min = 0.001, max = 10.0, display = NumberDisplay::Slider)]
+    pub(crate) thickness:      f32,
+}
+
+impl Default for PlaneConfig {
+    fn default() -> Self {
+        Self {
+            front:                 false,
+            back:                  false,
+            left:                  false,
+            right:                 false,
+            top:                   false,
+            bottom:                false,
+            alpha_mode:            None,
+            attenuation_distance:  f32::INFINITY,
+            base_color:            Color::from(LinearRgba::new(1., 1., 1., 1.)),
+            cull_mode:             Some(Face::Back),
+            diffuse_transmission:  0.,
+            double_sided:          false,
+            emissive:              LinearRgba::BLACK,
+            ior:                   1.5,
+            metallic:              0.,
+            perceptual_roughness:  0.5,
+            reflectance:           0.5,
+            specular_transmission: 0.,
+            thickness:             0.001,
+        }
+    }
 }
 
 #[derive(Component)]

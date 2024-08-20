@@ -4,7 +4,7 @@ use crate::{
         Teleporter,
     },
     boundary::{
-        boundary_config::BoundaryConfig,
+        // boundary_config::BoundaryConfig,
         Boundary,
     },
     state::PlayingGame,
@@ -25,6 +25,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_rapier3d::dynamics::Velocity;
+//use crate::boundary::Boundary;
 
 pub struct WallApproachPlugin;
 
@@ -71,7 +72,7 @@ struct HandlerParams {
 fn wall_approach_system(
     mut query: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
     boundary: Res<Boundary>,
-    boundary_config: Res<BoundaryConfig>,
+    boundary_config: Res<Boundary>,
 ) {
     let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
     let approach_distance = boundary_size * boundary_config.distance_approach;

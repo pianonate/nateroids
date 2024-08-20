@@ -1,5 +1,5 @@
 use crate::{
-    boundary::BoundaryConfig,
+    boundary::Boundary,
     camera::{
         camera_control::{
             CameraConfig,
@@ -107,7 +107,7 @@ pub struct PrimaryCamera;
 
 pub fn spawn_primary_camera(
     camera_config: Res<CameraConfig>,
-    config: Res<BoundaryConfig>,
+    config: Res<Boundary>,
     mut commands: Commands,
     mut orientation: ResMut<CameraOrientation>,
     mut q_stars_camera: Query<Entity, With<StarsCamera>>,

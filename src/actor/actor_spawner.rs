@@ -24,7 +24,6 @@ use crate::{
     },
 };
 use bevy::{
-    color::palettes::tailwind,
     ecs::system::EntityCommands,
     prelude::*,
     render::view::RenderLayers,

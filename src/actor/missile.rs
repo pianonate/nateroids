@@ -23,7 +23,7 @@ use crate::{
         actor_spawner::spawn_actor,
         spaceship_control::SpaceshipControl,
     },
-    boundary::BoundaryConfig,
+    //   boundary::Boundary,
 };
 use leafwing_input_manager::prelude::*;
 
@@ -102,7 +102,7 @@ fn fire_missile(
     q_input_map: Query<&ActionState<SpaceshipControl>>,
     q_spaceship: Query<(&Transform, &Velocity, &Aabb, Option<&ContinuousFire>), With<Spaceship>>,
     boundary: Res<Boundary>,
-    boundary_config: Res<BoundaryConfig>,
+    boundary_config: Res<Boundary>,
     mut missile_config: ResMut<MissileConfig>,
     time: Res<Time>,
 ) {

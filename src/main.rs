@@ -14,7 +14,7 @@ mod state;
 use crate::{
     actor::ActorPlugin,
     asset_loader::AssetLoaderPlugin,
-    boundary::BoundaryPlugin,
+    boundary::BoundaryModulePlugin,
     camera::CameraPlugin,
     despawn::DespawnPlugin,
     global_input::InputPlugin,
@@ -56,7 +56,7 @@ fn main() {
     // i just split them in 2
     app.add_plugins((
         AssetLoaderPlugin,
-        BoundaryPlugin,
+        BoundaryModulePlugin,
         CameraPlugin,
         ActorPlugin,
         DespawnPlugin,

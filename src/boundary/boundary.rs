@@ -1,31 +1,95 @@
+use crate::global_input::{
+    toggle_active,
+    GlobalAction,
+};
 use crate::{
-    boundary::boundary_config::BoundaryConfig,
     camera::RenderLayer,
     // computed states, so not using GameState directly
     state::PlayingGame,
 };
-
 use bevy::{
     prelude::*,
     render::view::RenderLayers,
 };
+use bevy_inspector_egui::{
+    inspector_options::std_options::NumberDisplay,
+    prelude::*,
+    quick::ResourceInspectorPlugin,
+};
+
+use bevy::color::palettes::tailwind;
 use std::cell::Cell;
 
-pub struct BoundaryVisualsPlugin;
+pub struct BoundaryPlugin;
 
-impl Plugin for BoundaryVisualsPlugin {
+impl Plugin for BoundaryPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Boundary>()
+            .register_type::<Boundary>()
+            .add_plugins(
+                ResourceInspectorPlugin::<Boundary>::default()
+                    .run_if(toggle_active(false, GlobalAction::BoundaryInspector)),
+            )
             .init_gizmo_group::<BoundaryGizmos>()
             .add_systems(Update, update_gizmos_config)
             .add_systems(Update, draw_boundary.run_if(in_state(PlayingGame)));
     }
 }
 
+#[derive(Resource, Reflect, InspectorOptions, Clone, Debug)]
+#[reflect(Resource, InspectorOptions)]
+pub struct Boundary {
+    pub cell_count:               UVec3,
+    pub color:                    Color,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub distance_approach:        f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub distance_shrink:          f32,
+    #[inspector(min = 0.01, max = 10.0, display = NumberDisplay::Slider)]
+    pub line_width:               f32,
+    #[inspector(min = 50., max = 300., display = NumberDisplay::Slider)]
+    pub scalar:                   f32,
+    #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
+    pub smallest_teleport_circle: f32,
+    pub transform:                Transform,
+}
+
+impl Default for Boundary {
+    fn default() -> Self {
+        let cell_count = UVec3::new(2, 1, 1);
+        let scalar = 110.;
+
+        Self {
+            cell_count,
+            color: Color::from(tailwind::BLUE_300),
+            distance_approach: 0.5,
+            distance_shrink: 0.25,
+            line_width: 4.,
+            scalar,
+            smallest_teleport_circle: 5.,
+            transform: Transform::from_scale(scalar * cell_count.as_vec3()),
+        }
+    }
+}
+
+impl Boundary {
+    pub fn scale(&self) -> Vec3 { self.scalar * self.cell_count.as_vec3() }
+
+    pub fn longest_diagonal(&self) -> f32 {
+        let boundary_scale = self.scale();
+        (boundary_scale.x.powi(2) + boundary_scale.y.powi(2) + boundary_scale.z.powi(2)).sqrt()
+    }
+
+    pub fn max_missile_distance(&self) -> f32 {
+        let boundary_scale = self.scale();
+        boundary_scale.x.max(boundary_scale.y).max(boundary_scale.z)
+    }
+}
+
 #[derive(Default, Reflect, GizmoConfigGroup)]
 pub struct BoundaryGizmos {}
 
-fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_config: Res<BoundaryConfig>) {
+fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_config: Res<Boundary>) {
     for (_, any_config, _) in config_store.iter_mut() {
         any_config.render_layers = RenderLayers::from_layers(RenderLayer::Game.layers());
         any_config.line_width = 2.;
@@ -39,11 +103,11 @@ fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_con
     }
 }
 
-#[derive(Reflect, Resource, Debug, Default)]
-#[reflect(Resource)]
-pub struct Boundary {
-    pub transform: Transform,
-}
+// #[derive(Reflect, Resource, Debug, Default)]
+// #[reflect(Resource)]
+// pub struct Boundary {
+//     pub transform: Transform,
+// }
 
 /// Finds the intersection point of a ray (defined by an origin and direction)
 /// with the edges of a viewable area.
@@ -180,24 +244,20 @@ fn is_in_bounds(point: Vec3, start: f32, origin: Vec3, boundary_min: Vec3, bound
     }
 }
 
-fn draw_boundary(
-    mut boundary: ResMut<Boundary>,
-    config: Res<BoundaryConfig>,
-    mut gizmos: Gizmos<BoundaryGizmos>,
-) {
-    // updating the transform from config so it can be located in one place
-    // and also so that it can be dynamically changed with the inspector while the
-    // game is running the boundary transform is used both for position but also
+fn draw_boundary(mut boundary: ResMut<Boundary>, mut gizmos: Gizmos<BoundaryGizmos>) {
+    // updating the boundary resource transform from its configuration so it can be
+    // dynamically changed with the inspector while the game is running
+    // the boundary transform is used both for position but also
     // so the fixed camera can be positioned based on the boundary scale
-    boundary.transform.scale = config.scale();
+    boundary.transform.scale = boundary.scale();
 
     gizmos
         .grid_3d(
             boundary.transform.translation,
             Quat::IDENTITY,
-            config.cell_count,
-            Vec3::splat(config.scalar),
-            config.color,
+            boundary.cell_count,
+            Vec3::splat(boundary.scalar),
+            boundary.color,
         )
         .outer_edges();
 }
