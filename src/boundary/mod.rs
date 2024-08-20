@@ -1,6 +1,6 @@
 mod boundary_config;
-mod planes;
 mod boundary_visuals;
+mod planes;
 mod wall_approach;
 
 pub use crate::boundary::{

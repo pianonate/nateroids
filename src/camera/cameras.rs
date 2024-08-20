@@ -1,5 +1,5 @@
 use crate::{
-    boundary::Boundary,
+    boundary::BoundaryConfig,
     camera::{
         camera_control::{
             CameraConfig,
@@ -20,7 +20,6 @@ use bevy::{
     render::view::RenderLayers,
 };
 use leafwing_input_manager::prelude::*;
-use crate::boundary::BoundaryConfig;
 
 pub struct CamerasPlugin;
 

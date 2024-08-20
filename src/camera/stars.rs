@@ -1,4 +1,7 @@
-use crate::boundary::{Boundary, BoundaryConfig};
+use crate::boundary::{
+    Boundary,
+    BoundaryConfig,
+};
 use bevy::{
     prelude::*,
     render::view::RenderLayers,

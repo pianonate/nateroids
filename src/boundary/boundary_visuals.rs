@@ -45,7 +45,6 @@ pub struct Boundary {
     pub transform: Transform,
 }
 
-
 /// Finds the intersection point of a ray (defined by an origin and direction)
 /// with the edges of a viewable area.
 ///
@@ -191,7 +190,7 @@ fn draw_boundary(
     // game is running the boundary transform is used both for position but also
     // so the fixed camera can be positioned based on the boundary scale
     boundary.transform.scale = config.scale();
-    
+
     gizmos
         .grid_3d(
             boundary.transform.translation,

@@ -37,7 +37,6 @@ pub struct CameraControlPlugin;
 
 impl Plugin for CameraControlPlugin {
     fn build(&self, app: &mut App) {
-
         app.register_type::<CameraConfig>()
             .add_plugins(
                 ResourceInspectorPlugin::<CameraConfig>::default()
@@ -165,11 +164,11 @@ fn check_inspector_state(
 
         // Check if the mouse is over any egui area
         let is_mouse_over_inspector = ctx.is_pointer_over_area();
-        
-        let dragged =  ctx.dragged_id().is_some();
-        
+
+        let dragged = ctx.dragged_id().is_some();
+
         let is_inspecting = is_mouse_over_inspector || dragged;
-        
+
         if let GameState::InGame { paused, inspecting } = state.get() {
             if *inspecting != is_inspecting {
                 next_state.set(GameState::InGame {

@@ -18,12 +18,14 @@ use crate::actor::{
     Teleporter,
 };
 
-use crate::actor::{
-    actor_spawner::spawn_actor,
-    spaceship_control::SpaceshipControl,
+use crate::{
+    actor::{
+        actor_spawner::spawn_actor,
+        spaceship_control::SpaceshipControl,
+    },
+    boundary::BoundaryConfig,
 };
 use leafwing_input_manager::prelude::*;
-use crate::boundary::BoundaryConfig;
 
 pub struct MissilePlugin;
 
