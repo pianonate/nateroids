@@ -1,6 +1,21 @@
-use crate::global_input::{
-    toggle_active,
-    GlobalAction,
+use crate::{
+    actor::{
+        actor_template::SpaceshipConfig,
+        spaceship::{
+            ContinuousFire,
+            Spaceship,
+        },
+    },
+    camera::PrimaryCamera,
+    global_input::{
+        toggle_active,
+        GlobalAction,
+    },
+    orientation::{
+        CameraOrientation,
+        OrientationType,
+    },
+    schedule::InGameSet,
 };
 use bevy::prelude::*;
 use bevy_inspector_egui::{
@@ -8,6 +23,7 @@ use bevy_inspector_egui::{
     prelude::*,
     quick::ResourceInspectorPlugin,
 };
+use bevy_rapier3d::dynamics::Velocity;
 use leafwing_input_manager::{
     action_state::ActionState,
     input_map::InputMap,
@@ -32,7 +48,13 @@ impl Plugin for SpaceshipControlPlugin {
             // spaceship will have input attached to it when spawning a spaceship
             .add_plugins(InputManagerPlugin::<SpaceshipControl>::default())
             .init_resource::<ActionState<SpaceshipControl>>()
-            .insert_resource(SpaceshipControl::generate_input_map());
+            .insert_resource(SpaceshipControl::generate_input_map())
+            .add_systems(
+                Update,
+                (spaceship_movement_controls, toggle_continuous_fire)
+                    .chain()
+                    .in_set(InGameSet::UserInput),
+            );
     }
 }
 
@@ -86,5 +108,122 @@ impl SpaceshipControl {
             Self::Fire => input_map.with(action, KeyCode::Space),
             Self::ContinuousFire => input_map.with(action, KeyCode::KeyF),
         })
+    }
+}
+
+fn spaceship_movement_controls(
+    mut q_spaceship: Query<(&mut Transform, &mut Velocity), With<Spaceship>>,
+    q_camera: Query<&Transform, (With<PrimaryCamera>, Without<Spaceship>)>,
+    q_input_map: Query<&ActionState<SpaceshipControl>>,
+    spaceship_config: Res<SpaceshipConfig>,
+    movement_config: Res<SpaceshipControlConfig>,
+    time: Res<Time>,
+    orientation_mode: Res<CameraOrientation>,
+) {
+    if let Ok(camera_transform) = q_camera.get_single() {
+        // we can use this because there is only exactly one spaceship - so we're not
+        // looping over the query
+        if let Ok((mut spaceship_transform, mut velocity)) = q_spaceship.get_single_mut() {
+            // dynamically update from inspector while game is running to change size
+            spaceship_transform.scale = Vec3::splat(spaceship_config.0.scalar);
+
+            let controls = q_input_map.single();
+
+            let mut rotation = 0.0;
+            let delta_seconds = time.delta_seconds();
+            let rotation_speed = movement_config.rotation_speed;
+
+            if controls.pressed(&SpaceshipControl::TurnRight) {
+                // right
+                velocity.angvel.z = 0.0;
+                rotation = rotation_speed * delta_seconds;
+            } else if controls.pressed(&SpaceshipControl::TurnLeft) {
+                // left
+                velocity.angvel.z = 0.0;
+                rotation = -rotation_speed * delta_seconds;
+            }
+
+            let camera_forward = camera_transform.forward();
+            let facing_opposite = camera_forward.dot(Vec3::new(0.0, 0.0, -1.0)) > 0.0;
+
+            if facing_opposite {
+                rotation = -rotation;
+            }
+
+            // rotate around the z-axis
+            spaceship_transform.rotate_z(rotation);
+
+            let max_speed = movement_config.max_speed;
+            let accel = movement_config.acceleration;
+
+            if controls.pressed(&SpaceshipControl::Accelerate) {
+                apply_acceleration(
+                    &mut velocity,
+                    -spaceship_transform.forward().as_vec3(),
+                    accel,
+                    max_speed,
+                    delta_seconds,
+                    orientation_mode,
+                );
+            }
+
+            /* let mut roll = 0.0;
+
+               if keyboard_input.pressed(ShiftLeft) {
+                roll = -SPACESHIP_ROLL_SPEED * time.delta_seconds();
+            } else if keyboard_input.pressed(ControlLeft) {
+                roll = SPACESHIP_ROLL_SPEED * time.delta_seconds();
+            }*/
+
+            // rotate around the local z-axis
+            // the rotation is relative to the current rotation
+            // transform.rotate_local_z(roll);
+        }
+    }
+}
+
+fn apply_acceleration(
+    velocity: &mut Velocity,
+    direction: Vec3,
+    acceleration: f32,
+    max_speed: f32,
+    delta_seconds: f32,
+    orientation: Res<CameraOrientation>,
+) {
+    let proposed_velocity = velocity.linvel + direction * (acceleration * delta_seconds);
+    let proposed_speed = proposed_velocity.length();
+
+    // Ensure we're not exceeding max velocity
+    if proposed_speed > max_speed {
+        velocity.linvel = proposed_velocity.normalize() * max_speed;
+    } else {
+        velocity.linvel = proposed_velocity;
+    }
+
+    //todo: #handl3d
+    match orientation.orientation {
+        // in 3d we can accelerate in all dirs
+        OrientationType::BehindSpaceship3D => (),
+        _ => velocity.linvel.z = 0.0, // Force the `z` value of velocity.linvel to be 0
+    }
+}
+
+// todo: how can i avoid setting this allow - i'm guessing a system param would
+// be just as problematic
+#[allow(clippy::type_complexity)]
+fn toggle_continuous_fire(
+    mut commands: Commands,
+    q_spaceship: Query<(Entity, &ActionState<SpaceshipControl>, Option<&ContinuousFire>), With<Spaceship>>,
+) {
+    if let Ok((entity, control, continuous)) = q_spaceship.get_single() {
+        if control.just_pressed(&SpaceshipControl::ContinuousFire) {
+            if continuous.is_some() {
+                println!("removing continuous");
+                commands.entity(entity).remove::<ContinuousFire>();
+            } else {
+                println!("adding continuous");
+                commands.entity(entity).insert(ContinuousFire);
+            }
+        }
     }
 }

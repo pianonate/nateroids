@@ -22,7 +22,6 @@ leafwing-input-manager = { git = "https://github.com/Leafwing-Studios/leafwing-i
 # RUSTFLAGS="--cfg=web_sys_unstable_apis" cargo build --release --target wasm32-unknown-unknown
 #
 bevy-inspector-egui = "0.25.2"
-egui_dock = "0.13"
 strum = { version = "0.26", features = ["derive"] }
 
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:

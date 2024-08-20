@@ -1,24 +1,11 @@
-use crate::{
-    boundary::Boundary,
-    camera::primary_camera::spawn_primary_camera,
-    global_input::GlobalAction,
-};
+use crate::boundary::Boundary;
 use bevy::{
-    core_pipeline::{
-        bloom::BloomSettings,
-        tonemapping::Tonemapping,
-    },
     prelude::*,
     render::view::RenderLayers,
 };
 use std::ops::Range;
 
-use crate::camera::{
-    camera_control::CameraConfig,
-    CameraOrder,
-    RenderLayer,
-};
-use leafwing_input_manager::action_state::ActionState;
+use crate::camera::RenderLayer;
 use rand::{
     prelude::ThreadRng,
     Rng,
@@ -27,11 +14,7 @@ use rand::{
 pub struct StarsPlugin;
 
 impl Plugin for StarsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_star_camera.before(spawn_primary_camera))
-            .add_systems(Startup, (spawn_stars, setup_star_rendering).chain())
-            .add_systems(Update, (toggle_stars, update_bloom_settings));
-    }
+    fn build(&self, app: &mut App) { app.add_systems(Startup, (spawn_stars, setup_star_rendering).chain()); }
 }
 
 #[derive(Debug, Clone, Reflect, Resource)]
@@ -71,76 +54,6 @@ impl Default for StarConfig {
             twinkle_intensity:             10.0..20.,
             twinkle_choose_multiple_count: 2, // stars to look at each update
         }
-    }
-}
-
-// propagate bloom settings back to the camera
-fn update_bloom_settings(
-    camera_config: Res<CameraConfig>,
-    mut q_current_settings: Query<&mut BloomSettings, With<StarsCamera>>,
-) {
-    if camera_config.is_changed() {
-        if let Ok(mut old_bloom_settings) = q_current_settings.get_single_mut() {
-            *old_bloom_settings = get_bloom_settings(camera_config);
-        }
-    }
-}
-
-fn get_bloom_settings(camera_config: Res<CameraConfig>) -> BloomSettings {
-    let mut new_bloom_settings = BloomSettings::NATURAL;
-
-    new_bloom_settings.intensity = camera_config.bloom_intensity;
-    new_bloom_settings.low_frequency_boost = camera_config.bloom_low_frequency_boost;
-    new_bloom_settings.high_pass_frequency = camera_config.bloom_high_pass_frequency;
-    new_bloom_settings.clone()
-}
-
-// star camera uses bloom so it needs to be in its own layer as we don't
-// want that effect on the colliders
-fn spawn_star_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
-    let camera3d = Camera3dBundle {
-        camera: Camera {
-            order: CameraOrder::Stars.order(),
-            hdr: true, // 1. HDR is required for bloom
-            ..default()
-        },
-        tonemapping: Tonemapping::BlenderFilmic,
-        ..default()
-    };
-
-    commands
-        .spawn(camera3d)
-        .insert(RenderLayers::from_layers(RenderLayer::Stars.layers()))
-        .insert(get_bloom_settings(camera_config))
-        .insert(StarsCamera);
-}
-
-#[derive(Component)]
-pub struct StarsCamera;
-
-// remove and insert BloomSettings to toggle them off and on
-// this can probably be removed now that bloom is pretty well working...
-fn toggle_stars(
-    mut commands: Commands,
-    mut camera: Query<(Entity, Option<&mut BloomSettings>), With<StarsCamera>>,
-    user_input: Res<ActionState<GlobalAction>>,
-    camera_config: Res<CameraConfig>,
-) {
-    let current_bloom_settings = camera.single_mut();
-
-    match current_bloom_settings {
-        (entity, Some(_)) => {
-            if user_input.just_pressed(&GlobalAction::Stars) {
-                println!("stars off");
-                commands.entity(entity).remove::<BloomSettings>();
-            }
-        },
-        (entity, None) => {
-            if user_input.just_pressed(&GlobalAction::Stars) {
-                println!("stars on");
-                commands.entity(entity).insert(get_bloom_settings(camera_config));
-            }
-        },
     }
 }
 

@@ -22,15 +22,7 @@ use bevy::{
         Dir3,
         Vec3,
     },
-    prelude::{
-        Component,
-        Gizmos,
-        Query,
-        Res,
-        Time,
-        Transform,
-        *,
-    },
+    prelude::*,
 };
 use bevy_rapier3d::dynamics::Velocity;
 
@@ -68,17 +60,22 @@ pub struct BoundaryWall {
     pub shrink_distance:   f32,
 }
 
+struct HandlerParams {
+    approach_distance: f32,
+    shrink_distance:   f32,
+    radius:            f32,
+    position:          Vec3,
+    direction:         Vec3,
+}
+
 fn wall_approach_system(
     mut query: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
     boundary: Res<Boundary>,
-    time: Res<Time>,
     boundary_config: Res<BoundaryConfig>,
 ) {
     let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
     let approach_distance = boundary_size * boundary_config.boundary_distance_approach;
     let shrink_distance = boundary_size * boundary_config.boundary_distance_shrink;
-
-    let delta_time = time.delta_seconds();
 
     for (aabb, transform, velocity, teleporter, mut visual) in query.iter_mut() {
         // the max dimension of the aabb is actually the diameter - using it as the
@@ -89,43 +86,82 @@ fn wall_approach_system(
         let position = transform.translation;
         let direction = velocity.linvel.normalize_or_zero();
 
-        if let Some(collision_point) = boundary.find_edge_point(position, direction) {
-            let distance_to_wall = position.distance(collision_point);
-            let normal = boundary.get_normal_for_position(collision_point);
+        let handler_params = HandlerParams {
+            approach_distance,
+            shrink_distance,
+            radius,
+            position,
+            direction,
+        };
 
-            if distance_to_wall <= approach_distance {
-                visual.approaching = Some(BoundaryWall {
-                    approach_distance,
-                    distance_to_wall,
-                    normal,
-                    radius,
-                    position: collision_point,
-                    shrink_distance,
-                });
-                visual.emerging = None;
-            } else {
-                visual.approaching = None;
-            }
-        } else {
-            visual.approaching = None;
+        handle_approaching_visual(&handler_params, &boundary, &mut visual);
+        handle_emerging_visual(&handler_params, &boundary, teleporter, &mut visual);
+    }
+}
+
+fn handle_emerging_visual(
+    handler_params: &HandlerParams,
+    boundary: &Res<Boundary>,
+    teleporter: &Teleporter,
+    visual: &mut Mut<WallApproachVisual>,
+) {
+    let approach_distance = handler_params.approach_distance;
+    let position = handler_params.position;
+    let radius = handler_params.radius;
+    let shrink_distance = handler_params.shrink_distance;
+    let direction = -handler_params.direction;
+
+    if teleporter.just_teleported {
+        if let Some(normal) = teleporter.last_teleported_normal {
+            // establish the existence of an emerging
+            visual.emerging = Some(BoundaryWall {
+                approach_distance,
+                distance_to_wall: 0.0,
+                normal,
+                position,
+                radius,
+                shrink_distance,
+            });
         }
-
-        if teleporter.just_teleported {
-            if let Some(normal) = teleporter.last_teleported_normal {
-                visual.emerging = Some(BoundaryWall {
-                    approach_distance,
-                    distance_to_wall: 0.0,
-                    normal,
-                    position,
-                    radius,
-                    shrink_distance,
-                });
-            }
-        } else if let Some(ref mut emerging) = visual.emerging {
-            emerging.distance_to_wall += velocity.linvel.length() * delta_time;
+    } else if let Some(ref mut emerging) = visual.emerging {
+        if let Some(emerging_point) = boundary.find_edge_point(position, direction) {
+            // if we established the existence of an emerging point, then we calculate its
+            // distance to the wall that is opposite the direction it's
+            // traveling from
+            emerging.distance_to_wall = position.distance(emerging_point);
             if emerging.distance_to_wall > approach_distance {
                 visual.emerging = None;
             }
+        }
+    }
+}
+
+// todo #bug - if you emerge from a boundary wall and a circle is drawn -
+//             you need to calculate distance the way that missile distances
+//             are counted - not including the teleport in the distance traveled
+//             this may apply to an aborted approach as well so we should handle
+// both
+fn handle_approaching_visual(
+    handler_params: &HandlerParams,
+    boundary: &Res<Boundary>,
+    visual: &mut Mut<WallApproachVisual>,
+) {
+    if let Some(collision_point) = boundary.find_edge_point(handler_params.position, handler_params.direction)
+    {
+        let distance_to_wall = handler_params.position.distance(collision_point);
+        let normal = boundary.get_normal_for_position(collision_point);
+
+        if distance_to_wall <= handler_params.approach_distance {
+            visual.approaching = Some(BoundaryWall {
+                approach_distance: handler_params.approach_distance,
+                distance_to_wall,
+                normal,
+                radius: handler_params.radius,
+                position: collision_point,
+                shrink_distance: handler_params.shrink_distance,
+            });
+        } else {
+            visual.approaching = None;
         }
     }
 }

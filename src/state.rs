@@ -13,6 +13,7 @@ impl Plugin for StatePlugin {
         app.init_state::<GameState>()
             .add_computed_state::<PlayingGame>()
             .add_computed_state::<IsPaused>()
+            .add_computed_state::<IsInspecting>()
             .add_systems(
                 Update,
                 (
@@ -39,7 +40,8 @@ pub enum GameState {
     #[default]
     Splash,
     InGame {
-        paused: bool,
+        paused:     bool,
+        inspecting: bool,
     },
     GameOver,
 }
@@ -81,11 +83,35 @@ impl ComputedStates for IsPaused {
     type SourceStates = GameState;
 
     fn compute(sources: GameState) -> Option<Self> {
-        // Here we convert from our [`AppState`] to all potential [`IsPaused`] versions.
+        // Here we convert from our [`GameState`] to all potential [`IsPaused`]
+        // versions.
         match sources {
             GameState::InGame { paused: true, .. } => Some(Self::Paused),
             GameState::InGame { paused: false, .. } => Some(Self::NotPaused),
             // If `GameState` is not `InGame`, pausing is meaningless, and so we set it to `None`.
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum IsInspecting {
+    NotInspecting,
+    Inspecting,
+}
+
+impl ComputedStates for IsInspecting {
+    type SourceStates = GameState;
+
+    fn compute(sources: GameState) -> Option<Self> {
+        // Here we convert from our [`GameState`] to all potential [`IsInspecting`]
+        // versions.
+        match sources {
+            GameState::InGame { inspecting: true, .. } => Some(Self::Inspecting),
+            GameState::InGame {
+                inspecting: false, ..
+            } => Some(Self::NotInspecting),
+            // If `GameState` is not `InGame`, inspecting is meaningless, and so we set it to `None`.
             _ => None,
         }
     }
@@ -97,15 +123,21 @@ fn toggle_pause(
     state: Res<State<GameState>>,
 ) {
     if user_input.just_pressed(&GlobalAction::Pause) {
-        if let GameState::InGame { paused } = state.get() {
-            next_state.set(GameState::InGame { paused: !*paused });
+        if let GameState::InGame { paused, inspecting } = state.get() {
+            next_state.set(GameState::InGame {
+                paused:     !*paused,
+                inspecting: *inspecting,
+            });
         }
     }
 }
 
 fn transition_to_in_game(mut next_state: ResMut<NextState<GameState>>) {
     println!("Transitioning to InGame");
-    next_state.set(GameState::InGame { paused: false });
+    next_state.set(GameState::InGame {
+        paused:     false,
+        inspecting: false,
+    });
 }
 
 fn pause_rapier(mut rapier_config: ResMut<RapierConfiguration>) {

@@ -76,6 +76,9 @@ fn run_splash(
         text.sections[0].style.font_size += 1.0;
     }
     if spawn_timer.timer.just_finished() {
-        next_state.set(GameState::InGame { paused: false });
+        next_state.set(GameState::InGame {
+            paused:     false,
+            inspecting: false,
+        });
     }
 }

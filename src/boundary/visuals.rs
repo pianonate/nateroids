@@ -2,10 +2,7 @@ use crate::{
     boundary::boundary_config::BoundaryConfig,
     camera::RenderLayer,
     // computed states, so not using GameState directly
-    state::{
-        IsPaused,
-        PlayingGame,
-    },
+    state::PlayingGame,
 };
 
 use bevy::{
@@ -21,10 +18,7 @@ impl Plugin for VisualsPlugin {
         app.init_resource::<Boundary>()
             .init_gizmo_group::<BoundaryGizmos>()
             .add_systems(Startup, init_gizmo_configs)
-            .add_systems(
-                Update,
-                draw_boundary.run_if(in_state(PlayingGame).or_else(in_state(IsPaused::Paused))),
-            );
+            .add_systems(Update, draw_boundary.run_if(in_state(PlayingGame)));
     }
 }
 
@@ -148,7 +142,7 @@ impl Boundary {
         }
     }
 
-    pub fn find_edge_point(&self, origin: Vec3, velocity: Vec3) -> Option<Vec3> {
+    pub fn find_edge_point(&self, origin: Vec3, direction: Vec3) -> Option<Vec3> {
         let boundary_min = self.transform.translation - self.transform.scale / 2.0;
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;
 
@@ -162,14 +156,14 @@ impl Boundary {
         let t_min = Cell::new(f32::MAX);
 
         for (start, dir, pos_bound, neg_bound) in [
-            (origin.x, velocity.x, boundary_max.x, boundary_min.x),
-            (origin.y, velocity.y, boundary_max.y, boundary_min.y),
-            (origin.z, velocity.z, boundary_max.z, boundary_min.z),
+            (origin.x, direction.x, boundary_max.x, boundary_min.x),
+            (origin.y, direction.y, boundary_max.y, boundary_min.y),
+            (origin.z, direction.z, boundary_max.z, boundary_min.z),
         ] {
             if dir != 0.0 {
                 let update_t_min = |boundary: f32| {
                     let t = (boundary - start) / dir;
-                    let point = origin + velocity * t;
+                    let point = origin + direction * t;
                     if t > 0.0
                         && t < t_min.get()
                         && is_in_bounds(point, start, origin, boundary_min, boundary_max)
@@ -184,7 +178,7 @@ impl Boundary {
         }
 
         if t_min.get() != f32::MAX {
-            let edge_point = origin + velocity * t_min.get();
+            let edge_point = origin + direction * t_min.get();
             return Some(edge_point);
         }
         None

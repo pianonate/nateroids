@@ -15,11 +15,12 @@ impl Plugin for InputPlugin {
     }
 }
 
+// inspector windows don't open full size
 #[derive(Actionlike, EnumIter, Reflect, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub enum GlobalAction {
     AABBs,
     BoundaryInspector,
-    CameraInspector,
+    CameraConfigInspector,
     Debug,
     LightsInspector,
     MissileInspector,
@@ -71,7 +72,7 @@ impl GlobalAction {
         Self::iter().fold(InputMap::default(), |input_map, action| match action {
             Self::AABBs => input_map.with(action, KeyCode::F1),
             Self::BoundaryInspector => insert_dual_input(input_map, action, KeyCode::KeyB),
-            Self::CameraInspector => insert_dual_input(input_map, action, KeyCode::KeyC),
+            Self::CameraConfigInspector => insert_dual_input(input_map, action, KeyCode::KeyC),
             Self::Debug => insert_dual_input(input_map, action, KeyCode::KeyD),
             Self::LightsInspector => insert_dual_input(input_map, action, KeyCode::KeyL),
             Self::MissileInspector => insert_dual_input(input_map, action, KeyCode::Digit1),
