@@ -74,8 +74,8 @@ fn wall_approach_system(
     boundary_config: Res<BoundaryConfig>,
 ) {
     let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
-    let approach_distance = boundary_size * boundary_config.boundary_distance_approach;
-    let shrink_distance = boundary_size * boundary_config.boundary_distance_shrink;
+    let approach_distance = boundary_size * boundary_config.distance_approach;
+    let shrink_distance = boundary_size * boundary_config.distance_shrink;
 
     for (aabb, transform, velocity, teleporter, mut visual) in query.iter_mut() {
         // the max dimension of the aabb is actually the diameter - using it as the

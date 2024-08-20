@@ -11,13 +11,13 @@ use bevy::{
 };
 use std::cell::Cell;
 
-pub struct VisualsPlugin;
+pub struct BoundaryVisualsPlugin;
 
-impl Plugin for VisualsPlugin {
+impl Plugin for BoundaryVisualsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Boundary>()
             .init_gizmo_group::<BoundaryGizmos>()
-            .add_systems(Startup, init_gizmo_configs)
+            .add_systems(Update, update_gizmos_config)
             .add_systems(Update, draw_boundary.run_if(in_state(PlayingGame)));
     }
 }
@@ -25,7 +25,7 @@ impl Plugin for VisualsPlugin {
 #[derive(Default, Reflect, GizmoConfigGroup)]
 pub struct BoundaryGizmos {}
 
-fn init_gizmo_configs(mut config_store: ResMut<GizmoConfigStore>, boundary_config: Res<BoundaryConfig>) {
+fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_config: Res<BoundaryConfig>) {
     for (_, any_config, _) in config_store.iter_mut() {
         any_config.render_layers = RenderLayers::from_layers(RenderLayer::Game.layers());
         any_config.line_width = 2.;
@@ -35,39 +35,16 @@ fn init_gizmo_configs(mut config_store: ResMut<GizmoConfigStore>, boundary_confi
     // in the same context
     {
         let (config, _) = config_store.config_mut::<BoundaryGizmos>();
-        config.line_width = boundary_config.boundary_line_width;
+        config.line_width = boundary_config.line_width;
     }
 }
 
-#[derive(Reflect, Resource, Debug)]
+#[derive(Reflect, Resource, Debug, Default)]
 #[reflect(Resource)]
 pub struct Boundary {
-    pub cell_count:           UVec3,
-    pub longest_diagonal:     f32,
-    pub max_missile_distance: f32,
-    pub transform:            Transform,
+    pub transform: Transform,
 }
 
-impl Default for Boundary {
-    fn default() -> Self {
-        let config = BoundaryConfig::default();
-
-        let cell_scale = config.boundary_scalar * config.boundary_cell_count.as_vec3();
-        let longest_diagonal = (cell_scale.x.powi(2) + cell_scale.y.powi(2) + cell_scale.z.powi(2)).sqrt();
-
-        let max_missile_distance = cell_scale.x.max(cell_scale.y).max(cell_scale.z);
-
-        Self {
-            cell_count: config.boundary_cell_count,
-            longest_diagonal,
-            max_missile_distance,
-            transform: Transform {
-                scale: cell_scale,
-                ..Default::default()
-            },
-        }
-    }
-}
 
 /// Finds the intersection point of a ray (defined by an origin and direction)
 /// with the edges of a viewable area.
@@ -213,17 +190,15 @@ fn draw_boundary(
     // and also so that it can be dynamically changed with the inspector while the
     // game is running the boundary transform is used both for position but also
     // so the fixed camera can be positioned based on the boundary scale
-    boundary.transform.scale = config.boundary_scalar * boundary.cell_count.as_vec3();
-
-    // update the longest diagonal so that the camera can be positioned correctly
-
+    boundary.transform.scale = config.scale();
+    
     gizmos
         .grid_3d(
             boundary.transform.translation,
             Quat::IDENTITY,
-            boundary.cell_count,
-            Vec3::splat(config.boundary_scalar),
-            config.boundary_color,
+            config.cell_count,
+            Vec3::splat(config.scalar),
+            config.color,
         )
         .outer_edges();
 }

@@ -37,16 +37,16 @@ impl Plugin for BoundaryConfigPlugin {
 #[derive(Resource, Reflect, InspectorOptions, Clone, Debug)]
 #[reflect(Resource, InspectorOptions)]
 pub struct BoundaryConfig {
-    pub boundary_color:             Color,
+    pub cell_count:        UVec3,
+    pub color:             Color,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
-    pub boundary_distance_approach: f32,
+    pub distance_approach: f32,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
-    pub boundary_distance_shrink:   f32,
-    #[inspector(min = 0.1, max = 10.0, display = NumberDisplay::Slider)]
-    pub boundary_line_width:        f32,
-    pub boundary_cell_count:        UVec3,
-    #[inspector(min = 50., max = 200., display = NumberDisplay::Slider)]
-    pub boundary_scalar:            f32,
+    pub distance_shrink:   f32,
+    #[inspector(min = 0.01, max = 10.0, display = NumberDisplay::Slider)]
+    pub line_width:        f32,
+    #[inspector(min = 50., max = 300., display = NumberDisplay::Slider)]
+    pub scalar:            f32,
     #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
     pub smallest_teleport_circle:   f32,
 }
@@ -54,14 +54,32 @@ pub struct BoundaryConfig {
 impl Default for BoundaryConfig {
     fn default() -> Self {
         Self {
-            boundary_color:             Color::from(tailwind::BLUE_300),
-            boundary_distance_approach: 0.5,
-            boundary_distance_shrink:   0.25,
-            boundary_line_width:        4.,
-            boundary_cell_count:        UVec3::new(2, 1, 1),
-            boundary_scalar:            110.,
+            cell_count:        UVec3::new(2, 1, 1),
+            color:             Color::from(tailwind::BLUE_300),
+            distance_approach: 0.5,
+            distance_shrink:   0.25,
+            line_width:        4.,
+            scalar:            110.,
             smallest_teleport_circle:   5.,
         }
+    }
+}
+
+impl BoundaryConfig {
+    
+    pub fn scale(&self) -> Vec3 {
+        self.scalar * self.cell_count.as_vec3()
+    }
+    
+    
+    pub fn longest_diagonal(&self) -> f32 {
+        let boundary_scale = self.scale();
+        (boundary_scale.x.powi(2) + boundary_scale.y.powi(2) + boundary_scale.z.powi(2)).sqrt()
+    }
+    
+    pub fn max_missile_distance(&self) -> f32 {
+        let boundary_scale = self.scale();
+        boundary_scale.x.max(boundary_scale.y).max(boundary_scale.z)
     }
 }
 

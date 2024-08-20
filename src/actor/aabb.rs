@@ -51,7 +51,6 @@ fn draw_aabb_system(mut gizmos: Gizmos, query: Query<(&Transform, &Aabb)>) {
         // Draw the wireframe cube
         gizmos.cuboid(
             Transform::from_translation(center)
-                // .with_scale(aabb.size() * transform.scale)
                 .with_scale(aabb.half_extents() * 2.0 * transform.scale)
                 .with_rotation(transform.rotation),
             Color::from(tailwind::GREEN_800),

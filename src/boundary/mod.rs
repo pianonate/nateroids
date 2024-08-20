@@ -1,18 +1,20 @@
 mod boundary_config;
 mod planes;
-mod visuals;
+mod boundary_visuals;
 mod wall_approach;
 
 pub use crate::boundary::{
+    boundary_config::BoundaryConfig,
+    // todo: #bug - move PlaneConfig into its own .rs
     boundary_config::PlaneConfig,
-    visuals::Boundary,
+    boundary_visuals::Boundary,
     wall_approach::WallApproachVisual,
 };
 
 use crate::boundary::{
     boundary_config::BoundaryConfigPlugin,
+    boundary_visuals::BoundaryVisualsPlugin,
     planes::PlanesPlugin,
-    visuals::VisualsPlugin,
     wall_approach::WallApproachPlugin,
 };
 use bevy::prelude::*;
@@ -23,7 +25,7 @@ impl Plugin for BoundaryPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(BoundaryConfigPlugin)
             .add_plugins(PlanesPlugin)
-            .add_plugins(VisualsPlugin)
+            .add_plugins(BoundaryVisualsPlugin)
             .add_plugins(WallApproachPlugin);
     }
 }

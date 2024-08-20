@@ -20,6 +20,7 @@ use bevy::{
     render::view::RenderLayers,
 };
 use leafwing_input_manager::prelude::*;
+use crate::boundary::BoundaryConfig;
 
 pub struct CamerasPlugin;
 
@@ -107,7 +108,7 @@ pub struct PrimaryCamera;
 
 pub fn spawn_primary_camera(
     camera_config: Res<CameraConfig>,
-    boundary: Res<Boundary>,
+    config: Res<BoundaryConfig>,
     mut commands: Commands,
     mut orientation: ResMut<CameraOrientation>,
     mut q_stars_camera: Query<Entity, With<StarsCamera>>,
@@ -130,7 +131,8 @@ pub fn spawn_primary_camera(
             ..default()
         },
         tonemapping: Tonemapping::TonyMcMapface,
-        transform: Transform::from_xyz(0.0, 0.0, boundary.transform.scale.z * 2.)
+        // todo: #handl3d
+        transform: Transform::from_xyz(0.0, 0.0, config.scale().z * 2.)
             .looking_at(orientation.config.nexus, orientation.config.axis_mundi),
 
         ..default()

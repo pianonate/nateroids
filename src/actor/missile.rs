@@ -23,6 +23,7 @@ use crate::actor::{
     spaceship_control::SpaceshipControl,
 };
 use leafwing_input_manager::prelude::*;
+use crate::boundary::BoundaryConfig;
 
 pub struct MissilePlugin;
 
@@ -99,6 +100,7 @@ fn fire_missile(
     q_input_map: Query<&ActionState<SpaceshipControl>>,
     q_spaceship: Query<(&Transform, &Velocity, &Aabb, Option<&ContinuousFire>), With<Spaceship>>,
     boundary: Res<Boundary>,
+    boundary_config: Res<BoundaryConfig>,
     mut missile_config: ResMut<MissileConfig>,
     time: Res<Time>,
 ) {
@@ -111,8 +113,9 @@ fn fire_missile(
         return;
     }
 
-    let missile = Missile::new(boundary.max_missile_distance);
+    let missile = Missile::new(boundary_config.max_missile_distance());
 
+    //todo: #bug - boundary is not necessary every time
     spawn_actor(
         &mut commands,
         &missile_config.0,

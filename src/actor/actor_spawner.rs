@@ -39,6 +39,7 @@ use std::{
     fmt,
     ops::Range,
 };
+use bevy::color::palettes::tailwind;
 
 // this is how far off we are from blender for the assets we're loading
 // we need to get them scaled up to generate a usable aabb
@@ -217,7 +218,7 @@ impl ActorConfig {
                 let mut transform = Transform::from_translation(position);
 
                 transform.rotation = get_random_rotation();
-
+                
                 transform
             },
 
