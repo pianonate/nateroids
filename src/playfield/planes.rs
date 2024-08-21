@@ -1,5 +1,4 @@
 use crate::{
-    playfield::Boundary,
     global_input::{
         toggle_active,
         GlobalAction,
@@ -8,6 +7,7 @@ use crate::{
         CameraOrientation,
         OrientationConfig,
     },
+    playfield::Boundary,
 };
 use bevy::{
     prelude::*,

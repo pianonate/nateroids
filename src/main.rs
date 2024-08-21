@@ -1,12 +1,12 @@
 // exclude when targeting wasm - this breaks in the browser right now
 mod actor;
 mod asset_loader;
-mod playfield;
 mod camera;
 mod despawn;
 mod global_input;
 mod orientation;
 mod physics;
+mod playfield;
 mod schedule;
 mod splash;
 mod state;
@@ -14,12 +14,12 @@ mod state;
 use crate::{
     actor::ActorPlugin,
     asset_loader::AssetLoaderPlugin,
-    playfield::PlayfieldPlugin,
     camera::CameraPlugin,
     despawn::DespawnPlugin,
     global_input::InputPlugin,
     orientation::OrientationPlugin,
     physics::PhysicsPlugin,
+    playfield::PlayfieldPlugin,
     schedule::SchedulePlugin,
     splash::SplashPlugin,
     state::StatePlugin,

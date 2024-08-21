@@ -13,14 +13,14 @@ use crate::{
         AssetsState,
         SceneAssets,
     },
-    playfield::{
-        Boundary,
-        WallApproachVisual,
-    },
     camera::RenderLayer,
     global_input::{
         toggle_active,
         GlobalAction,
+    },
+    playfield::{
+        Boundary,
+        WallApproachVisual,
     },
 };
 use bevy::{
@@ -43,6 +43,7 @@ use std::{
 // this is how far off we are from blender for the assets we're loading
 // we need to get them scaled up to generate a usable aabb
 const BLENDER_SCALE: f32 = 100.;
+const FORWARD_SPAWN_BUFFER: f32 = 1.;
 
 // call flow is to initialize the ensemble config which has the defaults
 // for an actor - configure defaults in initial_actor_config.rs
@@ -225,11 +226,15 @@ impl ActorConfig {
                 if let Some((parent_transform, parent_aabb)) = parent {
                     let forward = -parent_transform.forward();
                     let half_extents = parent_aabb.half_extents();
+
                     let world_half_extents =
                         parent_transform.rotation * (half_extents * parent_transform.scale);
                     let forward_extent = forward.dot(world_half_extents);
-                    let spawn_position =
-                        parent_transform.translation + forward * (forward_extent + *distance);
+
+                    // determined the buffer by eyeballing it up close to just make it 'look right'
+                    let spawn_position = parent_transform.translation
+                        + forward * (forward_extent + *distance + FORWARD_SPAWN_BUFFER);
+
                     Transform::from_translation(spawn_position)
                 } else {
                     Transform::from_translation(Vec3::ZERO)
@@ -274,11 +279,14 @@ impl ActorBundle {
         parent: Option<(&Transform, &Velocity, &Aabb)>,
         boundary: Res<Boundary>,
     ) -> Self {
+        let parent_aabb = parent.map(|(_, _, a)| a);
         let parent_transform = parent.map(|(t, _, _)| t);
         let parent_velocity = parent.map(|(_, v, _)| v);
-        let parent_aabb = parent.map(|(_, _, a)| a);
 
-        let transform = config.calculate_spawn_transform(parent_transform.zip(parent_aabb), boundary);
+        let mut transform = config.calculate_spawn_transform(parent_transform.zip(parent_aabb), boundary);
+
+        Self::apply_rotations(config, parent_transform, &mut transform);
+
         let velocity = config
             .velocity_behavior
             .calculate_velocity(parent_velocity, parent_transform);
@@ -308,6 +316,31 @@ impl ActorBundle {
             teleporter: Teleporter::default(),
             velocity,
             wall_visualizer: WallApproachVisual::default(),
+        }
+    }
+
+    // Combine rotations from optional parent with optional supplied rotation
+    // missiles need this to get oriented correctly
+    // both parent and actor_config.rotation are optional so we have to unpack both
+    // and use one, both or none
+    // extracted here for readability
+    fn apply_rotations(
+        config: &ActorConfig,
+        parent_transform: Option<&Transform>,
+        transform: &mut Transform,
+    ) {
+        let final_rotation = parent_transform
+            .map(|t| t.rotation)
+            .map(|parent_rot| {
+                config
+                    .rotation
+                    .map(|initial_rot| parent_rot * initial_rot)
+                    .unwrap_or(parent_rot)
+            })
+            .or(config.rotation);
+
+        if let Some(rotation) = final_rotation {
+            transform.rotation = rotation;
         }
     }
 }
@@ -449,8 +482,8 @@ pub fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>
 pub fn spawn_actor<'a>(
     commands: &'a mut Commands,
     config: &ActorConfig,
-    parent: Option<(&Transform, &Velocity, &Aabb)>,
     boundary: Res<Boundary>,
+    parent: Option<(&Transform, &Velocity, &Aabb)>,
 ) -> EntityCommands<'a> {
     let bundle = ActorBundle::new(config, parent, boundary);
 

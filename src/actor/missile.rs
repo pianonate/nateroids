@@ -121,8 +121,8 @@ fn fire_missile(
     spawn_actor(
         &mut commands,
         &missile_config.0,
-        Some((spaceship_transform, spaceship_velocity, aabb)),
         boundary,
+        Some((spaceship_transform, spaceship_velocity, aabb)),
     )
     .insert(missile);
 }

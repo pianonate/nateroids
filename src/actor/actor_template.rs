@@ -47,6 +47,8 @@ impl Default for MissileConfig {
             collision_groups: CollisionGroups::new(GROUP_MISSILE, GROUP_ASTEROID),
             health: 1.,
             mass: 0.1,
+            // #todo: #handle3d
+            rotation: Some(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
             spawn_position_behavior: SpawnPositionBehavior::ForwardFromParent { distance: 0.5 },
             scalar: 2.5,
             spawn_timer_seconds: Some(1.0 / 20.0),
@@ -93,6 +95,7 @@ impl Default for SpaceshipConfig {
                 | LockedAxes::ROTATION_LOCKED_Y
                 | LockedAxes::TRANSLATION_LOCKED_Z,
             restitution: 0.1,
+            // #todo: #handle3d
             rotation: Some(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
             scalar: 0.8,
             spawn_position_behavior: SpawnPositionBehavior::Fixed(Vec3::new(0.0, -20.0, 0.0)),

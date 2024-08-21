@@ -39,7 +39,7 @@ fn spawn_spaceship(mut commands: Commands, spaceship_config: Res<SpaceshipConfig
 
     let spaceship_input = InputManagerBundle::with_map(SpaceshipControl::generate_input_map());
 
-    spawn_actor(&mut commands, &spaceship_config.0, None, boundary)
+    spawn_actor(&mut commands, &spaceship_config.0, boundary, None)
         .insert(spaceship_input)
         .insert(Spaceship);
 }

@@ -1,5 +1,4 @@
 use crate::{
-    playfield::Boundary,
     camera::{
         camera_control::{
             CameraConfig,
@@ -10,6 +9,7 @@ use crate::{
     },
     global_input::GlobalAction,
     orientation::CameraOrientation,
+    playfield::Boundary,
 };
 use bevy::{
     core_pipeline::{

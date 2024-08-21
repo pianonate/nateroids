@@ -36,5 +36,5 @@ fn spawn_nateroid(
         return;
     }
 
-    spawn_actor(&mut commands, nateroid_config, None, boundary);
+    spawn_actor(&mut commands, nateroid_config, boundary, None);
 }

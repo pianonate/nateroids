@@ -109,7 +109,6 @@ fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_con
 /// - Finally, it returns the intersection point corresponding to the minimum
 ///   distance, or `None` if no valid intersection is found.
 impl Boundary {
-
     pub fn scale(&self) -> Vec3 { self.scalar * self.cell_count.as_vec3() }
 
     pub fn longest_diagonal(&self) -> f32 {
@@ -121,7 +120,7 @@ impl Boundary {
         let boundary_scale = self.scale();
         boundary_scale.x.max(boundary_scale.y).max(boundary_scale.z)
     }
-    
+
     pub fn calculate_teleport_position(&self, position: Vec3) -> Vec3 {
         let boundary_min = self.transform.translation - self.transform.scale / 2.0;
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;
@@ -177,7 +176,7 @@ impl Boundary {
     pub fn find_edge_point(&self, origin: Vec3, direction: Vec3) -> Option<Vec3> {
         let boundary_min = self.transform.translation - self.transform.scale / 2.0;
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;
-        
+
         let mut t_min = f32::MAX;
 
         for (start, dir, pos_bound, neg_bound) in [
@@ -186,12 +185,10 @@ impl Boundary {
             (origin.z, direction.z, boundary_max.z, boundary_min.z),
         ] {
             if dir != 0.0 {
-                let mut  update_t_min = |boundary: f32| {
+                let mut update_t_min = |boundary: f32| {
                     let t = (boundary - start) / dir;
                     let point = origin + direction * t;
-                    if t > 0.0
-                        && t < t_min
-                        && is_in_bounds(point, start, origin, boundary_min, boundary_max)
+                    if t > 0.0 && t < t_min && is_in_bounds(point, start, origin, boundary_min, boundary_max)
                     {
                         t_min = t;
                     }
