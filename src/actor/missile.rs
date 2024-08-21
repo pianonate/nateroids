@@ -1,4 +1,3 @@
-// #todo: #bug - missiles spawn rotated incorrectly center
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
