@@ -4,7 +4,6 @@ use crate::{
         actor_template::SpaceshipConfig,
         spaceship_control::SpaceshipControl,
     },
-    playfield::Boundary,
     schedule::InGameSet,
     state::GameState,
 };
@@ -29,23 +28,20 @@ impl Plugin for SpaceshipPlugin {
     }
 }
 
-//todo: #bug - you don't need to bring boundary in except for nateroids
-// spawning
-// - make it optional
-fn spawn_spaceship(mut commands: Commands, spaceship_config: Res<SpaceshipConfig>, boundary: Res<Boundary>) {
+fn spawn_spaceship(mut commands: Commands, spaceship_config: Res<SpaceshipConfig>) {
     if !spaceship_config.0.spawnable {
         return;
     }
 
     let spaceship_input = InputManagerBundle::with_map(SpaceshipControl::generate_input_map());
 
-    spawn_actor(&mut commands, &spaceship_config.0, boundary, None)
+    spawn_actor(&mut commands, &spaceship_config.0, None, None)
         .insert(spaceship_input)
         .insert(Spaceship);
 }
 
-// check if spaceship exists or not - query
-// if get_single() (there should only be one - returns an error then the
+// check if spaceship exists or not - query if get_single()
+// there should only be one - if it returns an error then the
 // spaceship doesn't exist
 fn spaceship_destroyed(
     mut next_state: ResMut<NextState<GameState>>,

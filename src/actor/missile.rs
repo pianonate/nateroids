@@ -17,12 +17,9 @@ use crate::actor::{
     Teleporter,
 };
 
-use crate::{
-    actor::{
-        actor_spawner::spawn_actor,
-        spaceship_control::SpaceshipControl,
-    },
-    //   boundary::Boundary,
+use crate::actor::{
+    actor_spawner::spawn_actor,
+    spaceship_control::SpaceshipControl,
 };
 use leafwing_input_manager::prelude::*;
 
@@ -100,7 +97,6 @@ fn fire_missile(
     mut commands: Commands,
     q_input_map: Query<&ActionState<SpaceshipControl>>,
     q_spaceship: Query<(&Transform, &Velocity, &Aabb, Option<&ContinuousFire>), With<Spaceship>>,
-    boundary: Res<Boundary>,
     boundary_config: Res<Boundary>,
     mut missile_config: ResMut<MissileConfig>,
     time: Res<Time>,
@@ -116,11 +112,10 @@ fn fire_missile(
 
     let missile = Missile::new(boundary_config.max_missile_distance());
 
-    //todo: #bug - boundary is not necessary every time
     spawn_actor(
         &mut commands,
         &missile_config.0,
-        boundary,
+        None,
         Some((spaceship_transform, spaceship_velocity, aabb)),
     )
     .insert(missile);

@@ -202,12 +202,16 @@ impl ActorConfig {
     fn calculate_spawn_transform(
         &self,
         parent: Option<(&Transform, &Aabb)>,
-        boundary: Res<Boundary>,
+        boundary: Option<Res<Boundary>>,
     ) -> Transform {
         let transform = match &self.spawn_position_behavior {
             SpawnPositionBehavior::Fixed(position) => Transform::from_translation(*position),
 
             SpawnPositionBehavior::RandomWithinBounds { scale_factor } => {
+                let boundary = boundary
+                    .as_ref()
+                    .expect("Boundary is required for RandomWithinBounds spawn behavior");
+
                 let bounds = Transform {
                     translation: boundary.transform.translation,
                     scale: boundary.transform.scale * *scale_factor,
@@ -277,7 +281,7 @@ impl ActorBundle {
     pub fn new(
         config: &ActorConfig,
         parent: Option<(&Transform, &Velocity, &Aabb)>,
-        boundary: Res<Boundary>,
+        boundary: Option<Res<Boundary>>,
     ) -> Self {
         let parent_aabb = parent.map(|(_, _, a)| a);
         let parent_transform = parent.map(|(t, _, _)| t);
@@ -482,7 +486,7 @@ pub fn random_vec3(range_x: Range<f32>, range_y: Range<f32>, range_z: Range<f32>
 pub fn spawn_actor<'a>(
     commands: &'a mut Commands,
     config: &ActorConfig,
-    boundary: Res<Boundary>,
+    boundary: Option<Res<Boundary>>,
     parent: Option<(&Transform, &Velocity, &Aabb)>,
 ) -> EntityCommands<'a> {
     let bundle = ActorBundle::new(config, parent, boundary);
