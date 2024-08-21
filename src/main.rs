@@ -1,7 +1,7 @@
 // exclude when targeting wasm - this breaks in the browser right now
 mod actor;
 mod asset_loader;
-mod boundary;
+mod playfield;
 mod camera;
 mod despawn;
 mod global_input;
@@ -14,7 +14,7 @@ mod state;
 use crate::{
     actor::ActorPlugin,
     asset_loader::AssetLoaderPlugin,
-    boundary::BoundaryModulePlugin,
+    playfield::PlayfieldPlugin,
     camera::CameraPlugin,
     despawn::DespawnPlugin,
     global_input::InputPlugin,
@@ -55,10 +55,10 @@ fn main() {
     // there's a limit to the tuple size so
     // i just split them in 2
     app.add_plugins((
-        AssetLoaderPlugin,
-        BoundaryModulePlugin,
-        CameraPlugin,
         ActorPlugin,
+        AssetLoaderPlugin,
+        PlayfieldPlugin,
+        CameraPlugin,
         DespawnPlugin,
         InputPlugin,
         OrientationPlugin,

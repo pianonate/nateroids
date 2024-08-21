@@ -18,19 +18,18 @@ use bevy_inspector_egui::{
 };
 
 use bevy::color::palettes::tailwind;
-use std::cell::Cell;
 
 pub struct BoundaryPlugin;
 
 impl Plugin for BoundaryPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Boundary>()
+            .init_gizmo_group::<BoundaryGizmos>()
             .register_type::<Boundary>()
             .add_plugins(
                 ResourceInspectorPlugin::<Boundary>::default()
                     .run_if(toggle_active(false, GlobalAction::BoundaryInspector)),
             )
-            .init_gizmo_group::<BoundaryGizmos>()
             .add_systems(Update, update_gizmos_config)
             .add_systems(Update, draw_boundary.run_if(in_state(PlayingGame)));
     }
@@ -72,20 +71,6 @@ impl Default for Boundary {
     }
 }
 
-impl Boundary {
-    pub fn scale(&self) -> Vec3 { self.scalar * self.cell_count.as_vec3() }
-
-    pub fn longest_diagonal(&self) -> f32 {
-        let boundary_scale = self.scale();
-        (boundary_scale.x.powi(2) + boundary_scale.y.powi(2) + boundary_scale.z.powi(2)).sqrt()
-    }
-
-    pub fn max_missile_distance(&self) -> f32 {
-        let boundary_scale = self.scale();
-        boundary_scale.x.max(boundary_scale.y).max(boundary_scale.z)
-    }
-}
-
 #[derive(Default, Reflect, GizmoConfigGroup)]
 pub struct BoundaryGizmos {}
 
@@ -102,12 +87,6 @@ fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_con
         config.line_width = boundary_config.line_width;
     }
 }
-
-// #[derive(Reflect, Resource, Debug, Default)]
-// #[reflect(Resource)]
-// pub struct Boundary {
-//     pub transform: Transform,
-// }
 
 /// Finds the intersection point of a ray (defined by an origin and direction)
 /// with the edges of a viewable area.
@@ -130,6 +109,19 @@ fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_con
 /// - Finally, it returns the intersection point corresponding to the minimum
 ///   distance, or `None` if no valid intersection is found.
 impl Boundary {
+
+    pub fn scale(&self) -> Vec3 { self.scalar * self.cell_count.as_vec3() }
+
+    pub fn longest_diagonal(&self) -> f32 {
+        let boundary_scale = self.scale();
+        (boundary_scale.x.powi(2) + boundary_scale.y.powi(2) + boundary_scale.z.powi(2)).sqrt()
+    }
+
+    pub fn max_missile_distance(&self) -> f32 {
+        let boundary_scale = self.scale();
+        boundary_scale.x.max(boundary_scale.y).max(boundary_scale.z)
+    }
+    
     pub fn calculate_teleport_position(&self, position: Vec3) -> Vec3 {
         let boundary_min = self.transform.translation - self.transform.scale / 2.0;
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;
@@ -185,15 +177,8 @@ impl Boundary {
     pub fn find_edge_point(&self, origin: Vec3, direction: Vec3) -> Option<Vec3> {
         let boundary_min = self.transform.translation - self.transform.scale / 2.0;
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;
-
-        // Cell is a type in Rust's standard library that provides interior mutability.
-        // It allows you toF mutate data even when you have an immutable
-        // reference to the Cell. This is useful in scenarios where you need to
-        // update a value but only have an immutable reference to the containing
-        // structure. In this case it allows us to write a simpler closure
-        // that doesn't get littered with & and * - at the cost of using .get() and
-        // .set()
-        let t_min = Cell::new(f32::MAX);
+        
+        let mut t_min = f32::MAX;
 
         for (start, dir, pos_bound, neg_bound) in [
             (origin.x, direction.x, boundary_max.x, boundary_min.x),
@@ -201,14 +186,14 @@ impl Boundary {
             (origin.z, direction.z, boundary_max.z, boundary_min.z),
         ] {
             if dir != 0.0 {
-                let update_t_min = |boundary: f32| {
+                let mut  update_t_min = |boundary: f32| {
                     let t = (boundary - start) / dir;
                     let point = origin + direction * t;
                     if t > 0.0
-                        && t < t_min.get()
+                        && t < t_min
                         && is_in_bounds(point, start, origin, boundary_min, boundary_max)
                     {
-                        t_min.set(t);
+                        t_min = t;
                     }
                 };
 
@@ -217,8 +202,8 @@ impl Boundary {
             }
         }
 
-        if t_min.get() != f32::MAX {
-            let edge_point = origin + direction * t_min.get();
+        if t_min != f32::MAX {
+            let edge_point = origin + direction * t_min;
             return Some(edge_point);
         }
         None

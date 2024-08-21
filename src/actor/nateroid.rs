@@ -3,7 +3,7 @@ use crate::{
         actor_spawner::spawn_actor,
         actor_template::NateroidConfig,
     },
-    boundary::Boundary,
+    playfield::Boundary,
     schedule::InGameSet,
 };
 

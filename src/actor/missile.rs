@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 use crate::{
-    boundary::Boundary,
+    playfield::Boundary,
     schedule::InGameSet,
 };
 

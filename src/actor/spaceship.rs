@@ -4,7 +4,7 @@ use crate::{
         actor_template::SpaceshipConfig,
         spaceship_control::SpaceshipControl,
     },
-    boundary::Boundary,
+    playfield::Boundary,
     schedule::InGameSet,
     state::GameState,
 };

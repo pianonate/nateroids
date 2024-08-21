@@ -1,5 +1,5 @@
 use crate::{
-    boundary::Boundary,
+    playfield::Boundary,
     global_input::{
         toggle_active,
         GlobalAction,

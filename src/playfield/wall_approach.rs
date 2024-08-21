@@ -3,7 +3,7 @@ use crate::{
         Aabb,
         Teleporter,
     },
-    boundary::{
+    playfield::{
         // boundary_config::BoundaryConfig,
         Boundary,
     },

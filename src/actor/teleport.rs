@@ -1,5 +1,5 @@
 use crate::{
-    boundary::Boundary,
+    playfield::Boundary,
     schedule::InGameSet,
 };
 use bevy::prelude::*;

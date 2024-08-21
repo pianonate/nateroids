@@ -13,7 +13,7 @@ use crate::{
         AssetsState,
         SceneAssets,
     },
-    boundary::{
+    playfield::{
         Boundary,
         WallApproachVisual,
     },

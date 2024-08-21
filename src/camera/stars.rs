@@ -1,4 +1,4 @@
-use crate::boundary::Boundary;
+use crate::playfield::Boundary;
 use bevy::{
     prelude::*,
     render::view::RenderLayers,

@@ -1,5 +1,5 @@
 use crate::{
-    boundary::Boundary,
+    playfield::Boundary,
     camera::{
         camera_control::{
             CameraConfig,

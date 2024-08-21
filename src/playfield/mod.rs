@@ -3,21 +3,21 @@ mod boundary;
 mod planes;
 mod wall_approach;
 
-pub use crate::boundary::{
+pub use crate::playfield::{
     boundary::Boundary,
     wall_approach::WallApproachVisual,
 };
 
-use crate::boundary::{
+use crate::playfield::{
     boundary::BoundaryPlugin,
     planes::PlanesPlugin,
     wall_approach::WallApproachPlugin,
 };
 use bevy::prelude::*;
 
-pub struct BoundaryModulePlugin;
+pub struct PlayfieldPlugin;
 
-impl Plugin for BoundaryModulePlugin {
+impl Plugin for PlayfieldPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(BoundaryPlugin)
             .add_plugins(PlanesPlugin)
