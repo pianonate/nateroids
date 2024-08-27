@@ -3,10 +3,7 @@ use crate::{
         Aabb,
         Teleporter,
     },
-    playfield::{
-        // boundary_config::BoundaryConfig,
-        Boundary,
-    },
+    playfield::Boundary,
     state::PlayingGame,
 };
 use bevy::{
@@ -25,18 +22,19 @@ use bevy::{
     prelude::*,
 };
 use bevy_rapier3d::dynamics::Velocity;
-//use crate::boundary::Boundary;
 
-pub struct WallApproachPlugin;
+// todo: #bug changing forward dir of spaceship while approaching will cause the
+//       approach portal to shoot off to the side rapidly
+pub struct WallPortalPlugin;
 
-impl Plugin for WallApproachPlugin {
+impl Plugin for WallPortalPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
             (
-                wall_approach_system,
-                draw_approaching_circles,
-                draw_emerging_circles,
+                wall_portal_system,
+                draw_approaching_portals,
+                draw_emerging_portals,
             )
                 .run_if(
                     in_state(PlayingGame), /* .or_else(in_state(GameState::Paused)) */
@@ -69,7 +67,7 @@ struct HandlerParams {
     direction:         Vec3,
 }
 
-fn wall_approach_system(
+fn wall_portal_system(
     mut query: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
     boundary: Res<Boundary>,
     boundary_config: Res<Boundary>,
@@ -167,7 +165,7 @@ fn handle_approaching_visual(
     }
 }
 
-fn draw_approaching_circles(q_wall: Query<&WallApproachVisual>, mut gizmos: Gizmos) {
+fn draw_approaching_portals(q_wall: Query<&WallApproachVisual>, mut gizmos: Gizmos) {
     for visual in q_wall.iter() {
         if let Some(ref approaching) = visual.approaching {
             let max_radius = approaching.radius;
@@ -191,7 +189,7 @@ fn draw_approaching_circles(q_wall: Query<&WallApproachVisual>, mut gizmos: Gizm
     }
 }
 
-fn draw_emerging_circles(q_wall: Query<&WallApproachVisual>, mut gizmos: Gizmos) {
+fn draw_emerging_portals(q_wall: Query<&WallApproachVisual>, mut gizmos: Gizmos) {
     for visual in q_wall.iter() {
         if let Some(ref emerging) = visual.emerging {
             let radius = if emerging.distance_to_wall <= emerging.shrink_distance {

@@ -37,7 +37,7 @@ note: apparently it inserts your home directory in front of this path, so you do
 git clone https://github.com/pianonate/nateroids
 ```
 
-run it - the first time will take a while even if you have sccache installed as you have to populate the path, n'est-ce pas?
+run it - the first time will take a while even if you have sccache installed as you have to populate the cache, n'est-ce pas?
 
 ```shell
 cargo run
