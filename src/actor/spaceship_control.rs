@@ -90,9 +90,7 @@ pub enum SpaceshipControl {
     TurnRight,
 }
 
-// #todo #bug - i can't use Shift-C as it invokes ContinuousFire even thought
-//               the ClashStrategy::PrioritizeLongest is on by default (and i
-//              tried explicitly)
+// #todo handle clash-strategy across InstantMap instances https://github.com/Leafwing-Studios/leafwing-input-manager/issues/617
 impl SpaceshipControl {
     pub fn generate_input_map() -> InputMap<Self> {
         Self::iter().fold(InputMap::default(), |input_map, action| match action {

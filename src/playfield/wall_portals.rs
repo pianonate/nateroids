@@ -23,8 +23,6 @@ use bevy::{
 };
 use bevy_rapier3d::dynamics::Velocity;
 
-// todo: #bug changing forward dir of spaceship while approaching will cause the
-//       approach portal to shoot off to the side rapidly
 pub struct WallPortalPlugin;
 
 impl Plugin for WallPortalPlugin {
@@ -36,9 +34,7 @@ impl Plugin for WallPortalPlugin {
                 draw_approaching_portals,
                 draw_emerging_portals,
             )
-                .run_if(
-                    in_state(PlayingGame), /* .or_else(in_state(GameState::Paused)) */
-                ),
+                .run_if(in_state(PlayingGame)),
         );
     }
 }
@@ -80,7 +76,7 @@ fn wall_portal_system(
         // the max dimension of the aabb is actually the diameter - using it as the
         // radius has the circles start out twice as big and then shrink to fit
         // the size of the object minimum size for small objects is preserved
-        let radius = aabb.max_dimension().max(boundary_config.smallest_teleport_circle);
+        let radius = aabb.max_dimension().max(boundary_config.circle_smallest);
 
         let position = transform.translation;
         let direction = velocity.linvel.normalize_or_zero();
@@ -135,11 +131,15 @@ fn handle_emerging_visual(
     }
 }
 
-// todo #bug - if you emerge from a boundary wall and a circle is drawn -
-//             you need to calculate distance the way that missile distances
-//             are counted - not including the teleport in the distance traveled
-//             this may apply to an aborted approach as well so we should handle
-// both
+// updated to handle two situations
+// 1. if you switch direction on approach, the circle used to jump away fast
+// implemented a smoothing factor to alleviate this
+//
+// 2. with the smoothing factor, it can cause the circle to draw on the wrong
+//    wall if
+// you are close to two walls and switch from the one to the other
+// so we need to switch to the new collision point in that case
+//
 fn handle_approaching_visual(
     handler_params: &HandlerParams,
     boundary: &Res<Boundary>,
@@ -151,17 +151,35 @@ fn handle_approaching_visual(
         let normal = boundary.get_normal_for_position(collision_point);
 
         if distance_to_wall <= handler_params.approach_distance {
+            // Adjust this value to control smoothing (0.0 to 1.0)
+            let smoothing_factor = boundary.circle_smoothing_factor;
+
+            let new_position = if let Some(approaching) = &visual.approaching {
+                // Only smooth the position if the normal hasn't changed significantly
+                // Threshold for considering normals "similar"
+                if approaching.normal.dot(normal.as_vec3()) > boundary.circle_direction_change_factor {
+                    approaching.position.lerp(collision_point, smoothing_factor)
+                } else {
+                    collision_point // If normal changed significantly, jump to
+                                    // new position
+                }
+            } else {
+                collision_point
+            };
+
             visual.approaching = Some(BoundaryWall {
                 approach_distance: handler_params.approach_distance,
                 distance_to_wall,
                 normal,
+                position: new_position,
                 radius: handler_params.radius,
-                position: collision_point,
                 shrink_distance: handler_params.shrink_distance,
             });
         } else {
             visual.approaching = None;
         }
+    } else {
+        visual.approaching = None;
     }
 }
 
