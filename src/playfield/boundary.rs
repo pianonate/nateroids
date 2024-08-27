@@ -43,24 +43,24 @@ impl Plugin for BoundaryPlugin {
 // circle_smoothing_factor:
 // keep it small so that if you change directions the circle doesn't fly
 // away fast - looks terrible
-
+//
 #[derive(Resource, Reflect, InspectorOptions, Clone, Debug)]
 #[reflect(Resource, InspectorOptions)]
 pub struct Boundary {
     pub cell_count:                     UVec3,
-    #[inspector(min = 0.0, max = std::f32::consts::PI, display = NumberDisplay::Slider)]
-    pub circle_direction_change_factor: f32,
-    #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
-    pub circle_smallest:                f32,
     pub color:                          Color,
-    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
-    pub circle_smoothing_factor:        f32,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
     pub distance_approach:              f32,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
     pub distance_shrink:                f32,
     #[inspector(min = 0.01, max = 10.0, display = NumberDisplay::Slider)]
     pub line_width:                     f32,
+    #[inspector(min = 0.0, max = std::f32::consts::PI, display = NumberDisplay::Slider)]
+    pub portal_direction_change_factor: f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub portal_movement_smoothing_factor:        f32,
+    #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
+    pub portal_smallest:                f32,
     #[inspector(min = 50., max = 300., display = NumberDisplay::Slider)]
     pub scalar:                         f32,
     pub transform:                      Transform,
@@ -73,9 +73,9 @@ impl Default for Boundary {
 
         Self {
             cell_count,
-            circle_direction_change_factor: 0.75,
-            circle_smallest: 5.,
-            circle_smoothing_factor: 0.08,
+            portal_direction_change_factor: 0.75,
+            portal_smallest: 5.,
+            portal_movement_smoothing_factor: 0.08,
             color: Color::from(tailwind::BLUE_300),
             distance_approach: 0.5,
             distance_shrink: 0.25,

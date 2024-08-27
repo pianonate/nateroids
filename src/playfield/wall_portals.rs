@@ -76,7 +76,7 @@ fn wall_portal_system(
         // the max dimension of the aabb is actually the diameter - using it as the
         // radius has the circles start out twice as big and then shrink to fit
         // the size of the object minimum size for small objects is preserved
-        let radius = aabb.max_dimension().max(boundary_config.circle_smallest);
+        let radius = aabb.max_dimension().max(boundary_config.portal_smallest);
 
         let position = transform.translation;
         let direction = velocity.linvel.normalize_or_zero();
@@ -131,15 +131,6 @@ fn handle_emerging_visual(
     }
 }
 
-// updated to handle two situations
-// 1. if you switch direction on approach, the circle used to jump away fast
-// implemented a smoothing factor to alleviate this
-//
-// 2. with the smoothing factor, it can cause the circle to draw on the wrong
-//    wall if
-// you are close to two walls and switch from the one to the other
-// so we need to switch to the new collision point in that case
-//
 fn handle_approaching_visual(
     handler_params: &HandlerParams,
     boundary: &Res<Boundary>,
@@ -151,21 +142,7 @@ fn handle_approaching_visual(
         let normal = boundary.get_normal_for_position(collision_point);
 
         if distance_to_wall <= handler_params.approach_distance {
-            // Adjust this value to control smoothing (0.0 to 1.0)
-            let smoothing_factor = boundary.circle_smoothing_factor;
-
-            let new_position = if let Some(approaching) = &visual.approaching {
-                // Only smooth the position if the normal hasn't changed significantly
-                // Threshold for considering normals "similar"
-                if approaching.normal.dot(normal.as_vec3()) > boundary.circle_direction_change_factor {
-                    approaching.position.lerp(collision_point, smoothing_factor)
-                } else {
-                    collision_point // If normal changed significantly, jump to
-                                    // new position
-                }
-            } else {
-                collision_point
-            };
+            let new_position = smooth_circle_position(boundary, &visual, collision_point, normal);
 
             visual.approaching = Some(BoundaryWall {
                 approach_distance: handler_params.approach_distance,
@@ -180,6 +157,40 @@ fn handle_approaching_visual(
         }
     } else {
         visual.approaching = None;
+    }
+}
+
+// updated to handle two situations
+// 1. if you switch direction on approach, the circle used to jump away fast
+// implemented a smoothing factor to alleviate this
+//
+// 2. with the smoothing factor, it can cause the circle to draw on the wrong
+//    wall if
+// you are close to two walls and switch from the one to the other
+// so we need to switch to the new collision point in that case
+//
+// extracted for readability/complexity
+fn smooth_circle_position(
+    boundary: &Res<Boundary>,
+    visual: &&mut Mut<WallApproachVisual>,
+    collision_point: Vec3,
+    normal: Dir3,
+) -> Vec3 {
+    if let Some(approaching) = &visual.approaching {
+        
+        // Adjust this value to control smoothing (0.0 to 1.0)
+        let smoothing_factor = boundary.portal_movement_smoothing_factor;
+
+        // Only smooth the position if the normal hasn't changed significantly
+        // circle_direction_change_factor = threshold for considering normals "similar"
+        if approaching.normal.dot(normal.as_vec3()) > boundary.portal_direction_change_factor {
+            approaching.position.lerp(collision_point, smoothing_factor)
+        } else {
+            // If normal changed significantly, jump to new position
+            collision_point
+        }
+    } else {
+        collision_point
     }
 }
 
