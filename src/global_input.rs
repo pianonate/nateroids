@@ -43,7 +43,8 @@ pub enum GlobalAction {
 /// useful when you want to limit the amount of info that is being emitted
 ///
 /// similarly you can also ask for the GlobalAction and use it in your code
-/// directly ```rust
+/// directly
+/// ```rust
 /// fn my_system(user_input: Res<ActionState<GlobalAction>>) {
 ///    if user_input.pressed(&GlobalAction::Debug) {
 ///       // whatever debug statements you're using will only happen while you

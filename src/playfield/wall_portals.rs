@@ -208,12 +208,8 @@ fn draw_approaching_portals(q_wall: Query<&WallApproachVisual>, mut gizmos: Gizm
                 min_radius + (max_radius - min_radius) * scale_factor
             };
 
-            gizmos.circle(
-                approaching.position,
-                approaching.normal,
-                radius,
-                Color::from(tailwind::BLUE_600),
-            );
+            draw_portal(&mut gizmos, approaching, radius, Color::from(tailwind::BLUE_600));
+
         }
     }
 }
@@ -235,13 +231,17 @@ fn draw_emerging_portals(q_wall: Query<&WallApproachVisual>, mut gizmos: Gizmos)
             };
 
             if radius > 0.0 {
-                gizmos.circle(
-                    emerging.position,
-                    emerging.normal,
-                    radius,
-                    Color::from(tailwind::YELLOW_800),
-                );
+                draw_portal(&mut gizmos, emerging, radius, Color::from(tailwind::YELLOW_800));
             }
         }
     }
+}
+
+fn draw_portal(gizmos: &mut Gizmos, emerging: &BoundaryWall, radius: f32, color: Color) {
+    gizmos.circle(
+        emerging.position,
+        emerging.normal,
+        radius,
+        color,
+    );
 }

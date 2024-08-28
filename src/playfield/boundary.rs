@@ -47,23 +47,23 @@ impl Plugin for BoundaryPlugin {
 #[derive(Resource, Reflect, InspectorOptions, Clone, Debug)]
 #[reflect(Resource, InspectorOptions)]
 pub struct Boundary {
-    pub cell_count:                     UVec3,
-    pub color:                          Color,
+    pub cell_count:                       UVec3,
+    pub color:                            Color,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
-    pub distance_approach:              f32,
+    pub distance_approach:                f32,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
-    pub distance_shrink:                f32,
+    pub distance_shrink:                  f32,
     #[inspector(min = 0.01, max = 10.0, display = NumberDisplay::Slider)]
-    pub line_width:                     f32,
+    pub line_width:                       f32,
     #[inspector(min = 0.0, max = std::f32::consts::PI, display = NumberDisplay::Slider)]
-    pub portal_direction_change_factor: f32,
+    pub portal_direction_change_factor:   f32,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
-    pub portal_movement_smoothing_factor:        f32,
+    pub portal_movement_smoothing_factor: f32,
     #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
-    pub portal_smallest:                f32,
+    pub portal_smallest:                  f32,
     #[inspector(min = 50., max = 300., display = NumberDisplay::Slider)]
-    pub scalar:                         f32,
-    pub transform:                      Transform,
+    pub scalar:                           f32,
+    pub transform:                        Transform,
 }
 
 impl Default for Boundary {
