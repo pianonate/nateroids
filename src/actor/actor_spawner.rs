@@ -20,7 +20,7 @@ use crate::{
     },
     playfield::{
         Boundary,
-        WallApproachVisual,
+        ActorPortals,
     },
 };
 use bevy::{
@@ -274,7 +274,7 @@ pub struct ActorBundle {
     pub scene_bundle:     SceneBundle,
     pub teleporter:       Teleporter,
     pub velocity:         Velocity,
-    pub wall_visualizer:  WallApproachVisual,
+    pub wall_visualizer: ActorPortals,
 }
 
 impl ActorBundle {
@@ -319,7 +319,7 @@ impl ActorBundle {
             },
             teleporter: Teleporter::default(),
             velocity,
-            wall_visualizer: WallApproachVisual::default(),
+            wall_visualizer: ActorPortals::default(),
         }
     }
 

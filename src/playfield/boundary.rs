@@ -18,6 +18,7 @@ use bevy_inspector_egui::{
 };
 
 use bevy::color::palettes::tailwind;
+use crate::playfield::portals::Portal;
 
 pub struct BoundaryPlugin;
 
@@ -33,6 +34,16 @@ impl Plugin for BoundaryPlugin {
             .add_systems(Update, update_gizmos_config)
             .add_systems(Update, draw_boundary.run_if(in_state(PlayingGame)));
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BoundaryFace {
+    Left,
+    Right,
+    Top,
+    Bottom,
+    Front,
+    Back,
 }
 
 // circle_direction_change_factor:
@@ -104,20 +115,8 @@ fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_con
 }
 
 impl Boundary {
-    pub fn scale(&self) -> Vec3 { self.scalar * self.cell_count.as_vec3() }
-
-    pub fn longest_diagonal(&self) -> f32 {
-        let boundary_scale = self.scale();
-        (boundary_scale.x.powi(2) + boundary_scale.y.powi(2) + boundary_scale.z.powi(2)).sqrt()
-    }
-
-    pub fn max_missile_distance(&self) -> f32 {
-        let boundary_scale = self.scale();
-        boundary_scale.x.max(boundary_scale.y).max(boundary_scale.z)
-    }
-
-    /// Finds the intersection point of a ray (defined by an origin and direction)
-    /// with the edges of a viewable area.
+    /// Finds the intersection point of a ray (defined by an origin and
+    /// direction) with the edges of a viewable area.
     ///
     /// # Parameters
     /// - `origin`: The starting point of the ray.
@@ -125,17 +124,17 @@ impl Boundary {
     /// - `dimensions`: The dimensions of the viewable area.
     ///
     /// # Returns
-    /// An `Option<Vec3>` containing the intersection point if found, or `None` if
-    /// no valid intersection exists.
+    /// An `Option<Vec3>` containing the intersection point if found, or `None`
+    /// if no valid intersection exists.
     ///
     /// # Method
     /// - The function calculates the intersection points of the ray with the
     ///   positive and negative boundaries of the viewable area along all axes.
     ///   todo: is this true? you'll have to test in 3d mode
-    /// - It iterates over these axes, updating the minimum intersection distance
-    ///   (`t_min`) if a valid intersection is found.
-    /// - Finally, it returns the intersection point corresponding to the minimum
-    ///   distance, or `None` if no valid intersection is found.
+    /// - It iterates over these axes, updating the minimum intersection
+    ///   distance (`t_min`) if a valid intersection is found.
+    /// - Finally, it returns the intersection point corresponding to the
+    ///   minimum distance, or `None` if no valid intersection is found.
     pub fn calculate_teleport_position(&self, position: Vec3) -> Vec3 {
         let boundary_min = self.transform.translation - self.transform.scale / 2.0;
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;
@@ -161,6 +160,37 @@ impl Boundary {
         }
 
         wrapped_position
+    }
+
+    pub fn draw_portal(&self, gizmos: &mut Gizmos, portal: &Portal, radius: f32, color: Color) {
+        gizmos.circle(
+            portal.position,
+            portal.boundary_wall_normal,
+            radius,
+            color,
+        );
+
+        // if let Some(overextended_face) = self.check_portal_overextension(portal, radius) {
+        //     println!("Portal extends past boundary face: {:?}", overextended_face);
+        // }
+    }
+
+    fn check_portal_overextension(&self, portal: &Portal, radius: f32) -> Option<BoundaryFace> {
+        let half_size = self.transform.scale / 2.0;
+        let min = self.transform.translation - half_size;
+        let max = self.transform.translation + half_size;
+        
+        println!("posY:{:?} radius:{:?} max.y{:?}", portal.position.y, radius, max.y);
+
+        match portal.boundary_wall_normal {
+            Dir3::NEG_X if portal.position.x - radius < min.x => Some(BoundaryFace::Left),
+            Dir3::X if portal.position.x + radius > max.x => Some(BoundaryFace::Right),
+            Dir3::NEG_Y if portal.position.y - radius < min.y => Some(BoundaryFace::Bottom),
+            Dir3::Y if portal.position.y + radius > max.y => Some(BoundaryFace::Top),
+            Dir3::NEG_Z if portal.position.z - radius < min.z => Some(BoundaryFace::Back),
+            Dir3::Z if portal.position.z + radius > max.z => Some(BoundaryFace::Front),
+            _ => None,
+        }
     }
 
     pub fn get_normal_for_position(&self, position: Vec3) -> Dir3 {
@@ -220,6 +250,19 @@ impl Boundary {
         }
         None
     }
+
+    pub fn longest_diagonal(&self) -> f32 {
+        let boundary_scale = self.scale();
+        (boundary_scale.x.powi(2) + boundary_scale.y.powi(2) + boundary_scale.z.powi(2)).sqrt()
+    }
+
+    pub fn max_missile_distance(&self) -> f32 {
+        let boundary_scale = self.scale();
+        boundary_scale.x.max(boundary_scale.y).max(boundary_scale.z)
+    }
+
+    pub fn scale(&self) -> Vec3 { self.scalar * self.cell_count.as_vec3() }
+
 }
 
 fn is_in_bounds(point: Vec3, start: f32, origin: Vec3, boundary_min: Vec3, boundary_max: Vec3) -> bool {

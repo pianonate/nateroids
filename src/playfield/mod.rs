@@ -1,17 +1,17 @@
 #[allow(clippy::module_inception)]
 mod boundary;
 mod planes;
-mod wall_portals;
+mod portals;
 
 pub use crate::playfield::{
     boundary::Boundary,
-    wall_portals::WallApproachVisual,
+    portals::ActorPortals,
 };
 
 use crate::playfield::{
     boundary::BoundaryPlugin,
     planes::PlanesPlugin,
-    wall_portals::WallPortalPlugin,
+    portals::PortalPlugin,
 };
 use bevy::prelude::*;
 
@@ -21,6 +21,6 @@ impl Plugin for PlayfieldPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(BoundaryPlugin)
             .add_plugins(PlanesPlugin)
-            .add_plugins(WallPortalPlugin);
+            .add_plugins(PortalPlugin);
     }
 }
