@@ -75,7 +75,8 @@ fn wall_portal_system(
     boundary: Res<Boundary>,
     boundary_config: Res<Boundary>,
 ) {
-    let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y);
+    // todo #handle3d
+    let boundary_size = boundary.transform.scale.x.min(boundary.transform.scale.y).min(boundary.transform.scale.z);
     let approach_distance = boundary_size * boundary_config.distance_approach;
     let shrink_distance = boundary_size * boundary_config.distance_shrink;
 
