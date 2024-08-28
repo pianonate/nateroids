@@ -103,26 +103,6 @@ fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_con
     }
 }
 
-/// Finds the intersection point of a ray (defined by an origin and direction)
-/// with the edges of a viewable area.
-///
-/// # Parameters
-/// - `origin`: The starting point of the ray.
-/// - `direction`: The direction vector of the ray.
-/// - `dimensions`: The dimensions of the viewable area.
-///
-/// # Returns
-/// An `Option<Vec3>` containing the intersection point if found, or `None` if
-/// no valid intersection exists.
-///
-/// # Method
-/// - The function calculates the intersection points of the ray with the
-///   positive and negative boundaries of the viewable area along all axes.
-///   todo: is this true? you'll have to test in 3d mode
-/// - It iterates over these axes, updating the minimum intersection distance
-///   (`t_min`) if a valid intersection is found.
-/// - Finally, it returns the intersection point corresponding to the minimum
-///   distance, or `None` if no valid intersection is found.
 impl Boundary {
     pub fn scale(&self) -> Vec3 { self.scalar * self.cell_count.as_vec3() }
 
@@ -136,6 +116,26 @@ impl Boundary {
         boundary_scale.x.max(boundary_scale.y).max(boundary_scale.z)
     }
 
+    /// Finds the intersection point of a ray (defined by an origin and direction)
+    /// with the edges of a viewable area.
+    ///
+    /// # Parameters
+    /// - `origin`: The starting point of the ray.
+    /// - `direction`: The direction vector of the ray.
+    /// - `dimensions`: The dimensions of the viewable area.
+    ///
+    /// # Returns
+    /// An `Option<Vec3>` containing the intersection point if found, or `None` if
+    /// no valid intersection exists.
+    ///
+    /// # Method
+    /// - The function calculates the intersection points of the ray with the
+    ///   positive and negative boundaries of the viewable area along all axes.
+    ///   todo: is this true? you'll have to test in 3d mode
+    /// - It iterates over these axes, updating the minimum intersection distance
+    ///   (`t_min`) if a valid intersection is found.
+    /// - Finally, it returns the intersection point corresponding to the minimum
+    ///   distance, or `None` if no valid intersection is found.
     pub fn calculate_teleport_position(&self, position: Vec3) -> Vec3 {
         let boundary_min = self.transform.translation - self.transform.scale / 2.0;
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;

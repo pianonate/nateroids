@@ -47,6 +47,7 @@ pub struct WallApproachVisual {
 
 #[derive(Clone, Debug)]
 pub struct BoundaryWall {
+    pub actor_direction:   Vec3,
     pub approach_distance: f32,
     pub distance_to_wall:  f32,
     pub normal:            Dir3,
@@ -55,16 +56,22 @@ pub struct BoundaryWall {
     pub shrink_distance:   f32,
 }
 
-struct HandlerParams {
-    approach_distance: f32,
-    shrink_distance:   f32,
-    radius:            f32,
-    position:          Vec3,
-    direction:         Vec3,
+impl Default for BoundaryWall {
+    fn default() -> Self {
+        Self {
+            actor_direction:   Vec3::ZERO,
+            approach_distance: 0.,
+            distance_to_wall:  0.,
+            normal:            Dir3::X,
+            position:          Vec3::ZERO,
+            radius:            0.,
+            shrink_distance:   0.,
+        }
+    }
 }
 
 fn wall_portal_system(
-    mut query: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
+    mut q_actor: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut WallApproachVisual)>,
     boundary: Res<Boundary>,
     boundary_config: Res<Boundary>,
 ) {
@@ -72,53 +79,51 @@ fn wall_portal_system(
     let approach_distance = boundary_size * boundary_config.distance_approach;
     let shrink_distance = boundary_size * boundary_config.distance_shrink;
 
-    for (aabb, transform, velocity, teleporter, mut visual) in query.iter_mut() {
+    for (aabb, transform, velocity, teleporter, mut visual) in q_actor.iter_mut() {
         // the max dimension of the aabb is actually the diameter - using it as the
         // radius has the circles start out twice as big and then shrink to fit
         // the size of the object minimum size for small objects is preserved
         let radius = aabb.max_dimension().max(boundary_config.portal_smallest);
 
         let position = transform.translation;
-        let direction = velocity.linvel.normalize_or_zero();
+        let actor_direction = velocity.linvel.normalize_or_zero();
 
-        let handler_params = HandlerParams {
+        let boundary_wall = BoundaryWall {
+            actor_direction,
             approach_distance,
-            shrink_distance,
             radius,
             position,
-            direction,
+            shrink_distance,
+            ..default()
         };
 
-        handle_approaching_visual(&handler_params, &boundary, &mut visual);
-        handle_emerging_visual(&handler_params, &boundary, teleporter, &mut visual);
+        handle_approaching_visual( &boundary, boundary_wall.clone(), &mut visual );
+        handle_emerging_visual(&boundary, boundary_wall.clone(), teleporter, &mut visual);
     }
 }
 
 fn handle_emerging_visual(
-    handler_params: &HandlerParams,
     boundary: &Res<Boundary>,
+    boundary_wall: BoundaryWall,
     teleporter: &Teleporter,
     visual: &mut Mut<WallApproachVisual>,
 ) {
-    let approach_distance = handler_params.approach_distance;
-    let position = handler_params.position;
-    let radius = handler_params.radius;
-    let shrink_distance = handler_params.shrink_distance;
-    let direction = -handler_params.direction;
+    let approach_distance = boundary_wall.approach_distance;
+    let position = boundary_wall.position;
 
     if teleporter.just_teleported {
         if let Some(normal) = teleporter.last_teleported_normal {
             // establish the existence of an emerging
             visual.emerging = Some(BoundaryWall {
-                approach_distance,
                 distance_to_wall: 0.0,
                 normal,
-                position,
-                radius,
-                shrink_distance,
+                ..boundary_wall
             });
         }
     } else if let Some(ref mut emerging) = visual.emerging {
+
+        let direction = -boundary_wall.actor_direction;
+
         if let Some(emerging_point) = boundary.find_edge_point(position, direction) {
             // if we established the existence of an emerging point, then we calculate its
             // distance to the wall that is opposite the direction it's
@@ -132,25 +137,23 @@ fn handle_emerging_visual(
 }
 
 fn handle_approaching_visual(
-    handler_params: &HandlerParams,
     boundary: &Res<Boundary>,
+    boundary_wall: BoundaryWall,
     visual: &mut Mut<WallApproachVisual>,
 ) {
-    if let Some(collision_point) = boundary.find_edge_point(handler_params.position, handler_params.direction)
+    if let Some(collision_point) = boundary.find_edge_point(boundary_wall.position, boundary_wall.actor_direction)
     {
-        let distance_to_wall = handler_params.position.distance(collision_point);
+        let distance_to_wall = boundary_wall.position.distance(collision_point);
         let normal = boundary.get_normal_for_position(collision_point);
 
-        if distance_to_wall <= handler_params.approach_distance {
-            let new_position = smooth_circle_position(boundary, &visual, collision_point, normal);
+        if distance_to_wall <= boundary_wall.approach_distance {
+            let new_position = smooth_circle_position(boundary, visual, collision_point, normal);
 
             visual.approaching = Some(BoundaryWall {
-                approach_distance: handler_params.approach_distance,
                 distance_to_wall,
                 normal,
                 position: new_position,
-                radius: handler_params.radius,
-                shrink_distance: handler_params.shrink_distance,
+                ..boundary_wall
             });
         } else {
             visual.approaching = None;
@@ -172,12 +175,12 @@ fn handle_approaching_visual(
 // extracted for readability/complexity
 fn smooth_circle_position(
     boundary: &Res<Boundary>,
-    visual: &&mut Mut<WallApproachVisual>,
+    visual: &mut Mut<WallApproachVisual>,
     collision_point: Vec3,
     normal: Dir3,
 ) -> Vec3 {
     if let Some(approaching) = &visual.approaching {
-        
+
         // Adjust this value to control smoothing (0.0 to 1.0)
         let smoothing_factor = boundary.portal_movement_smoothing_factor;
 
