@@ -7,13 +7,22 @@ use crate::{
     schedule::InGameSet,
 };
 
+use crate::global_input::{
+    toggle_active,
+    GlobalAction,
+};
 use bevy::prelude::*;
 
 pub struct NateroidPlugin;
 
 impl Plugin for NateroidPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, spawn_nateroid.in_set(InGameSet::EntityUpdates));
+        app.add_systems(
+            Update,
+            spawn_nateroid
+                .in_set(InGameSet::EntityUpdates)
+                .run_if(toggle_active(true, GlobalAction::SuppressNateroids)),
+        );
     }
 }
 

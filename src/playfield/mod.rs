@@ -1,3 +1,4 @@
+mod arc;
 #[allow(clippy::module_inception)]
 mod boundary;
 mod planes;

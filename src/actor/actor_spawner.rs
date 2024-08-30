@@ -19,8 +19,8 @@ use crate::{
         GlobalAction,
     },
     playfield::{
-        Boundary,
         ActorPortals,
+        Boundary,
     },
 };
 use bevy::{
@@ -274,7 +274,7 @@ pub struct ActorBundle {
     pub scene_bundle:     SceneBundle,
     pub teleporter:       Teleporter,
     pub velocity:         Velocity,
-    pub wall_visualizer: ActorPortals,
+    pub wall_visualizer:  ActorPortals,
 }
 
 impl ActorBundle {

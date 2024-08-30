@@ -3,7 +3,10 @@ use crate::{
         Aabb,
         Teleporter,
     },
-    playfield::Boundary,
+    playfield::{
+        boundary::BoundaryFace,
+        Boundary,
+    },
     state::PlayingGame,
 };
 use bevy::{
@@ -46,8 +49,9 @@ pub struct Portal {
     pub actor_distance_to_wall:     f32,
     pub boundary_distance_approach: f32,
     pub boundary_distance_shrink:   f32,
-    pub boundary_wall_normal:       Dir3,
-    pub position:             Vec3,
+    pub face:                       BoundaryFace,
+    pub normal:                     Dir3,
+    pub position:                   Vec3,
     pub radius:                     f32,
 }
 
@@ -56,10 +60,11 @@ impl Default for Portal {
         Self {
             actor_direction:            Vec3::ZERO,
             actor_distance_to_wall:     0.,
-            position:             Vec3::ZERO,
             boundary_distance_approach: 0.,
             boundary_distance_shrink:   0.,
-            boundary_wall_normal:       Dir3::X,
+            face:                       BoundaryFace::Right,
+            normal:                     Dir3::X,
+            position:                   Vec3::ZERO,
             radius:                     0.,
         }
     }
@@ -84,7 +89,7 @@ fn portal_system(
         // the max dimension of the aabb is actually the diameter - using it as the
         // radius has the circles start out twice as big and then shrink to fit
         // the size of the object minimum size for small objects is preserved
-        let radius = aabb.max_dimension().max(boundary_config.portal_smallest);
+        let radius = aabb.max_dimension().max(boundary_config.portal_smallest) * boundary_config.portal_scalar;
 
         let portal_position = transform.translation;
         let actor_direction = velocity.linvel.normalize_or_zero();
@@ -114,11 +119,14 @@ fn handle_emerging_visual(
     if teleporter.just_teleported {
         if let Some(normal) = teleporter.last_teleported_normal {
             // establish the existence of an emerging
-            visual.emerging = Some(Portal {
-                actor_distance_to_wall: 0.0,
-                boundary_wall_normal: normal,
-                ..portal
-            });
+            if let Some(face) = BoundaryFace::from_normal(normal) {
+                visual.emerging = Some(Portal {
+                    actor_distance_to_wall: 0.0,
+                    face,
+                    normal,
+                    ..portal
+                });
+            }
         }
     } else if let Some(ref mut emerging) = visual.emerging {
         let direction = -portal.actor_direction;
@@ -139,24 +147,25 @@ fn handle_emerging_visual(
 fn handle_approaching_visual(boundary: &Res<Boundary>, portal: Portal, visual: &mut Mut<ActorPortals>) {
     if let Some(collision_point) = boundary.find_edge_point(portal.position, portal.actor_direction) {
         let actor_distance_to_wall = portal.position.distance(collision_point);
-        let boundary_wall_normal = boundary.get_normal_for_position(collision_point);
 
         if actor_distance_to_wall <= portal.boundary_distance_approach {
-            let portal_position =
-                smooth_circle_position(boundary, visual, collision_point, boundary_wall_normal);
+            let normal = boundary.get_normal_for_position(collision_point);
+            let position = smooth_circle_position(boundary, visual, collision_point, normal);
 
-            visual.approaching = Some(Portal {
-                actor_distance_to_wall,
-                boundary_wall_normal,
-                position: portal_position,
-                ..portal
-            });
-        } else {
-            visual.approaching = None;
+            if let Some(face) = BoundaryFace::from_normal(normal) {
+                visual.approaching = Some(Portal {
+                    actor_distance_to_wall,
+                    face,
+                    normal,
+                    position,
+                    ..portal
+                });
+                return;
+            }
         }
-    } else {
-        visual.approaching = None;
     }
+
+    visual.approaching = None;
 }
 
 // updated to handle two situations
@@ -182,9 +191,7 @@ fn smooth_circle_position(
         // Only smooth the position if the normal hasn't changed significantly
         // circle_direction_change_factor = threshold for considering normals "similar"
         // approaching carries the last normal, current carries this frame's normal
-        if approaching
-            .boundary_wall_normal
-            .dot(current_boundary_wall_normal.as_vec3())
+        if approaching.normal.dot(current_boundary_wall_normal.as_vec3())
             > boundary.portal_direction_change_factor
         {
             approaching.position.lerp(collision_point, smoothing_factor)
@@ -197,9 +204,13 @@ fn smooth_circle_position(
     }
 }
 
-fn draw_approaching_portals(boundary: Res<Boundary>, q_portals: Query<&ActorPortals>, mut gizmos: Gizmos) {
-    for portal in q_portals.iter() {
-        if let Some(ref approaching) = portal.approaching {
+fn draw_approaching_portals(
+    boundary: Res<Boundary>,
+    mut q_portals: Query<&mut ActorPortals>,
+    mut gizmos: Gizmos,
+) {
+    for mut portal in q_portals.iter_mut() {
+        if let Some(ref mut approaching) = portal.approaching {
             let max_radius = approaching.radius;
             let min_radius = max_radius * 0.5;
 
@@ -212,18 +223,24 @@ fn draw_approaching_portals(boundary: Res<Boundary>, q_portals: Query<&ActorPort
                 min_radius + (max_radius - min_radius) * scale_factor
             };
 
-            // draw_portal(&mut gizmos, approaching, radius, Color::from(tailwind::BLUE_600));
-            boundary.draw_portal(&mut gizmos, approaching, radius, Color::from(tailwind::BLUE_600))
+            approaching.radius = radius;
 
+            // draw_portal(&mut gizmos, approaching, radius,
+            // Color::from(tailwind::BLUE_600));
+            boundary.draw_portal(&mut gizmos, approaching, Color::from(tailwind::BLUE_600))
         }
     }
 }
 
-fn draw_emerging_portals(boundary: Res<Boundary>, q_portals: Query<&ActorPortals>, mut gizmos: Gizmos) {
-    for portal in q_portals.iter() {
-        if let Some(ref emerging) = portal.emerging {
+fn draw_emerging_portals(
+    boundary: Res<Boundary>,
+    mut q_portals: Query<&mut ActorPortals>,
+    mut gizmos: Gizmos,
+) {
+    for mut portal in q_portals.iter_mut() {
+        if let Some(ref mut emerging) = portal.emerging {
             let radius = if emerging.actor_distance_to_wall <= emerging.boundary_distance_shrink {
-                emerging.radius 
+                emerging.radius
             } else if emerging.actor_distance_to_wall >= emerging.boundary_distance_approach {
                 0.0 // This will effectively make the circle disappear
             } else {
@@ -235,18 +252,9 @@ fn draw_emerging_portals(boundary: Res<Boundary>, q_portals: Query<&ActorPortals
             };
 
             if radius > 0.0 {
-                // draw_portal(&mut gizmos, emerging, radius, Color::from(tailwind::YELLOW_800));
-                boundary.draw_portal(&mut gizmos, emerging, radius, Color::from(tailwind::YELLOW_800))
+                emerging.radius = radius;
+                boundary.draw_portal(&mut gizmos, emerging, Color::from(tailwind::YELLOW_800))
             }
         }
     }
-}
-
-fn draw_portal(gizmos: &mut Gizmos, portal: &Portal, radius: f32, color: Color) {
-    gizmos.circle(
-        portal.position,
-        portal.boundary_wall_normal,
-        radius,
-        color,
-    );
 }

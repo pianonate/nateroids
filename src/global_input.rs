@@ -31,6 +31,7 @@ pub enum GlobalAction {
     SpaceshipInspector,
     SpaceshipControlInspector,
     Stars,
+    SuppressNateroids,
 }
 
 /// GlobalActions assign keys to do a lot of obvious stuff. Debug is less
@@ -84,6 +85,7 @@ impl GlobalAction {
             Self::SpaceshipInspector => insert_dual_input(input_map, action, KeyCode::Digit3),
             Self::SpaceshipControlInspector => insert_dual_input(input_map, action, KeyCode::Digit4),
             Self::Stars => input_map.with(action, KeyCode::F3),
+            Self::SuppressNateroids => input_map.with(action, KeyCode::F4),
         })
     }
 }
