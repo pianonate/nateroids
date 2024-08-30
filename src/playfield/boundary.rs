@@ -16,13 +16,10 @@ use bevy_inspector_egui::{
     prelude::*,
     quick::ResourceInspectorPlugin,
 };
-use std::f32::consts::PI;
 
-use crate::playfield::{
-    arc::calculate_intersection_points,
-    portals::Portal,
-};
+use crate::playfield::portals::Portal;
 use bevy::color::palettes::tailwind;
+use crate::playfield::boundary_face::BoundaryFace;
 
 pub struct BoundaryPlugin;
 
@@ -37,42 +34,6 @@ impl Plugin for BoundaryPlugin {
             )
             .add_systems(Update, update_gizmos_config)
             .add_systems(Update, draw_boundary.run_if(in_state(PlayingGame)));
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BoundaryFace {
-    Left,
-    Right,
-    Top,
-    Bottom,
-    Front,
-    Back,
-}
-
-impl BoundaryFace {
-
-    pub fn get_normal(&self) -> Vec3 {
-        match self {
-            BoundaryFace::Left => Vec3::NEG_X,
-            BoundaryFace::Right => Vec3::X,
-            BoundaryFace::Top => Vec3::Y,
-            BoundaryFace::Bottom => Vec3::NEG_Y,
-            BoundaryFace::Front => Vec3::Z,
-            BoundaryFace::Back => Vec3::NEG_Z,
-        }
-    }
-    
-    pub fn from_normal(normal: Dir3) -> Option<Self> {
-        match normal {
-            Dir3::X => Some(BoundaryFace::Right),
-            Dir3::NEG_X => Some(BoundaryFace::Left),
-            Dir3::Y => Some(BoundaryFace::Top),
-            Dir3::NEG_Y => Some(BoundaryFace::Bottom),
-            Dir3::Z => Some(BoundaryFace::Front),
-            Dir3::NEG_Z => Some(BoundaryFace::Back),
-            _ => None,
-        }
     }
 }
 
@@ -98,10 +59,14 @@ pub struct Boundary {
     pub line_width:                       f32,
     #[inspector(min = 0.0, max = std::f32::consts::PI, display = NumberDisplay::Slider)]
     pub portal_direction_change_factor:   f32,
+    #[inspector(min = 1.0, max = 30.0, display = NumberDisplay::Slider)]
+    pub portal_fadeout_duration: f32,
+    #[inspector(min = 0.001, max = 1.0, display = NumberDisplay::Slider)]
+    pub portal_minimum_radius: f32,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
     pub portal_movement_smoothing_factor: f32,
     #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
-    pub portal_scalar: f32,
+    pub portal_scalar:                    f32,
     #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
     pub portal_smallest:                  f32,
     #[inspector(min = 50., max = 300., display = NumberDisplay::Slider)]
@@ -121,8 +86,10 @@ impl Default for Boundary {
             distance_shrink: 0.25,
             line_width: 4.,
             portal_direction_change_factor: 0.75,
+            portal_fadeout_duration: 14.,
+            portal_minimum_radius: 0.1,
             portal_movement_smoothing_factor: 0.08,
-            portal_scalar: 3., 
+            portal_scalar: 2.,
             portal_smallest: 5.,
             scalar,
             transform: Transform::from_scale(scalar * cell_count.as_vec3()),
@@ -148,6 +115,28 @@ fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_con
 }
 
 impl Boundary {
+    fn get_overextended_intersection_points(
+        &self,
+        portal: &Portal,
+        overextended_faces: Vec<BoundaryFace>,
+    ) -> Vec<(BoundaryFace, Vec<Vec3>)> {
+        let mut intersections = Vec::new();
+        let half_size = self.transform.scale / 2.0;
+        let min = self.transform.translation - half_size;
+        let max = self.transform.translation + half_size;
+
+        for face in overextended_faces {
+            let face_points = face.get_face_points(&min, &max);
+            let face_intersections = intersect_circle_with_rectangle(portal, &face_points);
+
+            if !face_intersections.is_empty() {
+                intersections.push((face, face_intersections));
+            }
+        }
+
+        intersections
+    }
+
     /// Finds the intersection point of a ray (defined by an origin and
     /// direction) with the edges of a viewable area.
     ///
@@ -196,50 +185,65 @@ impl Boundary {
     }
 
     pub fn draw_portal(&self, gizmos: &mut Gizmos, portal: &Portal, color: Color) {
-  
-        let overextended_faces = self.check_portal_overextension(portal);
+        let overextended_faces = self.get_overextended_faces_for(portal);
 
-        let points = calculate_intersection_points(portal, self, overextended_faces);
-        
-        if points.is_empty() {
+        let over_extended_intersection_points =
+            self.get_overextended_intersection_points(portal, overextended_faces);
+
+        if over_extended_intersection_points.is_empty() {
             gizmos.circle(portal.position, portal.normal, portal.radius, color);
-            return
+            return;
         }
-        
+
         // todo #handle3d - with all likelihood this doesn't exactly make sense
         // when there's a corner so you may need a match to output both sets of points
         // for the extensions and only output the draw_portal_arc once..
-        for (face, points) in points {
+        for (face, points) in over_extended_intersection_points {
             if points.len() >= 2 {
-                let rotated_position = self.rotate_position_to_target_face( portal.position, portal.normal.as_vec3(), face);
+                let rotated_position =
+                    self.rotate_portal_center_to_target_face(portal.position, portal.normal, face);
 
                 // keep this around if you need to debug 3d later on
-                // gizmos.sphere(portal.position, Quat::IDENTITY,3., Color::from(tailwind::PURPLE_500)).resolution(64);
-                // gizmos.sphere(rotated_position, Quat::IDENTITY,3., Color::from(tailwind::PURPLE_500)).resolution(64);
-                // 
-                // let rotation_point = self.find_closest_point_on_edge(portal.position, portal.normal.as_vec3(), face.get_normal());
-                // let rotation_axis = portal.normal.as_vec3().cross(face.get_normal()).normalize();
-                // gizmos.line(rotation_point, rotation_point + rotation_axis * 20.0, Color::from(tailwind::YELLOW_500));
+                // gizmos.sphere(portal.position, Quat::IDENTITY,1.,
+                // Color::from(tailwind::PURPLE_500)).resolution(64);
+                // gizmos.sphere(rotated_position, Quat::IDENTITY,1.,
+                // Color::from(tailwind::PURPLE_500)).resolution(64);
+                //
+                // let rotation_point = self.find_closest_point_on_edge(portal.position,
+                // portal.normal.as_vec3(), face.get_normal());
+                // let rotation_axis =
+                // portal.normal.as_vec3().cross(face.get_normal()).normalize();
+                // gizmos.line(rotation_point, rotation_point + rotation_axis * 30.0,
+                // Color::from(tailwind::YELLOW_500));
                 // gizmos.line(rotation_point, portal.position, Color::from(tailwind::RED_500));
-                // gizmos.line(rotation_point, rotated_position, Color::from(tailwind::GREEN_500));
-                
-                gizmos.short_arc_3d_between(
-                    rotated_position,
-                    points[0],
-                    points[1],
-                    color, // Color::from(tailwind::GREEN_800),
-                ).resolution(32);
-                self.draw_portal_arc(gizmos, portal, color, points[0], points[1]);
-            } 
+                // gizmos.line(rotation_point, rotated_position,
+                // Color::from(tailwind::GREEN_500));
+
+                gizmos
+                    .short_arc_3d_between(
+                        rotated_position,
+                        points[0],
+                        points[1],
+                        color, // Color::from(tailwind::GREEN_800),
+                    )
+                    .resolution(32);
+                self.draw_primary_arc(gizmos, portal, color, points[0], points[1]);
+            }
         }
     }
 
-    fn rotate_position_to_target_face(
+    // when we rotate this to the target face we get a new center
+    // for the arc that is drawn outside the boundary
+    // wrapped to a point that provide a center that gives
+    // the illusion of having the circle wrap around the edge
+    fn rotate_portal_center_to_target_face(
         &self,
         position: Vec3,
-        current_normal: Vec3,
+        normal: Dir3,
         target_face: BoundaryFace,
     ) -> Vec3 {
+        let current_normal = normal.as_vec3();
+
         let target_normal = target_face.get_normal();
 
         // The rotation axis is the cross product of the current and target normals
@@ -259,22 +263,6 @@ impl Boundary {
         rotation_point + rotated_pos
     }
 
-    // fn find_closest_point_on_edge(&self, position: Vec3, normal1: Vec3, normal2: Vec3) -> Vec3 {
-    //     let edge_direction = normal1.cross(normal2).normalize();
-    //     let center = self.transform.translation;
-    //     let half_size = self.transform.scale / 2.0;
-    // 
-    //     // Find a point on the edge
-    //     let edge_point = center + (normal1 + normal2).normalize() * -half_size.dot((normal1 + normal2).normalize());
-    // 
-    //     // Project the position onto the edge
-    //     let to_position = position - edge_point;
-    //     let projection = to_position.dot(edge_direction) * edge_direction;
-    // 
-    //     edge_point + projection
-    // }
-
-
     fn find_closest_point_on_edge(&self, position: Vec3, normal1: Vec3, normal2: Vec3) -> Vec3 {
         // Calculate the direction of the intersection line (edge)
         let edge_direction = normal1.cross(normal2).normalize();
@@ -287,13 +275,25 @@ impl Boundary {
         let mut anchor_point = center;
 
         // Adjust the anchor point based on which planes are intersecting
-        if normal1.x != 0.0 { anchor_point.x += normal1.x * half_extents.x; }
-        if normal1.y != 0.0 { anchor_point.y += normal1.y * half_extents.y; }
-        if normal1.z != 0.0 { anchor_point.z += normal1.z * half_extents.z; }
+        if normal1.x != 0.0 {
+            anchor_point.x += normal1.x * half_extents.x;
+        }
+        if normal1.y != 0.0 {
+            anchor_point.y += normal1.y * half_extents.y;
+        }
+        if normal1.z != 0.0 {
+            anchor_point.z += normal1.z * half_extents.z;
+        }
 
-        if normal2.x != 0.0 { anchor_point.x += normal2.x * half_extents.x; }
-        if normal2.y != 0.0 { anchor_point.y += normal2.y * half_extents.y; }
-        if normal2.z != 0.0 { anchor_point.z += normal2.z * half_extents.z; }
+        if normal2.x != 0.0 {
+            anchor_point.x += normal2.x * half_extents.x;
+        }
+        if normal2.y != 0.0 {
+            anchor_point.y += normal2.y * half_extents.y;
+        }
+        if normal2.z != 0.0 {
+            anchor_point.z += normal2.z * half_extents.z;
+        }
 
         // Calculate vector from anchor point to position
         let to_position = position - anchor_point;
@@ -302,17 +302,8 @@ impl Boundary {
         let projection_length = to_position.dot(edge_direction);
         let point_on_edge = anchor_point + projection_length * edge_direction;
 
-        // Debugging Output
-        println!(
-            "pos:{:?} n1:{:?} n2:{:?} edge_dir:{:?} projection_length:{} point_on_edge:{:?} anchor_point:{:?}",
-            position, normal1, normal2, edge_direction, projection_length, point_on_edge, anchor_point
-        );
-
         point_on_edge
     }
-
- 
-
 
     // arc_3d has these assumptions:
     // rotation: defines orientation of the arc, by default we assume the arc is
@@ -321,7 +312,7 @@ impl Boundary {
     //
     // so we have to rotate the arc to match up with the actual place it should be
     // drawn
-    fn draw_portal_arc(&self, gizmos: &mut Gizmos, portal: &Portal, color: Color, from: Vec3, to: Vec3) {
+    fn draw_primary_arc(&self, gizmos: &mut Gizmos, portal: &Portal, color: Color, from: Vec3, to: Vec3) {
         let center = portal.position;
         let radius = portal.radius;
         let normal = portal.normal.as_vec3();
@@ -336,7 +327,6 @@ impl Boundary {
         let is_clockwise = cross_product.dot(normal) < 0.0;
 
         angle = std::f32::consts::TAU - angle;
-        println!("{}", angle);
 
         // Calculate the rotation to align the arc with the boundary face
         let face_rotation = Quat::from_rotation_arc(Vec3::Y, normal);
@@ -356,7 +346,7 @@ impl Boundary {
         // gizmos.line(center, to, Color::from(tailwind::BLUE_500));
     }
 
-    fn check_portal_overextension(&self, portal: &Portal) -> Vec<BoundaryFace> {
+    fn get_overextended_faces_for(&self, portal: &Portal) -> Vec<BoundaryFace> {
         let mut overextended_faces = Vec::new();
         let half_size = self.transform.scale / 2.0;
         let min = self.transform.translation - half_size;
@@ -503,4 +493,46 @@ fn draw_boundary(mut boundary: ResMut<Boundary>, mut gizmos: Gizmos<BoundaryGizm
             boundary.color,
         )
         .outer_edges();
+}
+
+pub fn intersect_circle_with_rectangle(portal: &Portal, rectangle_points: &[Vec3; 4]) -> Vec<Vec3> {
+    let mut intersections = Vec::new();
+
+    for i in 0..4 {
+        let start = rectangle_points[i];
+        let end = rectangle_points[(i + 1) % 4];
+
+        let edge_intersections = intersect_circle_with_line_segment(portal, start, end);
+        intersections.extend(edge_intersections);
+    }
+
+    intersections
+}
+
+fn intersect_circle_with_line_segment(portal: &Portal, start: Vec3, end: Vec3) -> Vec<Vec3> {
+    let edge = end - start;
+    let center_to_start = start - portal.position;
+
+    let a = edge.dot(edge);
+    let b = 2.0 * center_to_start.dot(edge);
+    let c = center_to_start.dot(center_to_start) - portal.radius * portal.radius;
+
+    let discriminant = b * b - 4.0 * a * c;
+
+    if discriminant < 0.0 {
+        return vec![];
+    }
+
+    let mut intersections = Vec::new();
+    let t1 = (-b + discriminant.sqrt()) / (2.0 * a);
+    let t2 = (-b - discriminant.sqrt()) / (2.0 * a);
+
+    if (0.0..=1.0).contains(&t1) {
+        intersections.push(start + t1 * edge);
+    }
+    if (0.0..=1.0).contains(&t2) && (t1 - t2).abs() > 1e-6 {
+        intersections.push(start + t2 * edge);
+    }
+
+    intersections
 }

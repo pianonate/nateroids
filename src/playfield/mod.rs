@@ -1,8 +1,7 @@
-mod arc;
-#[allow(clippy::module_inception)]
 mod boundary;
 mod planes;
 mod portals;
+mod boundary_face;
 
 pub use crate::playfield::{
     boundary::Boundary,

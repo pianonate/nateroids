@@ -4,7 +4,6 @@ use crate::{
         Teleporter,
     },
     playfield::{
-        boundary::BoundaryFace,
         Boundary,
     },
     state::PlayingGame,
@@ -25,6 +24,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_rapier3d::dynamics::Velocity;
+use crate::playfield::boundary_face::BoundaryFace;
 
 pub struct PortalPlugin;
 
@@ -50,6 +50,7 @@ pub struct Portal {
     pub boundary_distance_approach: f32,
     pub boundary_distance_shrink:   f32,
     pub face:                       BoundaryFace,
+    fade_out_started:               Option<f32>,
     pub normal:                     Dir3,
     pub position:                   Vec3,
     pub radius:                     f32,
@@ -63,6 +64,7 @@ impl Default for Portal {
             boundary_distance_approach: 0.,
             boundary_distance_shrink:   0.,
             face:                       BoundaryFace::Right,
+            fade_out_started:           None,
             normal:                     Dir3::X,
             position:                   Vec3::ZERO,
             radius:                     0.,
@@ -74,6 +76,7 @@ fn portal_system(
     mut q_actor: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut ActorPortals)>,
     boundary: Res<Boundary>,
     boundary_config: Res<Boundary>,
+    time: Res<Time>,
 ) {
     // todo #handle3d
     let boundary_size = boundary
@@ -89,7 +92,8 @@ fn portal_system(
         // the max dimension of the aabb is actually the diameter - using it as the
         // radius has the circles start out twice as big and then shrink to fit
         // the size of the object minimum size for small objects is preserved
-        let radius = aabb.max_dimension().max(boundary_config.portal_smallest) * boundary_config.portal_scalar;
+        let radius =
+            aabb.max_dimension().max(boundary_config.portal_smallest) * boundary_config.portal_scalar;
 
         let portal_position = transform.translation;
         let actor_direction = velocity.linvel.normalize_or_zero();
@@ -103,8 +107,8 @@ fn portal_system(
             ..default()
         };
 
-        handle_approaching_visual(&boundary, boundary_wall.clone(), &mut visual);
-        handle_emerging_visual(&boundary, boundary_wall.clone(), teleporter, &mut visual);
+        handle_approaching_visual(&boundary, boundary_wall.clone(), &time, &mut visual);
+        handle_emerging_visual(&boundary, boundary_wall.clone(), teleporter, &time, &mut visual);
     }
 }
 
@@ -112,10 +116,9 @@ fn handle_emerging_visual(
     boundary: &Res<Boundary>,
     portal: Portal,
     teleporter: &Teleporter,
+    time: &Res<Time>,
     visual: &mut Mut<ActorPortals>,
 ) {
-    let approach_distance = portal.boundary_distance_approach;
-
     if teleporter.just_teleported {
         if let Some(normal) = teleporter.last_teleported_normal {
             // establish the existence of an emerging
@@ -124,27 +127,27 @@ fn handle_emerging_visual(
                     actor_distance_to_wall: 0.0,
                     face,
                     normal,
+                    fade_out_started: Some(time.elapsed_seconds()),
                     ..portal
                 });
             }
         }
-    } else if let Some(ref mut emerging) = visual.emerging {
-        let direction = -portal.actor_direction;
-        let position = portal.position;
-
-        if let Some(emerging_point) = boundary.find_edge_point(position, direction) {
-            // if we established the existence of an emerging point, then we calculate its
-            // distance to the wall that is opposite the direction it's
-            // traveling from
-            emerging.actor_distance_to_wall = position.distance(emerging_point);
-            if emerging.actor_distance_to_wall > approach_distance {
-                visual.emerging = None;
-            }
+    }
+    // once the radius gets small enough we can eliminate it
+    else if let Some(ref mut emerging) = visual.emerging {
+        // Check if the radius has shrunk to a small value (near zero)
+        if emerging.radius <= boundary.portal_minimum_radius {
+            visual.emerging = None; // Remove the visual
         }
     }
 }
 
-fn handle_approaching_visual(boundary: &Res<Boundary>, portal: Portal, visual: &mut Mut<ActorPortals>) {
+fn handle_approaching_visual(
+    boundary: &Res<Boundary>,
+    portal: Portal,
+    time: &Res<Time>,
+    visual: &mut Mut<ActorPortals>,
+) {
     if let Some(collision_point) = boundary.find_edge_point(portal.position, portal.actor_direction) {
         let actor_distance_to_wall = portal.position.distance(collision_point);
 
@@ -165,7 +168,13 @@ fn handle_approaching_visual(boundary: &Res<Boundary>, portal: Portal, visual: &
         }
     }
 
-    visual.approaching = None;
+    // If we reach this point, we've teleported
+    if let Some(approaching) = &mut visual.approaching {
+        if approaching.fade_out_started.is_none() {
+            // Start fade-out
+            approaching.fade_out_started = Some(time.elapsed_seconds());
+        }
+    }
 }
 
 // updated to handle two situations
@@ -205,55 +214,95 @@ fn smooth_circle_position(
 }
 
 fn draw_approaching_portals(
+    time: Res<Time>,
     boundary: Res<Boundary>,
     mut q_portals: Query<&mut ActorPortals>,
     mut gizmos: Gizmos,
 ) {
     for mut portal in q_portals.iter_mut() {
         if let Some(ref mut approaching) = portal.approaching {
-            let max_radius = approaching.radius;
-            let min_radius = max_radius * 0.5;
+           
+            let radius = get_approaching_radius(approaching);
+            
+            // handle fadeout and get rid of it if we're past duration
+            // otherwise proceed
+            if let Some(fade_out_start) = approaching.fade_out_started {
+                // Calculate the elapsed time since fade-out started
+                let elapsed_time = time.elapsed_seconds() - fade_out_start;
 
-            let radius = if approaching.actor_distance_to_wall > approaching.boundary_distance_shrink {
-                max_radius
+                // Fade out over n seconds
+                let fade_out_duration = boundary.portal_fadeout_duration;
+                if elapsed_time >= fade_out_duration || approaching.radius < boundary.portal_minimum_radius {
+                    // Remove visual after fade-out is complete
+                    portal.approaching = None;
+                    continue;
+                }
+
+                // Calculate the current reduction based on elapsed time
+                let fade_factor = (1.0 - (elapsed_time / fade_out_duration)).clamp(0.0, 1.0);
+                approaching.radius *= fade_factor;
             } else {
-                let scale_factor = (approaching.actor_distance_to_wall
-                    / approaching.boundary_distance_shrink)
-                    .clamp(0.0, 1.0);
-                min_radius + (max_radius - min_radius) * scale_factor
-            };
+                // Apply the normal proximity-based scaling
+                approaching.radius = radius;
+            }
 
-            approaching.radius = radius;
-
-            // draw_portal(&mut gizmos, approaching, radius,
-            // Color::from(tailwind::BLUE_600));
-            boundary.draw_portal(&mut gizmos, approaching, Color::from(tailwind::BLUE_600))
+            // Draw the portal with the updated radius
+            boundary.draw_portal(&mut gizmos, approaching, Color::from(tailwind::BLUE_600));
         }
     }
 }
 
+// extracted for readability
+fn get_approaching_radius(approaching: &mut Portal) -> f32 {
+    // 0.5 corresponds to making sure that the aabb's of an actor fits
+    // once radius shrinks down - we make sure the aabb always fits
+    // for now not parameterizing but maybe i'll care in the future
+    let max_radius = approaching.radius;
+    let min_radius = max_radius * 0.5;
+
+    // Calculate the radius based on proximity to the boundary
+    // as it's approaching we keep it at a fixed size until we enter the shrink zone
+    if approaching.actor_distance_to_wall > approaching.boundary_distance_shrink {
+        max_radius
+    } else {
+        let scale_factor = (approaching.actor_distance_to_wall
+            / approaching.boundary_distance_shrink)
+            .clamp(0.0, 1.0);
+        min_radius + (max_radius - min_radius) * scale_factor
+    }
+}
+
 fn draw_emerging_portals(
+    time: Res<Time>,
     boundary: Res<Boundary>,
     mut q_portals: Query<&mut ActorPortals>,
     mut gizmos: Gizmos,
 ) {
     for mut portal in q_portals.iter_mut() {
         if let Some(ref mut emerging) = portal.emerging {
-            let radius = if emerging.actor_distance_to_wall <= emerging.boundary_distance_shrink {
-                emerging.radius
-            } else if emerging.actor_distance_to_wall >= emerging.boundary_distance_approach {
-                0.0 // This will effectively make the circle disappear
-            } else {
-                // Linear interpolation between full size and zero,
-                // but only after exceeding the shrink distance
-                let t = (emerging.actor_distance_to_wall - emerging.boundary_distance_shrink)
-                    / (emerging.boundary_distance_approach - emerging.boundary_distance_shrink);
-                emerging.radius * (1.0 - t)
-            };
+            if let Some(emerging_start) = emerging.fade_out_started {
+                // Calculate the elapsed time since the emerging process started
+                let elapsed_time = time.elapsed_seconds() - emerging_start;
 
-            if radius > 0.0 {
-                emerging.radius = radius;
-                boundary.draw_portal(&mut gizmos, emerging, Color::from(tailwind::YELLOW_800))
+                // Define the total duration for the emerging process
+                let emerging_duration = boundary.portal_fadeout_duration;
+
+                // Calculate the progress based on elapsed time
+                let progress = (elapsed_time / emerging_duration).clamp(0.0, 1.0);
+
+                // Interpolate the radius from the full size down to zero
+                let initial_radius = emerging.radius;
+                let radius = initial_radius * (1.0 - progress);  // Scale down as progress increases
+                
+                if radius > 0.0 {
+                    emerging.radius = radius;
+                    boundary.draw_portal(&mut gizmos, emerging, Color::from(tailwind::YELLOW_800));
+                }
+
+                // Remove visual after the emerging duration is complete
+                if elapsed_time >= emerging_duration {
+                    portal.emerging = None;
+                }
             }
         }
     }
