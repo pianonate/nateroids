@@ -17,16 +17,22 @@ use bevy_inspector_egui::{
     quick::ResourceInspectorPlugin,
 };
 
-use crate::playfield::portals::Portal;
+use crate::playfield::{
+    boundary_face::BoundaryFace,
+    portals::{
+        Portal,
+        PortalGizmo,
+    },
+};
+
 use bevy::color::palettes::tailwind;
-use crate::playfield::boundary_face::BoundaryFace;
 
 pub struct BoundaryPlugin;
 
 impl Plugin for BoundaryPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Boundary>()
-            .init_gizmo_group::<BoundaryGizmos>()
+            .init_gizmo_group::<BoundaryGizmo>()
             .register_type::<Boundary>()
             .add_plugins(
                 ResourceInspectorPlugin::<Boundary>::default()
@@ -35,6 +41,14 @@ impl Plugin for BoundaryPlugin {
             .add_systems(Update, update_gizmos_config)
             .add_systems(Update, draw_boundary.run_if(in_state(PlayingGame)));
     }
+}
+
+#[derive(Default, Reflect, GizmoConfigGroup)]
+struct BoundaryGizmo {}
+
+fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary: Res<Boundary>) {
+    let (config, _) = config_store.config_mut::<BoundaryGizmo>();
+    config.line_width = boundary.line_width;
 }
 
 // circle_direction_change_factor:
@@ -55,14 +69,14 @@ pub struct Boundary {
     pub distance_approach:                f32,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
     pub distance_shrink:                  f32,
-    #[inspector(min = 0.01, max = 10.0, display = NumberDisplay::Slider)]
+    #[inspector(min = 0.1, max = 40.0, display = NumberDisplay::Slider)]
     pub line_width:                       f32,
     #[inspector(min = 0.0, max = std::f32::consts::PI, display = NumberDisplay::Slider)]
     pub portal_direction_change_factor:   f32,
     #[inspector(min = 1.0, max = 30.0, display = NumberDisplay::Slider)]
-    pub portal_fadeout_duration: f32,
+    pub portal_fadeout_duration:          f32,
     #[inspector(min = 0.001, max = 1.0, display = NumberDisplay::Slider)]
-    pub portal_minimum_radius: f32,
+    pub portal_minimum_radius:            f32,
     #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
     pub portal_movement_smoothing_factor: f32,
     #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
@@ -94,23 +108,6 @@ impl Default for Boundary {
             scalar,
             transform: Transform::from_scale(scalar * cell_count.as_vec3()),
         }
-    }
-}
-
-#[derive(Default, Reflect, GizmoConfigGroup)]
-pub struct BoundaryGizmos {}
-
-fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary_config: Res<Boundary>) {
-    for (_, any_config, _) in config_store.iter_mut() {
-        any_config.render_layers = RenderLayers::from_layers(RenderLayer::Game.layers());
-        any_config.line_width = 2.;
-    }
-
-    // so we can avoid an error of borrowing the mutable config_store twice
-    // in the same context
-    {
-        let (config, _) = config_store.config_mut::<BoundaryGizmos>();
-        config.line_width = boundary_config.line_width;
     }
 }
 
@@ -161,37 +158,45 @@ impl Boundary {
         let boundary_min = self.transform.translation - self.transform.scale / 2.0;
         let boundary_max = self.transform.translation + self.transform.scale / 2.0;
 
-        let mut wrapped_position = position;
+        let mut teleport_position = position;
 
         if position.x >= boundary_max.x {
-            wrapped_position.x = boundary_min.x;
+            teleport_position.x = boundary_min.x;
         } else if position.x <= boundary_min.x {
-            wrapped_position.x = boundary_max.x;
+            teleport_position.x = boundary_max.x;
         }
 
         if position.y >= boundary_max.y {
-            wrapped_position.y = boundary_min.y;
+            teleport_position.y = boundary_min.y;
         } else if position.y <= boundary_min.y {
-            wrapped_position.y = boundary_max.y;
+            teleport_position.y = boundary_max.y;
         }
 
         if position.z >= boundary_max.z {
-            wrapped_position.z = boundary_min.z;
+            teleport_position.z = boundary_min.z;
         } else if position.z <= boundary_min.z {
-            wrapped_position.z = boundary_max.z;
+            teleport_position.z = boundary_max.z;
         }
 
-        wrapped_position
+        teleport_position
     }
 
-    pub fn draw_portal(&self, gizmos: &mut Gizmos, portal: &Portal, color: Color) {
+    pub fn draw_portal(
+        &self,
+        gizmos: &mut Gizmos<PortalGizmo>,
+        portal: &Portal,
+        color: Color,
+        resolution: usize,
+    ) {
         let overextended_faces = self.get_overextended_faces_for(portal);
 
         let over_extended_intersection_points =
             self.get_overextended_intersection_points(portal, overextended_faces);
 
         if over_extended_intersection_points.is_empty() {
-            gizmos.circle(portal.position, portal.normal, portal.radius, color);
+            gizmos
+                .circle(portal.position, portal.normal, portal.radius, color)
+                .resolution(resolution);
             return;
         }
 
@@ -205,9 +210,9 @@ impl Boundary {
 
                 // keep this around if you need to debug 3d later on
                 // gizmos.sphere(portal.position, Quat::IDENTITY,1.,
-                // Color::from(tailwind::PURPLE_500)).resolution(64);
+                // Color::from(tailwind::PURPLE_500)).resolution(resolution);
                 // gizmos.sphere(rotated_position, Quat::IDENTITY,1.,
-                // Color::from(tailwind::PURPLE_500)).resolution(64);
+                // Color::from(tailwind::PURPLE_500)).resolution(resolution);
                 //
                 // let rotation_point = self.find_closest_point_on_edge(portal.position,
                 // portal.normal.as_vec3(), face.get_normal());
@@ -226,8 +231,8 @@ impl Boundary {
                         points[1],
                         color, // Color::from(tailwind::GREEN_800),
                     )
-                    .resolution(32);
-                self.draw_primary_arc(gizmos, portal, color, points[0], points[1]);
+                    .resolution(resolution);
+                self.draw_primary_arc(gizmos, portal, color, resolution, points[0], points[1]);
             }
         }
     }
@@ -312,7 +317,15 @@ impl Boundary {
     //
     // so we have to rotate the arc to match up with the actual place it should be
     // drawn
-    fn draw_primary_arc(&self, gizmos: &mut Gizmos, portal: &Portal, color: Color, from: Vec3, to: Vec3) {
+    fn draw_primary_arc(
+        &self,
+        gizmos: &mut Gizmos<PortalGizmo>,
+        portal: &Portal,
+        color: Color,
+        resolution: usize,
+        from: Vec3,
+        to: Vec3,
+    ) {
         let center = portal.position;
         let radius = portal.radius;
         let normal = portal.normal.as_vec3();
@@ -339,7 +352,9 @@ impl Boundary {
         let final_rotation = start_rotation * face_rotation;
 
         // Draw the arc
-        gizmos.arc_3d(angle, radius, center, final_rotation, color);
+        gizmos
+            .arc_3d(angle, radius, center, final_rotation, color)
+            .resolution(resolution);
 
         // Debug visualization
         // gizmos.line(center, from, Color::from(tailwind::GREEN_500));
@@ -477,7 +492,7 @@ fn is_in_bounds(point: Vec3, start: f32, origin: Vec3, boundary_min: Vec3, bound
     }
 }
 
-fn draw_boundary(mut boundary: ResMut<Boundary>, mut gizmos: Gizmos<BoundaryGizmos>) {
+fn draw_boundary(mut boundary: ResMut<Boundary>, mut gizmos: Gizmos<BoundaryGizmo>) {
     // updating the boundary resource transform from its configuration so it can be
     // dynamically changed with the inspector while the game is running
     // the boundary transform is used both for position but also

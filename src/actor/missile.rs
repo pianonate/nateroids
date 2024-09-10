@@ -124,12 +124,12 @@ fn fire_missile(
 /// we update missile movement so that it can be despawned after it has traveled
 /// its total distance
 fn missile_movement(mut query: Query<(&Transform, &mut Missile, &Teleporter)>) {
-    for (transform, mut missile, wrappable) in query.iter_mut() {
+    for (transform, mut missile, teleporter) in query.iter_mut() {
         let current_position = transform.translation;
 
         if let Some(last_position) = missile.last_position {
             // Calculate the distance traveled since the last update
-            let distance_traveled = if wrappable.just_teleported {
+            let distance_traveled = if teleporter.just_teleported {
                 0.0
             } else {
                 last_position.distance(current_position)
@@ -140,7 +140,7 @@ fn missile_movement(mut query: Query<(&Transform, &mut Missile, &Teleporter)>) {
             missile.remaining_distance = missile.total_distance - missile.traveled_distance;
 
             // Update the last teleport position if the missile wrapped
-            if wrappable.just_teleported {
+            if teleporter.just_teleported {
                 missile.last_teleport_position = Some(current_position);
             }
         }

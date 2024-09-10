@@ -1,7 +1,14 @@
-use bevy::math::{Dir3, Vec3};
+use bevy::{
+    math::{
+        Dir3,
+        Vec3,
+    },
+    prelude::Reflect,
+};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Reflect)]
 pub enum BoundaryFace {
+    #[default]
     Left,
     Right,
     Top,

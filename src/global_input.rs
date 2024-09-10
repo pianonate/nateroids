@@ -27,6 +27,7 @@ pub enum GlobalAction {
     NateroidInspector,
     Physics,
     PlanesInspector,
+    PortalInspector,
     Pause,
     SpaceshipInspector,
     SpaceshipControlInspector,
@@ -54,7 +55,7 @@ pub enum GlobalAction {
 /// ```
 impl GlobalAction {
     pub fn global_input_map() -> InputMap<Self> {
-        fn insert_dual_input(
+        fn insert_shift_input(
             input_map: InputMap<GlobalAction>,
             action: GlobalAction,
             key: KeyCode,
@@ -73,17 +74,18 @@ impl GlobalAction {
         // accumulation works
         Self::iter().fold(InputMap::default(), |input_map, action| match action {
             Self::AABBs => input_map.with(action, KeyCode::F1),
-            Self::BoundaryInspector => insert_dual_input(input_map, action, KeyCode::KeyB),
-            Self::CameraConfigInspector => insert_dual_input(input_map, action, KeyCode::KeyC),
-            Self::Debug => insert_dual_input(input_map, action, KeyCode::KeyD),
-            Self::LightsInspector => insert_dual_input(input_map, action, KeyCode::KeyL),
-            Self::MissileInspector => insert_dual_input(input_map, action, KeyCode::Digit1),
-            Self::NateroidInspector => insert_dual_input(input_map, action, KeyCode::Digit2),
-            Self::Physics => input_map.with(action, KeyCode::F2),
-            Self::PlanesInspector => insert_dual_input(input_map, action, KeyCode::KeyP),
+            Self::BoundaryInspector => insert_shift_input(input_map, action, KeyCode::KeyB),
+            Self::CameraConfigInspector => insert_shift_input(input_map, action, KeyCode::KeyC),
+            Self::Debug => insert_shift_input(input_map, action, KeyCode::KeyD),
+            Self::LightsInspector => insert_shift_input(input_map, action, KeyCode::KeyL),
+            Self::MissileInspector => insert_shift_input(input_map, action, KeyCode::Digit1),
+            Self::NateroidInspector => insert_shift_input(input_map, action, KeyCode::Digit2),
             Self::Pause => input_map.with(action, KeyCode::Escape),
-            Self::SpaceshipInspector => insert_dual_input(input_map, action, KeyCode::Digit3),
-            Self::SpaceshipControlInspector => insert_dual_input(input_map, action, KeyCode::Digit4),
+            Self::Physics => input_map.with(action, KeyCode::F2),
+            Self::PlanesInspector => insert_shift_input(input_map, action, KeyCode::KeyP),
+            Self::PortalInspector => insert_shift_input(input_map, action, KeyCode::KeyG),
+            Self::SpaceshipInspector => insert_shift_input(input_map, action, KeyCode::Digit3),
+            Self::SpaceshipControlInspector => insert_shift_input(input_map, action, KeyCode::Digit4),
             Self::Stars => input_map.with(action, KeyCode::F3),
             Self::SuppressNateroids => input_map.with(action, KeyCode::F4),
         })

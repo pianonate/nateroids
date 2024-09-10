@@ -3,7 +3,13 @@ use crate::{
         Aabb,
         Teleporter,
     },
+    camera::RenderLayer,
+    global_input::{
+        toggle_active,
+        GlobalAction,
+    },
     playfield::{
+        boundary_face::BoundaryFace,
         Boundary,
     },
     state::PlayingGame,
@@ -22,18 +28,70 @@ use bevy::{
         Vec3,
     },
     prelude::*,
+    render::view::RenderLayers,
+};
+use bevy_inspector_egui::{
+    inspector_options::std_options::NumberDisplay,
+    prelude::*,
+    quick::ResourceInspectorPlugin,
 };
 use bevy_rapier3d::dynamics::Velocity;
-use crate::playfield::boundary_face::BoundaryFace;
 
 pub struct PortalPlugin;
 
 impl Plugin for PortalPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (portal_system, draw_approaching_portals, draw_emerging_portals).run_if(in_state(PlayingGame)),
-        );
+        app.init_gizmo_group::<PortalGizmo>()
+            .init_resource::<PortalConfig>()
+            .register_type::<PortalConfig>()
+            .add_plugins(
+                ResourceInspectorPlugin::<PortalConfig>::default()
+                    .run_if(toggle_active(false, GlobalAction::PortalInspector)),
+            )
+            .add_systems(
+                Update,
+                (
+                    update_portal_config,
+                    init_portals,
+                    draw_approaching_portals,
+                    draw_emerging_portals,
+                )
+                    .run_if(in_state(PlayingGame)),
+            );
+    }
+}
+
+#[derive(Debug, Default, Reflect, GizmoConfigGroup)]
+pub struct PortalGizmo {}
+
+fn update_portal_config(mut config_store: ResMut<GizmoConfigStore>, portal_config: Res<PortalConfig>) {
+    let (config, _) = config_store.config_mut::<PortalGizmo>();
+    config.line_width = portal_config.line_width;
+    config.line_joints = GizmoLineJoint::Round(portal_config.line_joints);
+}
+
+#[derive(Resource, Reflect, InspectorOptions, Clone, Debug)]
+#[reflect(Resource, InspectorOptions)]
+struct PortalConfig {
+    color_approaching: Color,
+    color_emerging:    Color,
+    #[inspector(min = 0, max = 40, display = NumberDisplay::Slider)]
+    line_joints:       u32,
+    #[inspector(min = 0.1, max = 40.0, display = NumberDisplay::Slider)]
+    line_width:        f32,
+    #[inspector(min = 3, max = 256, display = NumberDisplay::Slider)]
+    resolution:        usize,
+}
+
+impl Default for PortalConfig {
+    fn default() -> Self {
+        Self {
+            color_approaching: Color::from(tailwind::BLUE_600),
+            color_emerging:    Color::from(tailwind::YELLOW_800),
+            line_joints:       4,
+            line_width:        2.,
+            resolution:        128,
+        }
     }
 }
 
@@ -43,7 +101,7 @@ pub struct ActorPortals {
     pub emerging:    Option<Portal>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub struct Portal {
     pub actor_direction:            Vec3,
     pub actor_distance_to_wall:     f32,
@@ -72,7 +130,7 @@ impl Default for Portal {
     }
 }
 
-fn portal_system(
+fn init_portals(
     mut q_actor: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut ActorPortals)>,
     boundary: Res<Boundary>,
     boundary_config: Res<Boundary>,
@@ -216,14 +274,14 @@ fn smooth_circle_position(
 fn draw_approaching_portals(
     time: Res<Time>,
     boundary: Res<Boundary>,
+    config: Res<PortalConfig>,
     mut q_portals: Query<&mut ActorPortals>,
-    mut gizmos: Gizmos,
+    mut gizmos: Gizmos<PortalGizmo>,
 ) {
     for mut portal in q_portals.iter_mut() {
         if let Some(ref mut approaching) = portal.approaching {
-           
             let radius = get_approaching_radius(approaching);
-            
+
             // handle fadeout and get rid of it if we're past duration
             // otherwise proceed
             if let Some(fade_out_start) = approaching.fade_out_started {
@@ -247,7 +305,12 @@ fn draw_approaching_portals(
             }
 
             // Draw the portal with the updated radius
-            boundary.draw_portal(&mut gizmos, approaching, Color::from(tailwind::BLUE_600));
+            boundary.draw_portal(
+                &mut gizmos,
+                approaching,
+                config.color_approaching,
+                config.resolution,
+            );
         }
     }
 }
@@ -265,9 +328,8 @@ fn get_approaching_radius(approaching: &mut Portal) -> f32 {
     if approaching.actor_distance_to_wall > approaching.boundary_distance_shrink {
         max_radius
     } else {
-        let scale_factor = (approaching.actor_distance_to_wall
-            / approaching.boundary_distance_shrink)
-            .clamp(0.0, 1.0);
+        let scale_factor =
+            (approaching.actor_distance_to_wall / approaching.boundary_distance_shrink).clamp(0.0, 1.0);
         min_radius + (max_radius - min_radius) * scale_factor
     }
 }
@@ -275,8 +337,9 @@ fn get_approaching_radius(approaching: &mut Portal) -> f32 {
 fn draw_emerging_portals(
     time: Res<Time>,
     boundary: Res<Boundary>,
+    config: Res<PortalConfig>,
     mut q_portals: Query<&mut ActorPortals>,
-    mut gizmos: Gizmos,
+    mut gizmos: Gizmos<PortalGizmo>,
 ) {
     for mut portal in q_portals.iter_mut() {
         if let Some(ref mut emerging) = portal.emerging {
@@ -292,11 +355,11 @@ fn draw_emerging_portals(
 
                 // Interpolate the radius from the full size down to zero
                 let initial_radius = emerging.radius;
-                let radius = initial_radius * (1.0 - progress);  // Scale down as progress increases
-                
+                let radius = initial_radius * (1.0 - progress); // Scale down as progress increases
+
                 if radius > 0.0 {
                     emerging.radius = radius;
-                    boundary.draw_portal(&mut gizmos, emerging, Color::from(tailwind::YELLOW_800));
+                    boundary.draw_portal(&mut gizmos, emerging, config.color_emerging, config.resolution);
                 }
 
                 // Remove visual after the emerging duration is complete

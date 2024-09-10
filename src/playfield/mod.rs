@@ -1,7 +1,7 @@
 mod boundary;
+mod boundary_face;
 mod planes;
 mod portals;
-mod boundary_face;
 
 pub use crate::playfield::{
     boundary::Boundary,

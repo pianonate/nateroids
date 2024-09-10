@@ -21,22 +21,22 @@ pub struct Teleporter {
 
 fn teleport_at_boundary(
     boundary: Res<Boundary>,
-    mut wrappable_entities: Query<(&mut Transform, &mut Teleporter)>,
+    mut teleporting_entities: Query<(&mut Transform, &mut Teleporter)>,
 ) {
-    for (mut transform, mut wrappable) in wrappable_entities.iter_mut() {
+    for (mut transform, mut teleporter) in teleporting_entities.iter_mut() {
         let original_position = transform.translation;
 
         let teleported_position = boundary.calculate_teleport_position(original_position);
 
         if teleported_position != original_position {
             transform.translation = teleported_position;
-            wrappable.just_teleported = true;
-            wrappable.last_teleported_position = Some(teleported_position);
-            wrappable.last_teleported_normal = Some(boundary.get_normal_for_position(teleported_position));
+            teleporter.just_teleported = true;
+            teleporter.last_teleported_position = Some(teleported_position);
+            teleporter.last_teleported_normal = Some(boundary.get_normal_for_position(teleported_position));
         } else {
-            wrappable.just_teleported = false;
-            wrappable.last_teleported_position = None;
-            wrappable.last_teleported_normal = None;
+            teleporter.just_teleported = false;
+            teleporter.last_teleported_position = None;
+            teleporter.last_teleported_normal = None;
         }
     }
 }
