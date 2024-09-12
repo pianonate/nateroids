@@ -1,16 +1,11 @@
-use crate::global_input::{
-    toggle_active,
-    GlobalAction,
-};
 use crate::{
-    camera::RenderLayer,
-    // computed states, so not using GameState directly
+    global_input::{
+        toggle_active,
+        GlobalAction,
+    },
     state::PlayingGame,
 };
-use bevy::{
-    prelude::*,
-    render::view::RenderLayers,
-};
+use bevy::prelude::*;
 use bevy_inspector_egui::{
     inspector_options::std_options::NumberDisplay,
     prelude::*,
@@ -63,29 +58,13 @@ fn update_gizmos_config(mut config_store: ResMut<GizmoConfigStore>, boundary: Re
 #[derive(Resource, Reflect, InspectorOptions, Clone, Debug)]
 #[reflect(Resource, InspectorOptions)]
 pub struct Boundary {
-    pub cell_count:                       UVec3,
-    pub color:                            Color,
-    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
-    pub distance_approach:                f32,
-    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
-    pub distance_shrink:                  f32,
+    pub cell_count: UVec3,
+    pub color:      Color,
     #[inspector(min = 0.1, max = 40.0, display = NumberDisplay::Slider)]
-    pub line_width:                       f32,
-    #[inspector(min = 0.0, max = std::f32::consts::PI, display = NumberDisplay::Slider)]
-    pub portal_direction_change_factor:   f32,
-    #[inspector(min = 1.0, max = 30.0, display = NumberDisplay::Slider)]
-    pub portal_fadeout_duration:          f32,
-    #[inspector(min = 0.001, max = 1.0, display = NumberDisplay::Slider)]
-    pub portal_minimum_radius:            f32,
-    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
-    pub portal_movement_smoothing_factor: f32,
-    #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
-    pub portal_scalar:                    f32,
-    #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
-    pub portal_smallest:                  f32,
+    pub line_width: f32,
     #[inspector(min = 50., max = 300., display = NumberDisplay::Slider)]
-    pub scalar:                           f32,
-    pub transform:                        Transform,
+    pub scalar:     f32,
+    pub transform:  Transform,
 }
 
 impl Default for Boundary {
@@ -96,15 +75,7 @@ impl Default for Boundary {
         Self {
             cell_count,
             color: Color::from(tailwind::BLUE_300),
-            distance_approach: 0.5,
-            distance_shrink: 0.25,
             line_width: 4.,
-            portal_direction_change_factor: 0.75,
-            portal_fadeout_duration: 14.,
-            portal_minimum_radius: 0.1,
-            portal_movement_smoothing_factor: 0.08,
-            portal_scalar: 2.,
-            portal_smallest: 5.,
             scalar,
             transform: Transform::from_scale(scalar * cell_count.as_vec3()),
         }

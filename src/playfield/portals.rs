@@ -3,7 +3,6 @@ use crate::{
         Aabb,
         Teleporter,
     },
-    camera::RenderLayer,
     global_input::{
         toggle_active,
         GlobalAction,
@@ -28,7 +27,6 @@ use bevy::{
         Vec3,
     },
     prelude::*,
-    render::view::RenderLayers,
 };
 use bevy_inspector_egui::{
     inspector_options::std_options::NumberDisplay,
@@ -73,24 +71,48 @@ fn update_portal_config(mut config_store: ResMut<GizmoConfigStore>, portal_confi
 #[derive(Resource, Reflect, InspectorOptions, Clone, Debug)]
 #[reflect(Resource, InspectorOptions)]
 struct PortalConfig {
-    color_approaching: Color,
-    color_emerging:    Color,
+    color_approaching:             Color,
+    color_emerging:                Color,
+    #[inspector(min = 0.0, max = std::f32::consts::PI, display = NumberDisplay::Slider)]
+    pub direction_change_factor:   f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub distance_approach:         f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub distance_shrink:           f32,
+    #[inspector(min = 1.0, max = 30.0, display = NumberDisplay::Slider)]
+    pub fadeout_duration:          f32,
     #[inspector(min = 0, max = 40, display = NumberDisplay::Slider)]
-    line_joints:       u32,
+    line_joints:                   u32,
     #[inspector(min = 0.1, max = 40.0, display = NumberDisplay::Slider)]
-    line_width:        f32,
+    line_width:                    f32,
+    #[inspector(min = 0.001, max = 1.0, display = NumberDisplay::Slider)]
+    pub minimum_radius:            f32,
+    #[inspector(min = 0.0, max = 1.0, display = NumberDisplay::Slider)]
+    pub movement_smoothing_factor: f32,
+    #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
+    pub portal_scalar:             f32,
+    #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
+    pub portal_smallest:           f32,
     #[inspector(min = 3, max = 256, display = NumberDisplay::Slider)]
-    resolution:        usize,
+    resolution:                    usize,
 }
 
 impl Default for PortalConfig {
     fn default() -> Self {
         Self {
-            color_approaching: Color::from(tailwind::BLUE_600),
-            color_emerging:    Color::from(tailwind::YELLOW_800),
-            line_joints:       4,
-            line_width:        2.,
-            resolution:        128,
+            color_approaching:         Color::from(tailwind::BLUE_600),
+            color_emerging:            Color::from(tailwind::YELLOW_800),
+            direction_change_factor:   0.75,
+            distance_approach:         0.5,
+            distance_shrink:           0.25,
+            fadeout_duration:          14.,
+            line_joints:               4,
+            line_width:                2.,
+            minimum_radius:            0.1,
+            movement_smoothing_factor: 0.08,
+            portal_scalar:             2.,
+            portal_smallest:           5.,
+            resolution:                128,
         }
     }
 }
@@ -133,7 +155,7 @@ impl Default for Portal {
 fn init_portals(
     mut q_actor: Query<(&Aabb, &Transform, &Velocity, &Teleporter, &mut ActorPortals)>,
     boundary: Res<Boundary>,
-    boundary_config: Res<Boundary>,
+    portal_config: Res<PortalConfig>,
     time: Res<Time>,
 ) {
     // todo #handle3d
@@ -143,20 +165,16 @@ fn init_portals(
         .x
         .min(boundary.transform.scale.y)
         .min(boundary.transform.scale.z);
-    let boundary_distance_approach = boundary_size * boundary_config.distance_approach;
-    let boundary_distance_shrink = boundary_size * boundary_config.distance_shrink;
+    let boundary_distance_approach = boundary_size * portal_config.distance_approach;
+    let boundary_distance_shrink = boundary_size * portal_config.distance_shrink;
 
     for (aabb, transform, velocity, teleporter, mut visual) in q_actor.iter_mut() {
-        // the max dimension of the aabb is actually the diameter - using it as the
-        // radius has the circles start out twice as big and then shrink to fit
-        // the size of the object minimum size for small objects is preserved
-        let radius =
-            aabb.max_dimension().max(boundary_config.portal_smallest) * boundary_config.portal_scalar;
+        let radius = aabb.max_dimension().max(portal_config.portal_smallest) * portal_config.portal_scalar;
 
         let portal_position = transform.translation;
         let actor_direction = velocity.linvel.normalize_or_zero();
 
-        let boundary_wall = Portal {
+        let portal = Portal {
             actor_direction,
             position: portal_position,
             boundary_distance_approach,
@@ -165,14 +183,14 @@ fn init_portals(
             ..default()
         };
 
-        handle_approaching_visual(&boundary, boundary_wall.clone(), &time, &mut visual);
-        handle_emerging_visual(&boundary, boundary_wall.clone(), teleporter, &time, &mut visual);
+        handle_approaching_visual(&boundary, portal.clone(), &portal_config, &time, &mut visual);
+        handle_emerging_visual(portal.clone(), &portal_config, teleporter, &time, &mut visual);
     }
 }
 
 fn handle_emerging_visual(
-    boundary: &Res<Boundary>,
     portal: Portal,
+    portal_config: &Res<PortalConfig>,
     teleporter: &Teleporter,
     time: &Res<Time>,
     visual: &mut Mut<ActorPortals>,
@@ -194,7 +212,7 @@ fn handle_emerging_visual(
     // once the radius gets small enough we can eliminate it
     else if let Some(ref mut emerging) = visual.emerging {
         // Check if the radius has shrunk to a small value (near zero)
-        if emerging.radius <= boundary.portal_minimum_radius {
+        if emerging.radius <= portal_config.minimum_radius {
             visual.emerging = None; // Remove the visual
         }
     }
@@ -203,6 +221,7 @@ fn handle_emerging_visual(
 fn handle_approaching_visual(
     boundary: &Res<Boundary>,
     portal: Portal,
+    portal_config: &Res<PortalConfig>,
     time: &Res<Time>,
     visual: &mut Mut<ActorPortals>,
 ) {
@@ -211,7 +230,7 @@ fn handle_approaching_visual(
 
         if actor_distance_to_wall <= portal.boundary_distance_approach {
             let normal = boundary.get_normal_for_position(collision_point);
-            let position = smooth_circle_position(boundary, visual, collision_point, normal);
+            let position = smooth_circle_position(visual, collision_point, normal, portal_config);
 
             if let Some(face) = BoundaryFace::from_normal(normal) {
                 visual.approaching = Some(Portal {
@@ -246,20 +265,20 @@ fn handle_approaching_visual(
 //
 // extracted for readability/complexity
 fn smooth_circle_position(
-    boundary: &Res<Boundary>,
     visual: &mut Mut<ActorPortals>,
     collision_point: Vec3,
     current_boundary_wall_normal: Dir3,
+    portal_config: &Res<PortalConfig>,
 ) -> Vec3 {
     if let Some(approaching) = &visual.approaching {
         // Adjust this value to control smoothing (0.0 to 1.0)
-        let smoothing_factor = boundary.portal_movement_smoothing_factor;
+        let smoothing_factor = portal_config.movement_smoothing_factor;
 
         // Only smooth the position if the normal hasn't changed significantly
         // circle_direction_change_factor = threshold for considering normals "similar"
         // approaching carries the last normal, current carries this frame's normal
         if approaching.normal.dot(current_boundary_wall_normal.as_vec3())
-            > boundary.portal_direction_change_factor
+            > portal_config.direction_change_factor
         {
             approaching.position.lerp(collision_point, smoothing_factor)
         } else {
@@ -289,8 +308,8 @@ fn draw_approaching_portals(
                 let elapsed_time = time.elapsed_seconds() - fade_out_start;
 
                 // Fade out over n seconds
-                let fade_out_duration = boundary.portal_fadeout_duration;
-                if elapsed_time >= fade_out_duration || approaching.radius < boundary.portal_minimum_radius {
+                let fade_out_duration = config.fadeout_duration;
+                if elapsed_time >= fade_out_duration || approaching.radius < config.minimum_radius {
                     // Remove visual after fade-out is complete
                     portal.approaching = None;
                     continue;
@@ -348,7 +367,7 @@ fn draw_emerging_portals(
                 let elapsed_time = time.elapsed_seconds() - emerging_start;
 
                 // Define the total duration for the emerging process
-                let emerging_duration = boundary.portal_fadeout_duration;
+                let emerging_duration = config.fadeout_duration;
 
                 // Calculate the progress based on elapsed time
                 let progress = (elapsed_time / emerging_duration).clamp(0.0, 1.0);
