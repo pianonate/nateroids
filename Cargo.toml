@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0 OR MIT"
 
+
 [dependencies]
 bevy = { version = "0.14.2", features = ["tonemapping_luts", "bevy_dev_tools"] }
 rand = "0.8.5"
@@ -21,7 +22,7 @@ leafwing-input-manager = { git = "https://github.com/Leafwing-Studios/leafwing-i
 #                       without the extra rigamarole...is there a better way to do this?
 # RUSTFLAGS="--cfg=web_sys_unstable_apis" cargo build --release --target wasm32-unknown-unknown
 #
-bevy-inspector-egui = "0.25.2"
+bevy-inspector-egui = "0.27.0"
 strum = { version = "0.26", features = ["derive"] }
 
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
