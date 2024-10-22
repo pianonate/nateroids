@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0 OR MIT"
 
-
 [dependencies]
 bevy = { version = "0.14.2", features = ["tonemapping_luts", "bevy_dev_tools"] }
 rand = "0.8.5"
