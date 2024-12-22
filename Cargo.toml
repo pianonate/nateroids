@@ -19,7 +19,7 @@ leafwing-input-manager = "0.15.1"
 # RUSTFLAGS="--cfg=web_sys_unstable_apis" cargo build --release --target wasm32-unknown-unknown
 #
 bevy-inspector-egui = "0.27.0"
-strum = { version = "0.26", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive"] }
 
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
