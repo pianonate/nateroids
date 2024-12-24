@@ -128,7 +128,7 @@ fn spaceship_movement_controls(
             let controls = q_input_map.single();
 
             let mut rotation = 0.0;
-            let delta_seconds = time.delta_seconds();
+            let delta_seconds = time.delta_secs();
             let rotation_speed = movement_config.rotation_speed;
 
             if controls.pressed(&SpaceshipControl::TurnRight) {

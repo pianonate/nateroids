@@ -13,7 +13,7 @@ use crate::{
 };
 use bevy::{
     core_pipeline::{
-        bloom::BloomSettings,
+        bloom::Bloom,
         tonemapping::Tonemapping,
     },
     prelude::*,
@@ -38,18 +38,24 @@ pub struct StarsCamera;
 // star camera uses bloom so it needs to be in its own layer as we don't
 // want that effect on the colliders
 fn spawn_star_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
-    let camera3d = Camera3dBundle {
-        camera: Camera {
+    // let camera3d = Camera3d {
+    //     camera: Camera {
+    //         order: CameraOrder::Stars.order(),
+    //         hdr: true, // 1. HDR is required for bloom
+    //         ..default()
+    //     },
+    //     tonemapping: Tonemapping::BlenderFilmic,
+    //     ..default()
+    // };
+
+    commands
+        .spawn(Camera3d::default())
+        .insert(Camera {
             order: CameraOrder::Stars.order(),
             hdr: true, // 1. HDR is required for bloom
             ..default()
-        },
-        tonemapping: Tonemapping::BlenderFilmic,
-        ..default()
-    };
-
-    commands
-        .spawn(camera3d)
+        })
+        .insert(Tonemapping::BlenderFilmic)
         .insert(RenderLayers::from_layers(RenderLayer::Stars.layers()))
         .insert(get_bloom_settings(camera_config))
         .insert(StarsCamera);
@@ -58,7 +64,7 @@ fn spawn_star_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
 // propagate bloom settings back to the camera
 fn update_bloom_settings(
     camera_config: Res<CameraConfig>,
-    mut q_current_settings: Query<&mut BloomSettings, With<StarsCamera>>,
+    mut q_current_settings: Query<&mut Bloom, With<StarsCamera>>,
 ) {
     if camera_config.is_changed() {
         if let Ok(mut old_bloom_settings) = q_current_settings.get_single_mut() {
@@ -67,8 +73,8 @@ fn update_bloom_settings(
     }
 }
 
-fn get_bloom_settings(camera_config: Res<CameraConfig>) -> BloomSettings {
-    let mut new_bloom_settings = BloomSettings::NATURAL;
+fn get_bloom_settings(camera_config: Res<CameraConfig>) -> Bloom {
+    let mut new_bloom_settings = Bloom::NATURAL;
 
     new_bloom_settings.intensity = camera_config.bloom_intensity;
     new_bloom_settings.low_frequency_boost = camera_config.bloom_low_frequency_boost;
@@ -80,7 +86,7 @@ fn get_bloom_settings(camera_config: Res<CameraConfig>) -> BloomSettings {
 // this can probably be removed now that bloom is pretty well working...
 fn toggle_stars(
     mut commands: Commands,
-    mut camera: Query<(Entity, Option<&mut BloomSettings>), With<StarsCamera>>,
+    mut camera: Query<(Entity, Option<&mut Bloom>), With<StarsCamera>>,
     user_input: Res<ActionState<GlobalAction>>,
     camera_config: Res<CameraConfig>,
 ) {
@@ -90,7 +96,7 @@ fn toggle_stars(
         (entity, Some(_)) => {
             if user_input.just_pressed(&GlobalAction::Stars) {
                 println!("stars off");
-                commands.entity(entity).remove::<BloomSettings>();
+                commands.entity(entity).remove::<Bloom>();
             }
         },
         (entity, None) => {
@@ -120,27 +126,40 @@ pub fn spawn_primary_camera(
         .get_single_mut()
         .expect("why in god's name is there no star's camera?");
 
-    let primary_camera = Camera3dBundle {
-        camera: Camera {
+    // let primary_camera = Camera3dBundle {
+    //     camera: Camera {
+    //         hdr: true,
+    //         order: CameraOrder::Game.order(),
+    //         clear_color: ClearColorConfig::Custom(
+    //             camera_config.clear_color.darker(camera_config.darkening_factor),
+    //         ),
+    //         ..default()
+    //     },
+    //     tonemapping: Tonemapping::TonyMcMapface,
+    //     // todo: #handl3d
+    //     transform: Transform::from_xyz(0.0, 0.0, config.scale().z * 2.)
+    //         .looking_at(orientation.config.nexus, orientation.config.axis_mundi),
+    //
+    //     ..default()
+    // };
+
+    let transform = Transform::from_xyz(0.0, 0.0, config.scale().z * 2.)
+        .looking_at(orientation.config.nexus, orientation.config.axis_mundi);
+
+    orientation.config.locus = transform;
+
+    commands
+        .spawn(Camera3d::default())
+        .insert(transform)
+        .insert(Camera {
             hdr: true,
             order: CameraOrder::Game.order(),
             clear_color: ClearColorConfig::Custom(
                 camera_config.clear_color.darker(camera_config.darkening_factor),
             ),
             ..default()
-        },
-        tonemapping: Tonemapping::TonyMcMapface,
-        // todo: #handl3d
-        transform: Transform::from_xyz(0.0, 0.0, config.scale().z * 2.)
-            .looking_at(orientation.config.nexus, orientation.config.axis_mundi),
-
-        ..default()
-    };
-
-    orientation.config.locus = primary_camera.transform;
-
-    commands
-        .spawn(primary_camera)
+        })
+        .insert(Tonemapping::TonyMcMapface)
         .insert(RenderLayers::from_layers(RenderLayer::Game.layers()))
         .insert(InputManagerBundle::with_map(CameraControl::camera_input_map()))
         .add_child(stars_camera_entity)

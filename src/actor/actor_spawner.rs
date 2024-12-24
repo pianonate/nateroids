@@ -271,8 +271,9 @@ pub struct ActorBundle {
     pub restitution:      Restitution,
     pub mass_properties:  ColliderMassProperties,
     pub render_layers:    RenderLayers,
-    pub scene_bundle:     SceneBundle,
+    pub scene_root:       SceneRoot,
     pub teleporter:       Teleporter,
+    pub transform:        Transform,
     pub velocity:         Velocity,
     pub wall_visualizer:  ActorPortals,
 }
@@ -312,12 +313,9 @@ impl ActorBundle {
             },
             mass_properties: ColliderMassProperties::Mass(config.mass),
             render_layers: RenderLayers::from_layers(config.render_layer.layers()),
-            scene_bundle: SceneBundle {
-                scene: config.scene.clone(),
-                transform,
-                ..default()
-            },
+            scene_root: SceneRoot(config.scene.clone()),
             teleporter: Teleporter::default(),
+            transform,
             velocity,
             wall_visualizer: ActorPortals::default(),
         }

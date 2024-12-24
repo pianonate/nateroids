@@ -140,10 +140,20 @@ fn transition_to_in_game(mut next_state: ResMut<NextState<GameState>>) {
     });
 }
 
-fn pause_rapier(mut rapier_config: ResMut<RapierConfiguration>) {
-    rapier_config.physics_pipeline_active = false;
+fn pause_rapier(mut rapier_config_query: Query<&mut RapierConfiguration>) {
+    if let Ok(mut rapier_config) = rapier_config_query.get_single_mut() {
+        println!("pausing game and physics");
+        rapier_config.physics_pipeline_active = false;
+    } else {
+        error!("Error: Unable to find the RapierConfiguration component.");
+    }
 }
 
-fn unpause_rapier(mut rapier_config: ResMut<RapierConfiguration>) {
-    rapier_config.physics_pipeline_active = true;
+fn unpause_rapier(mut rapier_config_query: Query<&mut RapierConfiguration>) {
+    if let Ok(mut rapier_config) = rapier_config_query.get_single_mut() {
+        println!("unpausing game and physics");
+        rapier_config.physics_pipeline_active = true;
+    } else {
+        error!("Error: Unable to find the RapierConfiguration component.");
+    }
 }

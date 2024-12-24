@@ -43,18 +43,42 @@ pub fn load_assets(
     };
 }
 
+// pub fn check_asset_loading(
+//     mut next_state: ResMut<NextState<AssetsState>>,
+//     asset_server: Res<AssetServer>,
+//     scene_assets: Res<SceneAssets>,
+// ) {
+//
+//     let missile_loaded =
+// asset_server.get_load_state(scene_assets.missile.id()) ==
+// Some(LoadState::Loaded);     let nateroid_loaded =
+// asset_server.get_load_state(scene_assets.nateroid.id()) ==
+// Some(LoadState::Loaded);     let spaceship_loaded =
+//         asset_server.get_load_state(scene_assets.spaceship.id()) ==
+// Some(LoadState::Loaded);
+//
+//
+//     if missile_loaded && nateroid_loaded && spaceship_loaded {
+//         // println!("All assets loaded, transitioning to Loaded state");
+//         next_state.set(AssetsState::Loaded);
+//     }
+// }
 pub fn check_asset_loading(
     mut next_state: ResMut<NextState<AssetsState>>,
     asset_server: Res<AssetServer>,
     scene_assets: Res<SceneAssets>,
 ) {
-    let missile_loaded = asset_server.get_load_state(scene_assets.missile.id()) == Some(LoadState::Loaded);
-    let nateroid_loaded = asset_server.get_load_state(scene_assets.nateroid.id()) == Some(LoadState::Loaded);
-    let spaceship_loaded =
-        asset_server.get_load_state(scene_assets.spaceship.id()) == Some(LoadState::Loaded);
+    // Collect all asset IDs to check their load states
+    let all_assets_loaded = [
+        scene_assets.missile.id(),
+        scene_assets.nateroid.id(),
+        scene_assets.spaceship.id(),
+    ]
+    .iter()
+    .all(|&id| matches!(asset_server.get_load_state(id), Some(LoadState::Loaded)));
 
-    if missile_loaded && nateroid_loaded && spaceship_loaded {
-        // println!("All assets loaded, transitioning to Loaded state");
+    // Transition to the Loaded state if all assets are loaded
+    if all_assets_loaded {
         next_state.set(AssetsState::Loaded);
     }
 }

@@ -210,22 +210,35 @@ fn manage_lighting(
             },
             (None, true) => {
                 // Spawn new light
-                commands.spawn((
-                    DirectionalLightBundle {
-                        directional_light: DirectionalLight {
-                            color: settings.color,
-                            illuminance: settings.illuminance,
-                            shadows_enabled: settings.shadows_enabled,
-                            ..default()
-                        },
-                        transform: Transform::from_rotation(Quat::from_axis_angle(
-                            light_rotation.axis,
-                            light_rotation.angle,
-                        )),
+                commands
+                    .spawn(DirectionalLight {
+                        color: settings.color,
+                        illuminance: settings.illuminance,
+                        shadows_enabled: settings.shadows_enabled,
                         ..default()
-                    },
-                    LightDirection(*position),
-                ));
+                    })
+                    .insert(Transform::from_rotation(Quat::from_axis_angle(
+                        light_rotation.axis,
+                        light_rotation.angle,
+                    )))
+                    .insert(LightDirection(*position));
+                // commands.spawn((
+                //     DirectionalLightBundle {
+                //         directional_light: DirectionalLight {
+                //             color: settings.color,
+                //             illuminance: settings.illuminance,
+                //             shadows_enabled: settings.shadows_enabled,
+                //             ..default()
+                //         },
+                //         transform:
+                // Transform::from_rotation(Quat::from_axis_angle(
+                //             light_rotation.axis,
+                //             light_rotation.angle,
+                //         )),
+                //         ..default()
+                //     },
+                //     LightDirection(*position),
+                // ));
             },
             (None, false) => {}, // Do nothing for disabled lights that don't exist
         }

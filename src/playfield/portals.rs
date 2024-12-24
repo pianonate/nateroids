@@ -7,6 +7,7 @@ use crate::{
         toggle_active,
         GlobalAction,
     },
+    orientation::CameraOrientation,
     playfield::{
         boundary_face::BoundaryFace,
         Boundary,
@@ -94,7 +95,7 @@ struct PortalConfig {
     #[inspector(min = 1., max = 10., display = NumberDisplay::Slider)]
     pub portal_smallest:           f32,
     #[inspector(min = 3, max = 256, display = NumberDisplay::Slider)]
-    resolution:                    usize,
+    resolution:                    u32,
 }
 
 impl Default for PortalConfig {
@@ -203,7 +204,7 @@ fn handle_emerging_visual(
                     actor_distance_to_wall: 0.0,
                     face,
                     normal,
-                    fade_out_started: Some(time.elapsed_seconds()),
+                    fade_out_started: Some(time.elapsed_secs()),
                     ..portal
                 });
             }
@@ -249,7 +250,7 @@ fn handle_approaching_visual(
     if let Some(approaching) = &mut visual.approaching {
         if approaching.fade_out_started.is_none() {
             // Start fade-out
-            approaching.fade_out_started = Some(time.elapsed_seconds());
+            approaching.fade_out_started = Some(time.elapsed_secs());
         }
     }
 }
@@ -294,6 +295,7 @@ fn draw_approaching_portals(
     time: Res<Time>,
     boundary: Res<Boundary>,
     config: Res<PortalConfig>,
+    orientation: Res<CameraOrientation>,
     mut q_portals: Query<&mut ActorPortals>,
     mut gizmos: Gizmos<PortalGizmo>,
 ) {
@@ -305,7 +307,7 @@ fn draw_approaching_portals(
             // otherwise proceed
             if let Some(fade_out_start) = approaching.fade_out_started {
                 // Calculate the elapsed time since fade-out started
-                let elapsed_time = time.elapsed_seconds() - fade_out_start;
+                let elapsed_time = time.elapsed_secs() - fade_out_start;
 
                 // Fade out over n seconds
                 let fade_out_duration = config.fadeout_duration;
@@ -329,6 +331,7 @@ fn draw_approaching_portals(
                 approaching,
                 config.color_approaching,
                 config.resolution,
+                &orientation,
             );
         }
     }
@@ -357,6 +360,7 @@ fn draw_emerging_portals(
     time: Res<Time>,
     boundary: Res<Boundary>,
     config: Res<PortalConfig>,
+    orientation: Res<CameraOrientation>,
     mut q_portals: Query<&mut ActorPortals>,
     mut gizmos: Gizmos<PortalGizmo>,
 ) {
@@ -364,7 +368,7 @@ fn draw_emerging_portals(
         if let Some(ref mut emerging) = portal.emerging {
             if let Some(emerging_start) = emerging.fade_out_started {
                 // Calculate the elapsed time since the emerging process started
-                let elapsed_time = time.elapsed_seconds() - emerging_start;
+                let elapsed_time = time.elapsed_secs() - emerging_start;
 
                 // Define the total duration for the emerging process
                 let emerging_duration = config.fadeout_duration;
@@ -378,7 +382,13 @@ fn draw_emerging_portals(
 
                 if radius > 0.0 {
                     emerging.radius = radius;
-                    boundary.draw_portal(&mut gizmos, emerging, config.color_emerging, config.resolution);
+                    boundary.draw_portal(
+                        &mut gizmos,
+                        emerging,
+                        config.color_emerging,
+                        config.resolution,
+                        &orientation,
+                    );
                 }
 
                 // Remove visual after the emerging duration is complete

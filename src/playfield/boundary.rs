@@ -20,6 +20,7 @@ use crate::playfield::{
     },
 };
 
+use crate::orientation::CameraOrientation;
 use bevy::color::palettes::tailwind;
 
 pub struct BoundaryPlugin;
@@ -157,7 +158,8 @@ impl Boundary {
         gizmos: &mut Gizmos<PortalGizmo>,
         portal: &Portal,
         color: Color,
-        resolution: usize,
+        resolution: u32,
+        orientation: &CameraOrientation,
     ) {
         let overextended_faces = self.get_overextended_faces_for(portal);
 
@@ -165,9 +167,13 @@ impl Boundary {
             self.get_overextended_intersection_points(portal, overextended_faces);
 
         if over_extended_intersection_points.is_empty() {
+            let rotation =
+                Quat::from_rotation_arc(orientation.config.axis_profundus, portal.normal.as_vec3());
+            let isometry = Isometry3d::new(portal.position, rotation);
             gizmos
-                .circle(portal.position, portal.normal, portal.radius, color)
+                .circle(isometry, portal.radius, color)
                 .resolution(resolution);
+
             return;
         }
 
@@ -293,7 +299,7 @@ impl Boundary {
         gizmos: &mut Gizmos<PortalGizmo>,
         portal: &Portal,
         color: Color,
-        resolution: usize,
+        resolution: u32,
         from: Vec3,
         to: Vec3,
     ) {
@@ -324,7 +330,7 @@ impl Boundary {
 
         // Draw the arc
         gizmos
-            .arc_3d(angle, radius, center, final_rotation, color)
+            .arc_3d(angle, radius, Isometry3d::new(center, final_rotation), color)
             .resolution(resolution);
 
         // Debug visualization
@@ -472,8 +478,7 @@ fn draw_boundary(mut boundary: ResMut<Boundary>, mut gizmos: Gizmos<BoundaryGizm
 
     gizmos
         .grid_3d(
-            boundary.transform.translation,
-            Quat::IDENTITY,
+            Isometry3d::new(boundary.transform.translation, Quat::IDENTITY),
             boundary.cell_count,
             Vec3::splat(boundary.scalar),
             boundary.color,

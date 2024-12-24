@@ -131,24 +131,31 @@ fn create_or_update_plane(
     let entity = if let Some(entity) = existing_entity {
         commands
             .entity(entity)
-            .insert(PbrBundle {
-                mesh: mesh.clone(),
-                material: material_handle.clone(),
-                transform,
-                ..default()
-            })
+            .insert(Mesh3d(mesh.clone()))
+            .insert(MeshMaterial3d(material_handle.clone()))
+            .insert(transform)
+            // .insert(PbrBundle {
+            //     mesh: mesh.clone(),
+            //     material: material_handle.clone(),
+            //     transform,
+            //     ..default()
+            // })
             .id()
     } else {
         commands
-            .spawn((
-                PbrBundle {
-                    mesh: mesh.clone(),
-                    material: material_handle.clone(),
-                    transform,
-                    ..default()
-                },
-                BoxPlane { plane_type },
-            ))
+            .spawn(BoxPlane { plane_type })
+            .insert(Mesh3d(mesh.clone()))
+            .insert(MeshMaterial3d(material_handle.clone()))
+            .insert(transform)
+            // .spawn((
+            //     PbrBundle {
+            //         mesh: mesh.clone(),
+            //         material: material_handle.clone(),
+            //         transform,
+            //         ..default()
+            //     },
+            //     BoxPlane { plane_type },
+            // ))
             .id()
     };
 

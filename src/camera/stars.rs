@@ -151,11 +151,17 @@ fn setup_star_rendering(
             ..default()
         });
 
-        commands.entity(entity).insert(MaterialMeshBundle {
-            mesh: mesh.clone(),
-            material,
-            transform: Transform::from_translation(star.position).with_scale(Vec3::splat(star.radius)),
-            ..default()
-        });
+        // commands.entity(entity).insert(MaterialMeshBundle {
+        //     mesh: mesh.clone(),
+        //     material,
+        //     transform:
+        // Transform::from_translation(star.position).with_scale(Vec3::splat(star.
+        // radius)),     ..default()
+        // });
+        commands
+            .entity(entity)
+            .insert(Mesh3d(mesh.clone()))
+            .insert(MeshMaterial3d(material))
+            .insert(Transform::from_translation(star.position).with_scale(Vec3::splat(star.radius)));
     }
 }

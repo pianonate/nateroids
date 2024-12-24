@@ -64,7 +64,8 @@ fn extract_elements_at_indices<T: Clone>(vec: &[T], indices: &[usize]) -> Vec<T>
 fn start_twinkling(
     mut commands: Commands,
     config: Res<StarConfig>,
-    stars: Query<(Entity, &Handle<StandardMaterial>), (With<Star>, Without<Twinkling>)>,
+    //  stars: Query<(Entity, &Handle<StandardMaterial>), (With<Star>, Without<Twinkling>)>,
+    stars: Query<(Entity, &MeshMaterial3d<StandardMaterial>), (With<Star>, Without<Twinkling>)>,
     materials: Res<Assets<StandardMaterial>>,
     mut start_timer: ResMut<StartTwinklingTimer>,
     time: Res<Time>,
@@ -90,7 +91,7 @@ fn start_twinkling(
     // this pre-filtering avoids that cost - i don't know what is the difference
     // of collecting into a Vec vs. destructuring in the for loop - but it's a LOT
     // slower
-    let all_stars: Vec<(Entity, &Handle<StandardMaterial>)> = stars.iter().collect();
+    let all_stars: Vec<(Entity, &MeshMaterial3d<StandardMaterial>)> = stars.iter().collect();
     let filtered_stars = extract_elements_at_indices(&all_stars, &indices);
 
     let mut rng = rand::thread_rng();
@@ -120,7 +121,8 @@ fn start_twinkling(
 fn update_twinkling(
     mut commands: Commands,
     time: Res<Time>,
-    mut stars: Query<(Entity, &Handle<StandardMaterial>, &mut Twinkling)>,
+    // mut stars: Query<(Entity, &Handle<StandardMaterial>, &mut Twinkling)>,
+    mut stars: Query<(Entity, &MeshMaterial3d<StandardMaterial>, &mut Twinkling)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     for (entity, material_handle, mut twinkling) in stars.iter_mut() {
