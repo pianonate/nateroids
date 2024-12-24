@@ -14,12 +14,12 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
             .add_plugins(RapierDebugRenderPlugin::default())
-            .add_systems(Startup, init_rapier)
+            .add_systems(Startup, init_physics_debug_aabb)
             .add_systems(Update, toggle_physics_debug);
     }
 }
 
-fn init_rapier(mut rapier_debug: ResMut<DebugRenderContext>) { rapier_debug.enabled = false; }
+fn init_physics_debug_aabb(mut rapier_debug: ResMut<DebugRenderContext>) { rapier_debug.enabled = false; }
 
 // fn disable_physics_debug(mut rapier_debug: ResMut<DebugRenderContext>) {
 // rapier_debug.enabled = false; }

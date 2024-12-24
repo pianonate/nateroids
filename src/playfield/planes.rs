@@ -134,12 +134,6 @@ fn create_or_update_plane(
             .insert(Mesh3d(mesh.clone()))
             .insert(MeshMaterial3d(material_handle.clone()))
             .insert(transform)
-            // .insert(PbrBundle {
-            //     mesh: mesh.clone(),
-            //     material: material_handle.clone(),
-            //     transform,
-            //     ..default()
-            // })
             .id()
     } else {
         commands
@@ -147,15 +141,6 @@ fn create_or_update_plane(
             .insert(Mesh3d(mesh.clone()))
             .insert(MeshMaterial3d(material_handle.clone()))
             .insert(transform)
-            // .spawn((
-            //     PbrBundle {
-            //         mesh: mesh.clone(),
-            //         material: material_handle.clone(),
-            //         transform,
-            //         ..default()
-            //     },
-            //     BoxPlane { plane_type },
-            // ))
             .id()
     };
 

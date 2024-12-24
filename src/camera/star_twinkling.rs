@@ -64,7 +64,6 @@ fn extract_elements_at_indices<T: Clone>(vec: &[T], indices: &[usize]) -> Vec<T>
 fn start_twinkling(
     mut commands: Commands,
     config: Res<StarConfig>,
-    //  stars: Query<(Entity, &Handle<StandardMaterial>), (With<Star>, Without<Twinkling>)>,
     stars: Query<(Entity, &MeshMaterial3d<StandardMaterial>), (With<Star>, Without<Twinkling>)>,
     materials: Res<Assets<StandardMaterial>>,
     mut start_timer: ResMut<StartTwinklingTimer>,
@@ -121,7 +120,6 @@ fn start_twinkling(
 fn update_twinkling(
     mut commands: Commands,
     time: Res<Time>,
-    // mut stars: Query<(Entity, &Handle<StandardMaterial>, &mut Twinkling)>,
     mut stars: Query<(Entity, &MeshMaterial3d<StandardMaterial>, &mut Twinkling)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {

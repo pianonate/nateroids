@@ -38,16 +38,6 @@ pub struct StarsCamera;
 // star camera uses bloom so it needs to be in its own layer as we don't
 // want that effect on the colliders
 fn spawn_star_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
-    // let camera3d = Camera3d {
-    //     camera: Camera {
-    //         order: CameraOrder::Stars.order(),
-    //         hdr: true, // 1. HDR is required for bloom
-    //         ..default()
-    //     },
-    //     tonemapping: Tonemapping::BlenderFilmic,
-    //     ..default()
-    // };
-
     commands
         .spawn(Camera3d::default())
         .insert(Camera {
@@ -126,24 +116,7 @@ pub fn spawn_primary_camera(
         .get_single_mut()
         .expect("why in god's name is there no star's camera?");
 
-    // let primary_camera = Camera3dBundle {
-    //     camera: Camera {
-    //         hdr: true,
-    //         order: CameraOrder::Game.order(),
-    //         clear_color: ClearColorConfig::Custom(
-    //             camera_config.clear_color.darker(camera_config.darkening_factor),
-    //         ),
-    //         ..default()
-    //     },
-    //     tonemapping: Tonemapping::TonyMcMapface,
-    //     // todo: #handl3d
-    //     transform: Transform::from_xyz(0.0, 0.0, config.scale().z * 2.)
-    //         .looking_at(orientation.config.nexus, orientation.config.axis_mundi),
-    //
-    //     ..default()
-    // };
-
-    let transform = Transform::from_xyz(0.0, 0.0, config.scale().z * 2.)
+      let transform = Transform::from_xyz(0.0, 0.0, config.scale().z * 2.)
         .looking_at(orientation.config.nexus, orientation.config.axis_mundi);
 
     orientation.config.locus = transform;

@@ -24,45 +24,11 @@ impl Plugin for SplashPlugin {
         app.insert_resource(SplashTimer {
             timer: Timer::from_seconds(SPLASH_TIME, TimerMode::Once),
         })
-        // not sure why i need this but it prevents a runtime warning
-        // .insert_resource(TextSettings {
-        //     allow_dynamic_font_size: true,
-        //     ..Default::default()
-        // })
         .add_systems(OnEnter(GameState::Splash), splash_screen)
         .add_systems(Update, run_splash.run_if(in_state(GameState::Splash)));
     }
 }
 
-// fn splash_screen(mut commands: Commands) {
-//     let splash_text = Text::from_section(
-//         // Accepts a String or any type that converts into a String, such as
-// &str.         "nateroids",
-//         TextFont {
-//             font_size: 1.0,
-//             ..default()
-//         },
-//     );
-//
-//     let splash_style = Style {
-//         align_self: AlignSelf::Center,
-//         justify_self: JustifySelf::Center,
-//         ..default()
-//     };
-//
-//     let mut press_space_style = splash_style.clone();
-//     press_space_style.top = Val::Px(50.0);
-//
-//     commands.spawn((
-//         TextBundle {
-//             text: splash_text,
-//             style: splash_style,
-//             ..default()
-//         },
-//         RenderLayers::from_layers(RenderLayer::Game.layers()),
-//         SplashText,
-//     ));
-// }
 fn splash_screen(mut commands: Commands) {
     commands.spawn((
         SplashText,
