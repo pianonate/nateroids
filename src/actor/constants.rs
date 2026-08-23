@@ -7,7 +7,7 @@ use bevy::color::palettes::tailwind::ORANGE_500;
 use bevy::color::palettes::tailwind::RED_600;
 use bevy::color::palettes::tailwind::YELLOW_400;
 use bevy::prelude::Vec3;
-use bevy_kana::Position;
+use hana_kana::Position;
 
 // aabb gizmo
 pub(super) const AABB_GIZMO_COLOR: Color = Color::Srgba(GREEN_800);

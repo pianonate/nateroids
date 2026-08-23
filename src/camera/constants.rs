@@ -6,7 +6,7 @@ use bevy::camera::visibility::Layer;
 use bevy::color::Srgba;
 use bevy::color::palettes::tailwind::GRAY_50;
 use bevy::prelude::Color;
-use bevy_kana::Position;
+use hana_kana::Position;
 
 // camera bloom
 pub(super) const CAMERA_BLOOM_HIGH_PASS_FREQUENCY: f32 = 0.5;

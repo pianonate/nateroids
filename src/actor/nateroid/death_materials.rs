@@ -1,7 +1,7 @@
 use bevy::camera::visibility::RenderLayers;
 use bevy::prelude::*;
-use bevy_kana::ToF32;
-use bevy_kana::ToUsize;
+use hana_kana::ToF32;
+use hana_kana::ToUsize;
 
 use super::Nateroid;
 use super::NateroidSettings;

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_enhanced_input::action::TriggerState;
 use bevy_enhanced_input::prelude::Action;
 use bevy_enhanced_input::prelude::ActionOf;
-use bevy_kana::ToF32;
+use hana_kana::ToF32;
 
 use super::FlameGizmo;
 use super::flicker;

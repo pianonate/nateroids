@@ -3,8 +3,8 @@
 use bevy::prelude::Color;
 use bevy::prelude::Transform;
 use bevy::prelude::Vec3;
-use bevy_kana::Displacement;
-use bevy_kana::Position;
+use hana_kana::Displacement;
+use hana_kana::Position;
 
 use crate::orientation::DimensionMode;
 use crate::orientation::OrientationSettings;

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_kana::Position;
+use hana_kana::Position;
 
 use super::ActorPortals;
 use crate::playfield::boundary_face::BoundaryFace;

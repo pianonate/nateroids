@@ -7,7 +7,7 @@ use bevy_enhanced_input::action::events as input_events;
 use bevy_enhanced_input::prelude::Action;
 use bevy_enhanced_input::prelude::ActionOf;
 use bevy_inspector_egui::InspectorOptions;
-use bevy_kana::Position;
+use hana_kana::Position;
 use input_events::Start;
 
 use super::Teleporter;

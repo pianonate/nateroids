@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_enhanced_input::prelude::*;
-use bevy_kana::Keybindings;
+use hana_rubric::Keybindings;
 
 use super::constants::GLOBAL_SHORTCUTS_PRIORITY;
 

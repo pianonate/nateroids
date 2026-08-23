@@ -1,7 +1,7 @@
 use avian3d::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
-use bevy_kana::Position;
+use hana_kana::Position;
 
 use super::boundary_geometry;
 use super::boundary_geometry::PhysicsBurst;

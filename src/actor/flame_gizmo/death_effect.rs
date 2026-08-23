@@ -3,7 +3,7 @@ use std::f32::consts::TAU;
 use bevy::camera::primitives::Aabb;
 use bevy::math::Isometry3d;
 use bevy::prelude::*;
-use bevy_kana::ToF32;
+use hana_kana::ToF32;
 use rand::RngExt;
 use rand::rng;
 

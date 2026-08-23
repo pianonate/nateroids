@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use bevy::prelude::*;
-use bevy_kana::ToF32;
+use hana_kana::ToF32;
 
 use super::constants::NATEROID_EMPTY_SPAWN_SUCCESS_RATE;
 use super::constants::NATEROID_SPAWN_HISTORY_LEN;

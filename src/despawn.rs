@@ -1,9 +1,9 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use bevy_kana::Position;
-use bevy_kana::ToF32;
-use bevy_kana::ToUsize;
-use bevy_kana::Velocity;
+use hana_kana::Position;
+use hana_kana::ToF32;
+use hana_kana::ToUsize;
+use hana_kana::Velocity;
 use rand::RngExt;
 use rand::rng;
 

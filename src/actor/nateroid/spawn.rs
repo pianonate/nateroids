@@ -3,7 +3,7 @@ use std::ops::Range;
 
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use bevy_kana::Position;
+use hana_kana::Position;
 use rand::Rng;
 use rand::RngExt;
 use rand::rng;

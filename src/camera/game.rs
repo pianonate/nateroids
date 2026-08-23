@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::inspector_options::std_options::NumberDisplay;
 use bevy_inspector_egui::prelude::*;
 use bevy_inspector_egui::quick::ResourceInspectorPlugin;
-use bevy_kana::Position;
+use hana_kana::Position;
 use hana_lagrange::Operation;
 use hana_lagrange::OrbitCam;
 use hana_lagrange::OrbitCamBlenderLikePreset;

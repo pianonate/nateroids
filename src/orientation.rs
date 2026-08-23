@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use bevy_kana::Displacement;
-use bevy_kana::Position;
+use hana_kana::Displacement;
+use hana_kana::Position;
 
 use crate::constants::CAMERA_ORIENTATION_DEFAULT_SETTINGS;
 

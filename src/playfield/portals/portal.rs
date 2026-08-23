@@ -1,7 +1,7 @@
 use bevy::math::Dir3;
 use bevy::math::Vec3;
 use bevy::prelude::*;
-use bevy_kana::Position;
+use hana_kana::Position;
 
 use crate::playfield::boundary_face::BoundaryFace;
 use crate::playfield::constants::DEFAULT_PORTAL_FACE_COUNT;

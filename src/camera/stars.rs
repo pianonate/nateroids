@@ -10,7 +10,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::inspector_options::std_options::NumberDisplay;
 use bevy_inspector_egui::prelude::*;
 use bevy_inspector_egui::quick::ResourceInspectorPlugin;
-use bevy_kana::Position;
+use hana_kana::Position;
 use rand::Rng;
 use rand::RngExt;
 use rand::prelude::ThreadRng;
