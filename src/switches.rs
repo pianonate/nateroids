@@ -87,7 +87,7 @@ impl Switches {
 }
 
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
-pub(crate) enum InspectorActivity {
+enum InspectorActivity {
     Active,
     #[default]
     Inactive,

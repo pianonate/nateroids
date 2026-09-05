@@ -74,11 +74,11 @@ impl NateroidDeathMaterials {
     }
 
     /// Number of precomputed transparency levels.
-    pub const fn level_count(&self) -> usize { self.levels.len() }
+    pub(crate) const fn level_count(&self) -> usize { self.levels.len() }
 
     /// Faded material for the given alpha `level`, matched to `mesh_name`
     /// (donut/icing). Unknown mesh names fall back to the donut material.
-    pub fn material_for(
+    pub(crate) fn material_for(
         &self,
         level: usize,
         mesh_name: Option<&str>,

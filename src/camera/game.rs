@@ -77,19 +77,19 @@ pub(crate) struct BloomSettings {
         max = CAMERA_BLOOM_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) intensity:           f32,
+    pub(super) intensity:           f32,
     #[inspector(
         min = CAMERA_BLOOM_MIN,
         max = CAMERA_BLOOM_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) low_frequency_boost: f32,
+    pub(super) low_frequency_boost: f32,
     #[inspector(
         min = CAMERA_BLOOM_MIN,
         max = CAMERA_BLOOM_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) high_pass_frequency: f32,
+    pub(super) high_pass_frequency: f32,
 }
 
 #[derive(Reflect, InspectorOptions, Debug, PartialEq, Clone, Copy)]
@@ -124,27 +124,27 @@ pub(crate) struct SmoothnessSettings {
         max = CAMERA_SMOOTHNESS_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) zoom:  f32,
+    zoom:  f32,
     #[inspector(
         min = CAMERA_SMOOTHNESS_MIN,
         max = CAMERA_SMOOTHNESS_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) pan:   f32,
+    pan:   f32,
     #[inspector(
         min = CAMERA_SMOOTHNESS_MIN,
         max = CAMERA_SMOOTHNESS_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) orbit: f32,
+    orbit: f32,
 }
 
 #[derive(Resource, Reflect, InspectorOptions, Debug, PartialEq, Clone, Copy)]
 #[reflect(Resource, InspectorOptions)]
 pub(crate) struct CameraSettings {
-    pub(crate) bloom_settings:      BloomSettings,
-    pub(crate) smoothness_settings: SmoothnessSettings,
-    pub(crate) splash_start:        SplashStart,
+    pub(super) bloom_settings: BloomSettings,
+    smoothness_settings:       SmoothnessSettings,
+    pub(crate) splash_start:   SplashStart,
 }
 
 impl Default for CameraSettings {

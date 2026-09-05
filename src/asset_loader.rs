@@ -35,7 +35,7 @@ impl Plugin for AssetLoaderPlugin {
 
 /// PBR texture handles for one nateroid mesh (donut or icing).
 #[derive(Clone, Debug)]
-pub(crate) struct NateroidTextures {
+struct NateroidTextures {
     albedo:             Handle<Image>,
     normal:             Handle<Image>,
     metallic_roughness: Handle<Image>,

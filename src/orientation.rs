@@ -49,7 +49,7 @@ pub(crate) struct CameraOrientation {
 }
 
 impl CameraOrientation {
-    pub(crate) fn set_orientation(&mut self, new_orientation: OrientationType) {
+    fn set_orientation(&mut self, new_orientation: OrientationType) {
         self.orientation_type = new_orientation;
         self.orientation_settings = match new_orientation {
             OrientationType::TopDown => OrientationSettings {

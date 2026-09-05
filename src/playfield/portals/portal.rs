@@ -8,15 +8,15 @@ use crate::playfield::constants::DEFAULT_PORTAL_FACE_COUNT;
 
 #[derive(Resource, Clone, Debug)]
 pub(crate) struct Portal {
-    pub(crate) actor_direction:            Vec3,
-    pub(crate) actor_distance_to_wall:     f32,
-    pub(crate) boundary_distance_approach: f32,
-    pub(crate) boundary_distance_shrink:   f32,
-    pub(crate) boundary_face:              BoundaryFace,
-    pub(crate) face_count:                 usize,
-    pub(crate) fade_out_started:           Option<f32>,
-    pub(crate) position:                   Position,
-    pub(crate) radius:                     f32,
+    pub(super) actor_direction:             Vec3,
+    pub(super) actor_distance_to_wall:      f32,
+    pub(super) boundary_distance_approach:  f32,
+    pub(super) boundary_distance_shrink:    f32,
+    pub(in crate::playfield) boundary_face: BoundaryFace,
+    pub(super) face_count:                  usize,
+    pub(super) fade_out_started:            Option<f32>,
+    pub(in crate::playfield) position:      Position,
+    pub(in crate::playfield) radius:        f32,
 }
 
 impl Portal {

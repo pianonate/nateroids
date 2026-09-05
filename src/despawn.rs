@@ -37,12 +37,12 @@ impl Plugin for DespawnPlugin {
 
 #[derive(Component, Debug)]
 pub(crate) struct Deaderoid {
-    pub(crate) initial_scale:          Vec3,
-    pub(crate) target_shrink:          f32,
-    pub(crate) shrink_duration:        f32,
-    pub(crate) elapsed_time:           f32,
-    pub(crate) current_shrink:         f32,
-    pub(crate) current_material_index: usize,
+    initial_scale:          Vec3,
+    target_shrink:          f32,
+    shrink_duration:        f32,
+    elapsed_time:           f32,
+    current_shrink:         f32,
+    current_material_index: usize,
 }
 
 /// Uses `try_despawn` because entities can be queued for despawn multiple times in a frame

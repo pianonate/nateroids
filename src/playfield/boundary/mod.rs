@@ -80,27 +80,27 @@ impl Plugin for BoundaryPlugin {
 #[derive(Resource, Reflect, InspectorOptions, Clone, Debug)]
 #[reflect(Resource, InspectorOptions)]
 pub(crate) struct Boundary {
-    pub(crate) cell_count:          UVec3,
-    pub(crate) grid_color:          Color,
-    pub(crate) outer_color:         Color,
+    cell_count:             UVec3,
+    pub(crate) grid_color:  Color,
+    pub(crate) outer_color: Color,
     #[inspector(
         min = BOUNDARY_GRID_LINE_WIDTH_MIN,
         max = BOUNDARY_GRID_LINE_WIDTH_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) grid_line_width:     f32,
+    grid_line_width:        f32,
     #[inspector(
         min = BOUNDARY_EXTERIOR_LINE_WIDTH_MIN,
         max = BOUNDARY_EXTERIOR_LINE_WIDTH_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) exterior_line_width: f32,
+    exterior_line_width:    f32,
     #[inspector(
         min = BOUNDARY_EXTERIOR_SCALAR_MIN,
         max = BOUNDARY_EXTERIOR_SCALAR_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) exterior_scalar:     f32,
+    exterior_scalar:        f32,
 }
 
 impl Boundary {

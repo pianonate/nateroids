@@ -90,64 +90,64 @@ pub(crate) enum Spawnability {
 #[derive(Reflect, InspectorOptions, Clone, Debug)]
 #[reflect(InspectorOptions)]
 pub(crate) struct ActorSettings {
-    pub(crate) spawnability:             Spawnability,
+    pub(super) spawnability:             Spawnability,
     #[inspector(
         min = ACTOR_DAMPING_MIN,
         max = ACTOR_DAMPING_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) angular_damping:          Option<f32>,
+    pub(super) angular_damping:          Option<f32>,
     #[inspector(
         min = ACTOR_COLLIDER_MARGIN_MIN,
         max = ACTOR_COLLIDER_MARGIN_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) collider_margin:          f32,
-    pub(crate) collider_type:            ColliderType,
-    pub(crate) collision_damage:         f32,
-    pub(crate) collision_layers:         CollisionLayers,
-    pub(crate) gravity_scale:            f32,
-    pub(crate) health:                   f32,
+    pub(super) collider_margin:          f32,
+    pub(super) collider_type:            ColliderType,
+    pub(super) collision_damage:         f32,
+    pub(super) collision_layers:         CollisionLayers,
+    pub(super) gravity_scale:            f32,
+    pub(super) health:                   f32,
     #[inspector(
         min = ACTOR_DAMPING_MIN,
         max = ACTOR_DAMPING_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) linear_damping:           Option<f32>,
-    pub(crate) locked_axes:              LockedAxes,
+    pub(super) linear_damping:           Option<f32>,
+    pub(super) locked_axes:              LockedAxes,
     #[inspector(
         min = ACTOR_MASS_MIN,
         max = ACTOR_MASS_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) mass:                     f32,
+    pub(super) mass:                     f32,
     #[inspector(
         min = ACTOR_MAX_VELOCITY_MIN,
         max = ACTOR_MAX_VELOCITY_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) max_angular_velocity:     f32,
+    pub(super) max_angular_velocity:     f32,
     #[inspector(
         min = ACTOR_MAX_VELOCITY_MIN,
         max = ACTOR_MAX_VELOCITY_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) max_linear_velocity:      f32,
-    pub(crate) render_layer:             RenderLayer,
+    pub(super) max_linear_velocity:      f32,
+    pub(super) render_layer:             RenderLayer,
     #[inspector(
         min = ACTOR_RESTITUTION_MIN,
         max = ACTOR_RESTITUTION_MAX,
         display = NumberDisplay::Slider
     )]
-    pub(crate) restitution:              f32,
-    pub(crate) restitution_combine_rule: CoefficientCombine,
-    pub(crate) rigid_body:               RigidBody,
+    pub(super) restitution:              f32,
+    pub(super) restitution_combine_rule: CoefficientCombine,
+    pub(super) rigid_body:               RigidBody,
     #[reflect(ignore)]
-    pub(crate) scene:                    Handle<WorldAsset>,
-    pub(crate) spawn_timer_seconds:      Option<f32>,
-    pub(crate) transform:                Transform,
+    pub(super) scene:                    Handle<WorldAsset>,
+    pub(super) spawn_timer_seconds:      Option<f32>,
+    pub(super) transform:                Transform,
     #[reflect(ignore)]
-    pub(crate) spawn_timer:              Option<Timer>,
+    pub(super) spawn_timer:              Option<Timer>,
 }
 
 impl ActorSettings {
