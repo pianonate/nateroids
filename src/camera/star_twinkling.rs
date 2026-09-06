@@ -1,78 +1,136 @@
-use std::f32::consts::TAU;
-
 use bevy::prelude::*;
-use rand::RngExt;
-use rand::prelude::ThreadRng;
+use bevy::render::storage::ShaderBuffer;
+use hana_kana::ToF32;
 
-use super::constants::STAR_TWINKLE_AMPLITUDE_FRACTION_MAX;
-use super::constants::STAR_TWINKLE_AMPLITUDE_FRACTION_MIN;
-use super::constants::STAR_TWINKLE_SPEED_FRACTION_MAX;
-use super::constants::STAR_TWINKLE_SPEED_FRACTION_MIN;
-use super::stars::Star;
+use super::constants::STAR_TWINKLE_PHASE_REBASE;
+use super::star_material::StarData;
+use super::star_material::StarMaterial;
 use super::stars::StarSettings;
 
 pub(super) struct StarTwinklingPlugin;
 
 impl Plugin for StarTwinklingPlugin {
-    fn build(&self, app: &mut App) { app.add_systems(Update, update_twinkling); }
+    fn build(&self, app: &mut App) {
+        app.add_plugins(MaterialPlugin::<StarMaterial>::default())
+            .init_resource::<StarTwinkling>()
+            .add_systems(Update, update_twinkling);
+    }
 }
 
-/// Per-star twinkle state, baked once at spawn so the field twinkles with
-/// varied timing, amplitude, and rate rather than in lockstep.
-/// `update_twinkling` scales each star by the live `StarTwinkleSettings`
-/// `amplitude`/`speed` through these fractions, so an inspector edit rescales
-/// every star uniformly while each keeps its individual character.
-#[derive(Component)]
-pub(super) struct Twinkle {
-    /// Running sine argument, seeded to a random offset so stars start out of
-    /// sync; advanced each frame by `speed * speed_fraction`.
-    phase:              f32,
-    /// This star's share of `StarTwinkleSettings::amplitude` — how much it
-    /// brightens and dims relative to its neighbors.
-    amplitude_fraction: f32,
-    /// This star's share of `StarTwinkleSettings::speed` — how fast it cycles
-    /// relative to its neighbors.
-    speed_fraction:     f32,
+/// CPU copy used only when spawning or rebasing the shared GPU clock.
+#[derive(Resource, Default)]
+pub(super) struct StarTwinkling {
+    pub(super) stars:        Vec<StarData>,
+    pub(super) star_buffer:  Handle<ShaderBuffer>,
+    pub(super) clock_buffer: Handle<ShaderBuffer>,
+    phase:                   f64,
 }
 
-impl Twinkle {
-    pub(super) fn random(rng: &mut ThreadRng) -> Self {
-        Self {
-            phase:              rng.random_range(0.0..TAU),
-            amplitude_fraction: rng.random_range(
-                STAR_TWINKLE_AMPLITUDE_FRACTION_MIN..STAR_TWINKLE_AMPLITUDE_FRACTION_MAX,
-            ),
-            speed_fraction:     rng
-                .random_range(STAR_TWINKLE_SPEED_FRACTION_MIN..STAR_TWINKLE_SPEED_FRACTION_MAX),
+impl StarTwinkling {
+    pub(super) const fn reset(&mut self) { self.phase = 0.0; }
+
+    /// Integrating speed preserves phase when the live speed setting changes.
+    fn advance(&mut self, delta_secs: f64, speed: f32) -> Option<f64> {
+        self.phase = delta_secs.mul_add(f64::from(speed), self.phase);
+        if self.phase.abs() < STAR_TWINKLE_PHASE_REBASE {
+            return None;
         }
+        let phase = self.phase;
+        self.phase = 0.0;
+        Some(phase)
     }
 }
 
 fn update_twinkling(
     time: Res<Time>,
     star_settings: Res<StarSettings>,
-    mut stars: Query<(&Star, &MeshMaterial3d<StandardMaterial>, &mut Twinkle)>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut star_twinkling: ResMut<StarTwinkling>,
+    mut buffers: ResMut<Assets<ShaderBuffer>>,
 ) {
-    let twinkle_settings = &star_settings.twinkle;
-    let delta = time.delta_secs();
+    if star_twinkling.stars.is_empty() {
+        return;
+    }
+    if let Some(phase) = star_twinkling.advance(time.delta_secs_f64(), star_settings.twinkle.speed)
+    {
+        for star in &mut star_twinkling.stars {
+            star.rebase(phase);
+        }
+        if let Some(mut buffer) = buffers.get_mut(&star_twinkling.star_buffer) {
+            buffer.set_data(star_twinkling.stars.clone());
+        }
+    }
+    if let Some(mut buffer) = buffers.get_mut(&star_twinkling.clock_buffer) {
+        buffer.set_data(Vec4::new(
+            star_twinkling.phase.to_f32(),
+            star_settings.twinkle.amplitude,
+            0.0,
+            0.0,
+        ));
+    }
+}
 
-    for (star, material_handle, mut twinkle) in &mut stars {
-        // Wrap `phase` with `rem_euclid` so `f32` precision holds over long runs.
-        twinkle.phase = (twinkle.speed_fraction)
-            .mul_add(twinkle_settings.speed * delta, twinkle.phase)
-            .rem_euclid(TAU);
+#[cfg(test)]
+mod tests {
+    use std::f64::consts::TAU;
 
-        let Some(mut material) = materials.get_mut(material_handle) else {
-            continue;
-        };
+    use bevy::prelude::*;
 
-        // `amplitude` is the live master knob scaled by this star's fraction;
-        // `factor` oscillates around 1.0 and the clamp stops a full-amplitude
-        // trough from pushing emissive below black.
-        let amplitude = twinkle_settings.amplitude * twinkle.amplitude_fraction;
-        let factor = amplitude.mul_add(twinkle.phase.sin(), 1.0).max(0.0);
-        let emissive = star.emissive * factor;
-        material.emissive = LinearRgba::new(emissive.x, emissive.y, emissive.z, emissive.w);
+    use super::StarTwinkling;
+    use crate::camera::constants::STAR_TWINKLE_PHASE_REBASE;
+    use crate::camera::star_material::StarData;
+
+    const INITIAL_PHASE: f32 = 0.7;
+    const AMPLITUDE_FRACTION: f32 = 0.8;
+    const SPEED_FRACTION: f32 = 1.3;
+    const PHASE_TOLERANCE: f64 = 0.00001;
+
+    fn star() -> StarData {
+        StarData {
+            emissive: Vec4::ONE,
+            twinkle:  Vec4::new(INITIAL_PHASE, AMPLITUDE_FRACTION, SPEED_FRACTION, 0.0),
+        }
+    }
+
+    fn sine(star: &StarData, phase: f64) -> f64 {
+        f64::from(star.twinkle.z)
+            .mul_add(phase, f64::from(star.twinkle.x))
+            .sin()
+    }
+
+    #[test]
+    fn speed_edits_and_zero_speed_preserve_existing_phase() {
+        let mut clock = StarTwinkling::default();
+        let star = star();
+        assert_eq!(clock.advance(2.0, 3.0), None);
+        let before = sine(&star, clock.phase);
+        assert_eq!(clock.advance(0.0, 10.0), None);
+        assert!((sine(&star, clock.phase) - before).abs() < PHASE_TOLERANCE);
+        assert_eq!(clock.advance(100.0, 0.0), None);
+        assert!((sine(&star, clock.phase) - before).abs() < PHASE_TOLERANCE);
+        assert_eq!(clock.advance(0.5, 10.0), None);
+        let expected = f64::from(SPEED_FRACTION)
+            .mul_add(11.0, f64::from(INITIAL_PHASE))
+            .sin();
+        assert!((sine(&star, clock.phase) - expected).abs() < PHASE_TOLERANCE);
+    }
+
+    #[test]
+    fn rebase_preserves_each_stars_brightness_and_subsequent_motion() {
+        let mut clock = StarTwinkling::default();
+        let mut star = star();
+        let original = star.clone();
+        let elapsed = STAR_TWINKLE_PHASE_REBASE + 1.0;
+        assert_eq!(clock.advance(elapsed, 1.0), Some(elapsed));
+        star.rebase(elapsed);
+        assert!(clock.phase.abs() < PHASE_TOLERANCE);
+        assert!((0.0..TAU).contains(&f64::from(star.twinkle.x)));
+        assert!((sine(&star, clock.phase) - sine(&original, elapsed)).abs() < PHASE_TOLERANCE);
+        assert_eq!(clock.advance(0.25, 3.0), None);
+        assert!(
+            (sine(&star, clock.phase) - sine(&original, elapsed + 0.75)).abs() < PHASE_TOLERANCE
+        );
+        assert_eq!(star.emissive, original.emissive);
+        assert!((star.twinkle.y - original.twinkle.y).abs() < f32::EPSILON);
+        assert!((star.twinkle.z - original.twinkle.z).abs() < f32::EPSILON);
     }
 }

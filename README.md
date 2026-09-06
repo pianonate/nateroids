@@ -18,6 +18,10 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 ## make rust compile faster
 
+For the edit/build/run loop, use `cargo dev` to run or `cargo dev-build` to build.
+These project aliases enable incremental compilation even when your global Cargo
+config disables it.
+
 use sccache to make follow on compiles faster as it will cache locally anything you've already built. this comes in handy if you get other projects that all need to compile with bevy or 
 anything you commonly depend on in these projects
 
@@ -52,3 +56,20 @@ cargo run --release
 ```
 
 It might run faster on your machine. It will definitely be a smaller binary.
+
+## Forwarded trackpad controls
+
+To use a MacBook trackpad forwarded as mouse-wheel events through Deskflow:
+
+```sh
+NATEROIDS_FORWARDED_TRACKPAD=1 cargo run
+```
+
+Two-finger scrolling orbits, Shift+scroll pans, and Control+scroll zooms.
+Physical mouse wheels receive those same controls while this mode is enabled.
+Native trackpad input and middle-button dragging retain their existing controls.
+
+Press Shift+C to open camera settings. Change `scroll_mode` between
+`MouseWheel` and `ForwardedTrackpad`, or adjust `line_scroll_sensitivity`,
+without restarting. Settings changed in the inspector last for the current run.
+Without the environment variable, mouse-wheel scrolling zooms as before.

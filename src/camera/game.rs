@@ -21,6 +21,7 @@ use super::constants::CAMERA_BLOOM_LOW_FREQUENCY_BOOST;
 use super::constants::CAMERA_BLOOM_MAX;
 use super::constants::CAMERA_BLOOM_MIN;
 use super::constants::CAMERA_INPUT_SENSITIVITY;
+use super::constants::CAMERA_LINE_SCROLL_SENSITIVITY;
 use super::constants::CAMERA_ORBIT_SMOOTHNESS;
 use super::constants::CAMERA_PAN_SMOOTHNESS;
 use super::constants::CAMERA_SMOOTHNESS_MAX;
@@ -36,6 +37,7 @@ use super::constants::CAMERA_SPLASH_START_YAW;
 use super::constants::CAMERA_ZOOM_LOWER_LIMIT;
 use super::constants::CAMERA_ZOOM_SENSITIVITY;
 use super::constants::CAMERA_ZOOM_SMOOTHNESS;
+use super::constants::FORWARDED_TRACKPAD_ENV;
 use super::lights::LightSettings;
 use super::rendering::CameraOrder;
 use super::required_components::RequiredCameraComponents;
@@ -56,7 +58,8 @@ impl Plugin for GameCameraPlugin {
             .add_systems(Update, update_environment_map_intensity)
             .add_systems(
                 Update,
-                update_orbit_cam_smoothness.run_if(resource_changed::<CameraSettings>),
+                (update_orbit_cam_smoothness, update_camera_input_mode)
+                    .run_if(resource_changed::<CameraSettings>),
             );
         bind_action_switch!(
             app,
@@ -139,28 +142,62 @@ pub(crate) struct SmoothnessSettings {
     orbit: f32,
 }
 
+#[derive(Default, Reflect, Debug, PartialEq, Clone, Copy)]
+enum CameraScrollMode {
+    #[default]
+    MouseWheel,
+    ForwardedTrackpad,
+}
+
 #[derive(Resource, Reflect, InspectorOptions, Debug, PartialEq, Clone, Copy)]
 #[reflect(Resource, InspectorOptions)]
 pub(crate) struct CameraSettings {
     pub(super) bloom_settings: BloomSettings,
     smoothness_settings:       SmoothnessSettings,
     pub(crate) splash_start:   SplashStart,
+    scroll_mode:               CameraScrollMode,
+    #[inspector(min = 0.0)]
+    line_scroll_sensitivity:   f32,
+}
+
+impl CameraSettings {
+    fn input_mode(&self) -> OrbitCamInputMode {
+        let line_scroll_input_gain = match self.scroll_mode {
+            CameraScrollMode::MouseWheel => None,
+            CameraScrollMode::ForwardedTrackpad => {
+                Some(OrbitCamInputGain::uniform(self.line_scroll_sensitivity))
+            },
+        };
+        OrbitCamInputMode::Preset(OrbitCamPreset::from(
+            OrbitCamBlenderLikePreset::default()
+                .mouse_input_gain(OrbitCamInputGain::uniform(CAMERA_INPUT_SENSITIVITY))
+                .line_scroll_input_gain(line_scroll_input_gain),
+        ))
+    }
 }
 
 impl Default for CameraSettings {
     fn default() -> Self {
         Self {
-            bloom_settings:      BloomSettings {
+            scroll_mode:             if std::env::var(FORWARDED_TRACKPAD_ENV)
+                .is_ok_and(|value| value == "1")
+            {
+                CameraScrollMode::ForwardedTrackpad
+            } else {
+                CameraScrollMode::MouseWheel
+            },
+            line_scroll_sensitivity: CAMERA_LINE_SCROLL_SENSITIVITY,
+            bloom_settings:          BloomSettings {
                 intensity:           CAMERA_BLOOM_INTENSITY,
                 low_frequency_boost: CAMERA_BLOOM_LOW_FREQUENCY_BOOST,
                 high_pass_frequency: CAMERA_BLOOM_HIGH_PASS_FREQUENCY,
             },
-            smoothness_settings: SmoothnessSettings {
+            smoothness_settings:     SmoothnessSettings {
                 zoom:  CAMERA_ZOOM_SMOOTHNESS,
                 pan:   CAMERA_PAN_SMOOTHNESS,
                 orbit: CAMERA_ORBIT_SMOOTHNESS,
             },
-            splash_start:        SplashStart {
+            splash_start:            SplashStart {
                 radius: CAMERA_SPLASH_START_RADIUS,
                 focus:  CAMERA_SPLASH_START_FOCUS,
                 pitch:  CAMERA_SPLASH_START_PITCH,
@@ -190,10 +227,7 @@ pub(super) fn game_camera(
             )},
         }
         // Middle-drag orbit, Shift+middle-drag pan, Blender-style trackpad.
-        template_value(OrbitCamInputMode::Preset(OrbitCamPreset::from(
-            OrbitCamBlenderLikePreset::default()
-                .mouse_input_gain(OrbitCamInputGain::uniform(CAMERA_INPUT_SENSITIVITY)),
-        )))
+        template_value(camera_settings.input_mode())
         Camera {
             order: {CameraOrder::Game.order()},
             // can't obscure the star camera with this on
@@ -236,5 +270,17 @@ fn update_orbit_cam_smoothness(
         camera
             .orbit
             .set_damping(camera_settings.smoothness_settings.orbit);
+    }
+}
+
+fn update_camera_input_mode(
+    settings: Res<CameraSettings>,
+    mut cameras: Query<&mut OrbitCamInputMode, With<OrbitCam>>,
+) {
+    let mode = settings.input_mode();
+    for mut current in &mut cameras {
+        if *current != mode {
+            *current = mode.clone();
+        }
     }
 }

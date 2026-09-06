@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use hana_lading::AllSetsLoaded;
-use hana_lagrange::CameraMoveList;
+use hana_lagrange::CameraSequence;
 use hana_lagrange::OrbitCam;
 
+use super::camera_animation::SplashSpinActive;
 use super::camera_animation::SplashZoomActive;
 use super::ui::SplashSkipHint;
 use super::ui::SplashText;
@@ -48,7 +49,7 @@ fn enter_game(
         }
         commands
             .entity(*camera_entity)
-            .remove::<(CameraMoveList, SplashZoomActive)>();
+            .remove::<(CameraSequence, SplashZoomActive, SplashSpinActive)>();
         commands.trigger(CameraHomeEvent);
     }
 
@@ -93,7 +94,7 @@ pub(super) fn run_splash(
         (),
         (
             With<OrbitCam>,
-            Or<(With<CameraMoveList>, With<SplashZoomActive>)>,
+            Or<(With<SplashSpinActive>, With<SplashZoomActive>)>,
         ),
     >,
 ) {

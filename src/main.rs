@@ -27,6 +27,8 @@ use bevy::gltf::GltfPlugin;
 use bevy::gltf::convert_coordinates::GltfConvertCoordinates;
 use bevy::pbr::PbrPlugin;
 use bevy::prelude::*;
+use bevy::window::PresentMode;
+use bevy::winit::WinitSettings;
 use bevy_brp_extras::BrpExtrasPlugin;
 use bevy_brp_extras::DEFAULT_REMOTE_PORT;
 use bevy_inspector_egui::bevy_egui::EguiPlugin;
@@ -51,6 +53,7 @@ use crate::switches::SwitchesPlugin;
 
 fn main() {
     let mut app = App::new();
+    app.insert_resource(WinitSettings::continuous());
 
     // Get effective port from `BrpExtrasPlugin` to include in window title if non-default
     let brp_extras_plugin = BrpExtrasPlugin::default();
@@ -79,6 +82,7 @@ fn main() {
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     title: window_title,
+                    present_mode: PresentMode::AutoNoVsync,
                     ..default()
                 }),
                 ..default()

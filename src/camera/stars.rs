@@ -6,11 +6,14 @@ use bevy::camera::visibility::RenderLayers;
 use bevy::camera::visibility::VisibleEntities;
 use bevy::diagnostic::FrameCount;
 use bevy::mesh::Mesh3d;
+use bevy::mesh::MeshTag;
 use bevy::prelude::*;
+use bevy::render::storage::ShaderBuffer;
 use bevy_inspector_egui::inspector_options::std_options::NumberDisplay;
 use bevy_inspector_egui::prelude::*;
 use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use hana_kana::Position;
+use hana_kana::ToU32;
 use rand::Rng;
 use rand::RngExt;
 use rand::prelude::ThreadRng;
@@ -39,7 +42,10 @@ use super::constants::STAR_TWINKLE_SPEED;
 use super::constants::STAR_TWINKLE_SPEED_MAX;
 use super::constants::STAR_TWINKLE_SPEED_MIN;
 use super::star::StarCamera;
-use super::star_twinkling::Twinkle;
+use super::star_material::StarData;
+use super::star_material::StarMaterial;
+use super::star_material::StarMaterialExtension;
+use super::star_twinkling::StarTwinkling;
 use crate::input::InspectStarSwitch;
 use crate::playfield::Boundary;
 use crate::state::GameState;
@@ -96,7 +102,7 @@ pub(super) struct StarColorSettings {
 #[reflect(InspectorOptions)]
 pub(super) struct StarTwinkleSettings {
     /// Master brightness swing applied uniformly to every star each frame; each
-    /// star scales it by its own `Twinkle::amplitude_fraction`.
+    /// star scales it by its own `StarData::twinkle` amplitude fraction.
     #[inspector(
         min = STAR_TWINKLE_AMPLITUDE_MIN,
         max = STAR_TWINKLE_AMPLITUDE_MAX,
@@ -104,7 +110,7 @@ pub(super) struct StarTwinkleSettings {
     )]
     pub(super) amplitude: f32,
     /// Master cycle rate applied uniformly to every star; each star scales it by
-    /// its own `Twinkle::speed_fraction`.
+    /// its own `StarData::twinkle` speed fraction.
     #[inspector(
         min = STAR_TWINKLE_SPEED_MIN,
         max = STAR_TWINKLE_SPEED_MAX,
@@ -157,9 +163,8 @@ impl Default for StarSettings {
 
 #[derive(Reflect, Component, Default)]
 pub(super) struct Star {
-    position:            Position,
-    radius:              f32,
-    pub(super) emissive: Vec4,
+    position: Position,
+    radius:   f32,
 }
 
 #[derive(Resource)]
@@ -227,41 +232,66 @@ fn spawn_stars(
     star_settings: Res<StarSettings>,
     boundary: Res<Boundary>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<StarMaterial>>,
+    mut buffers: ResMut<Assets<ShaderBuffer>>,
+    mut star_twinkling: ResMut<StarTwinkling>,
 ) {
     debug!("spawning stars");
+    star_twinkling.reset();
+    star_twinkling.stars.clear();
+    if star_settings.count == 0 {
+        star_twinkling.star_buffer = default();
+        star_twinkling.clock_buffer = default();
+        return;
+    }
     let longest_diagonal = boundary.longest_diagonal();
     let inner_sphere_radius = longest_diagonal + star_settings.field_diameter.start;
     let outer_sphere_radius = inner_sphere_radius + star_settings.field_diameter.end;
-
-    let mesh = meshes.add(Sphere::new(1.));
+    let mesh = meshes.add(Rectangle::new(2.0, 2.0));
     let mut rng = rng();
+    let mut stars = Vec::with_capacity(star_settings.count);
 
     for _ in 0..star_settings.count {
         let position = get_star_position(inner_sphere_radius, outer_sphere_radius, &mut rng);
         let radius = rng.random_range(star_settings.radius.clone());
         let emissive = get_star_color(&star_settings, &mut rng);
-
-        let material = materials.add(StandardMaterial {
-            emissive: LinearRgba::new(emissive.x, emissive.y, emissive.z, emissive.w),
+        star_twinkling
+            .stars
+            .push(StarData::random(emissive, &mut rng));
+        stars.push(Star { position, radius });
+    }
+    star_twinkling.star_buffer = buffers.add(ShaderBuffer::from(star_twinkling.stars.clone()));
+    star_twinkling.clock_buffer = buffers.add(ShaderBuffer::from(Vec4::new(
+        0.0,
+        star_settings.twinkle.amplitude,
+        0.0,
+        0.0,
+    )));
+    let material = materials.add(StarMaterial {
+        base:      StandardMaterial {
+            base_color: Color::BLACK,
+            reflectance: 0.0,
+            alpha_mode: AlphaMode::Add,
             ..default()
-        });
-
+        },
+        extension: StarMaterialExtension {
+            stars: star_twinkling.star_buffer.clone(),
+            clock: star_twinkling.clock_buffer.clone(),
+        },
+    });
+    for (index, star) in stars.into_iter().enumerate() {
+        let transform = Transform {
+            translation: *star.position,
+            rotation:    Quat::IDENTITY,
+            scale:       Vec3::splat(star.radius),
+        };
         commands.spawn((
-            Star {
-                position,
-                radius,
-                emissive,
-            },
-            Twinkle::random(&mut rng),
+            star,
             RenderLayer::Stars.layers(),
             Mesh3d(mesh.clone()),
-            MeshMaterial3d(material),
-            Transform {
-                translation: *position,
-                rotation:    Quat::IDENTITY,
-                scale:       Vec3::splat(radius),
-            },
+            MeshMaterial3d(material.clone()),
+            MeshTag(index.to_u32()),
+            transform,
         ));
     }
 }
@@ -339,5 +369,84 @@ fn rotate_stars(
 
     for (star, mut transform) in &mut stars {
         transform.translation = rotation * *star.position;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use bevy::mesh::MeshTag;
+    use bevy::prelude::*;
+    use bevy::render::storage::ShaderBuffer;
+
+    use super::Star;
+    use super::StarRotationState;
+    use super::StarSettings;
+    use super::despawn_stars;
+    use super::spawn_stars;
+    use crate::camera::star_material::StarMaterial;
+    use crate::camera::star_twinkling::StarTwinkling;
+    use crate::playfield::Boundary;
+
+    const STAR_COUNT: usize = 3;
+
+    #[test]
+    fn stars_share_material_and_mesh_with_distinct_buffer_indices() {
+        let mut app = App::new();
+        app.init_resource::<Assets<Mesh>>()
+            .init_resource::<Assets<StarMaterial>>()
+            .init_resource::<Assets<ShaderBuffer>>()
+            .init_resource::<Boundary>()
+            .init_resource::<StarTwinkling>()
+            .insert_resource(StarRotationState { current_angle: 0.0 })
+            .insert_resource(StarSettings {
+                count: STAR_COUNT,
+                ..default()
+            })
+            .add_systems(Update, (despawn_stars, spawn_stars).chain());
+        app.update();
+
+        let world = app.world_mut();
+        let mut query = world
+            .query_filtered::<(&Mesh3d, &MeshMaterial3d<StarMaterial>, &MeshTag), With<Star>>();
+        let mut meshes = HashSet::new();
+        let mut materials = HashSet::new();
+        let mut tags = Vec::new();
+        for (mesh, material, tag) in query.iter(world) {
+            meshes.insert(mesh.0.id());
+            materials.insert(material.0.id());
+            tags.push(tag.0);
+        }
+        tags.sort_unstable();
+        assert_eq!(tags, [0, 1, 2]);
+        assert_eq!(meshes.len(), 1);
+        assert_eq!(materials.len(), 1);
+        assert_eq!(world.resource::<Assets<StarMaterial>>().len(), 1);
+        assert_eq!(world.resource::<StarTwinkling>().stars.len(), STAR_COUNT);
+
+        world.resource_mut::<StarSettings>().count = 0;
+        app.update();
+        let world = app.world_mut();
+        assert_eq!(
+            world
+                .query_filtered::<Entity, With<Star>>()
+                .iter(world)
+                .count(),
+            0
+        );
+        assert!(world.resource::<StarTwinkling>().stars.is_empty());
+
+        world.resource_mut::<StarSettings>().count = 1;
+        app.update();
+        let world = app.world_mut();
+        assert_eq!(
+            world
+                .query_filtered::<Entity, With<Star>>()
+                .iter(world)
+                .count(),
+            1
+        );
+        assert_eq!(world.resource::<StarTwinkling>().stars.len(), 1);
     }
 }

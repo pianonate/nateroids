@@ -3597,9 +3597,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "hana_kana"
+version = "0.5.0-dev"
+dependencies = [
+ "bevy",
+ "bevy_lookup_curve",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "hana_lading"
-version = "0.0.1"
-source = "git+https://github.com/natepiano/hana#df97b2b237a4cb1fdc5c028bbc65c30ee8c3ea28"
+version = "0.1.0"
+source = "git+https://github.com/natepiano/bevy_hana#1b37e5e669380071bdc08f2f819b0db746e1792f"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -3609,14 +3618,13 @@ dependencies = [
 
 [[package]]
 name = "hana_lagrange"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14f26050b0db5f856106c5f3219b510881f44e7842ffcf922b63832678f5ed0e"
+version = "0.6.0-dev"
 dependencies = [
  "bevy",
  "bevy_enhanced_input",
- "bevy_kana",
  "bitflags 2.11.0",
+ "hana_kana 0.5.0-dev",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
@@ -4406,7 +4414,7 @@ dependencies = [
  "bevy_brp_extras",
  "bevy_enhanced_input",
  "hana_clerestory",
- "hana_kana",
+ "hana_kana 0.4.0",
  "hana_lading",
  "hana_lagrange",
  "hana_liminal",

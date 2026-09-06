@@ -63,6 +63,12 @@ pub(super) const FOCUS_GIZMO_DISTANCE_LABEL_OFFSET: f32 = 20.0;
 pub(super) const FOCUS_GIZMO_LABEL_RADIUS_MULTIPLIER: f32 = 2.0;
 pub(super) const FOCUS_GIZMO_LINE_WIDTH: f32 = 2.0;
 
+// forwarded trackpad
+/// Pixel-equivalent movement per line-scroll unit; adjustable in camera settings.
+pub(super) const CAMERA_LINE_SCROLL_SENSITIVITY: f32 = 20.0;
+/// Set to `1` to start with forwarded-trackpad controls.
+pub(super) const FORWARDED_TRACKPAD_ENV: &str = "NATEROIDS_FORWARDED_TRACKPAD";
+
 // home animation
 pub(super) const HOME_ANIMATION_DURATION_MS: u64 = 1200;
 
@@ -139,6 +145,7 @@ pub(super) const STAR_COUNT: usize = 1000;
 pub(super) const STAR_DURATION_REPLACE_TIMER: f32 = 1.0;
 pub(super) const STAR_FIELD_DIAMETER: Range<f32> = 200.0..400.0;
 pub(super) const STAR_RADIUS: Range<f32> = 0.3..2.5;
+pub(super) const STAR_SHADER_PATH: &str = "shaders/star.wgsl";
 
 // star rotation
 /// Below this cycle length `rotate_stars` treats rotation as off (1 second =
@@ -153,10 +160,12 @@ pub(super) const STAR_TWINKLE_AMPLITUDE: f32 = 0.7;
 /// Per-star amplitude spread, so stars twinkle by different amounts.
 pub(super) const STAR_TWINKLE_AMPLITUDE_FRACTION_MAX: f32 = 1.0;
 pub(super) const STAR_TWINKLE_AMPLITUDE_FRACTION_MIN: f32 = 0.5;
+/// Rebase per-star phases occasionally rather than lose precision in shader time.
+pub(super) const STAR_TWINKLE_PHASE_REBASE: f64 = 1024.0;
 /// Default master cycle rate in radians per second, before per-star scaling.
 pub(super) const STAR_TWINKLE_SPEED: f32 = 3.0;
 /// Per-star rate spread, so stars twinkle at different speeds.
-pub(super) const STAR_TWINKLE_SPEED_FRACTION_MAX: f32 = 2.0;
+pub(super) const STAR_TWINKLE_SPEED_FRACTION_MAX: f32 = 1.0;
 pub(super) const STAR_TWINKLE_SPEED_FRACTION_MIN: f32 = 0.5;
 
 // time conversions

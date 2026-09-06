@@ -1,9 +1,10 @@
 use bevy::prelude::*;
-use hana_lagrange::CameraMoveList;
+use hana_lagrange::CameraCommands;
+use hana_lagrange::CameraPlaybackObservation;
+use hana_lagrange::CameraSequence;
 
 use super::Boundary;
 use crate::camera::RenderLayer;
-use crate::constants::MILLISECONDS_PER_SECOND;
 use crate::playfield::constants::BOUNDARY_COLOR;
 use crate::playfield::constants::BOUNDARY_GRID_ALPHA;
 use crate::playfield::constants::BOUNDARY_OUTER_ALPHA;
@@ -120,15 +121,25 @@ pub(super) fn draw_boundary(
 pub(super) fn start_boundary_fade(
     _trigger: On<Remove, SplashText>,
     mut commands: Commands,
-    camera_query: Query<&CameraMoveList>,
+    camera_query: Query<(Entity, &CameraSequence)>,
+    camera_commands: CameraCommands,
 ) {
-    let remaining_time_ms = camera_query
+    let duration_secs = camera_query
         .iter()
         .next()
-        .map_or(0.0, CameraMoveList::remaining_time_ms);
-
-    // `Timer::from_seconds` requires `CameraMoveList::remaining_time_ms` in seconds.
-    let duration_secs = remaining_time_ms / MILLISECONDS_PER_SECOND;
+        .map_or(0.0, |(camera, sequence)| {
+            match camera_commands.observe(camera) {
+                CameraPlaybackObservation::Retained { position, .. } => {
+                    let total_secs: f32 = sequence
+                        .moves()
+                        .iter()
+                        .map(|movement| movement.duration().as_secs_f32())
+                        .sum();
+                    total_secs * (1.0 - position.normalized())
+                },
+                CameraPlaybackObservation::NoRetainedSequence => 0.0,
+            }
+        });
 
     commands.spawn(BoundaryFadeIn(Timer::from_seconds(
         duration_secs,

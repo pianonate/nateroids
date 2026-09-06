@@ -6,6 +6,7 @@ mod rendering;
 mod required_components;
 mod selection;
 mod star;
+mod star_material;
 mod star_twinkling;
 mod stars;
 mod ui;
