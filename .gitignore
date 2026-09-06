@@ -1,1 +1,3 @@
 /target
+# nix-direnv cache: the GC-rooted devShell profile and its rc dump
+/.direnv/
