@@ -84,7 +84,7 @@ render preparation, and driver submission are hypotheses, not established causes
 1. Pause build/test automation as well as manual builds. Reserve the whole test
    window; a quiet interval before launch was insufficient last time. Record
    background activity throughout each sample and discard affected samples.
-2. Freeze the source revision, lockfile, shader, and local hana checkout. Build
+2. Freeze the source revision, lockfile, and shader. Build
    every candidate before measuring. Start with the current profile versus one
    codegen unit, without cross-crate LTO. Revisit LTO only with a clean baseline.
 3. Run actual gameplay with the same input sequence, resolution, presentation
@@ -111,7 +111,7 @@ render preparation, and driver submission are hypotheses, not established causes
 ### Build and launch the first two candidates
 
 Run from the repository root. These overrides do not edit the release profile.
-The local hana_lagrange dependency requires the sibling hana checkout.
+The camera and asset-loader dependencies resolve from the public hana mirror.
 
 ```sh
 bench_dir=$(mktemp -d /tmp/nateroids-fps.XXXXXX)
@@ -180,7 +180,8 @@ executables, build commands/logs, raw JSON samples, and Python harnesses.
 `clean_comparison.py` waits for a quiet interval but must still reject any run
 where competing work restarts. Its last comparison failed that check.
 
-The snapshot predates the public hana_lading dependency update. Comparing its
+The snapshot uses a sibling hana checkout and predates the public hana_lading
+dependency update. Comparing its
 Rust sources with the updated dependency found documentation-only differences,
 but future comparisons should rebuild all candidates from one current tree.
 Temporary artifacts can disappear when `/tmp` is cleaned; the commands above

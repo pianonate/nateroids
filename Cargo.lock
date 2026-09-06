@@ -1520,7 +1520,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-time",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2804,7 +2804,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3030,7 +3030,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3599,6 +3599,7 @@ dependencies = [
 [[package]]
 name = "hana_kana"
 version = "0.5.0-dev"
+source = "git+https://github.com/natepiano/bevy_hana#24419647db800afd731fba5ea0badce6ffe93774"
 dependencies = [
  "bevy",
  "bevy_lookup_curve",
@@ -3608,7 +3609,7 @@ dependencies = [
 [[package]]
 name = "hana_lading"
 version = "0.1.0"
-source = "git+https://github.com/natepiano/bevy_hana#1b37e5e669380071bdc08f2f819b0db746e1792f"
+source = "git+https://github.com/natepiano/bevy_hana#24419647db800afd731fba5ea0badce6ffe93774"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -3619,6 +3620,7 @@ dependencies = [
 [[package]]
 name = "hana_lagrange"
 version = "0.6.0-dev"
+source = "git+https://github.com/natepiano/bevy_hana#24419647db800afd731fba5ea0badce6ffe93774"
 dependencies = [
  "bevy",
  "bevy_enhanced_input",
@@ -4040,7 +4042,7 @@ checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
 dependencies = [
  "hermit-abi",
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4549,7 +4551,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5146,7 +5148,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5878,7 +5880,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6401,7 +6403,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -7334,7 +7336,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

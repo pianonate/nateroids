@@ -1,4 +1,4 @@
 [alias]
 # Override a global incremental=false only for these development commands.
-dev = ["run", "--config", "build.incremental=true"]
-dev-build = ["build", "--config", "build.incremental=true"]
+dev       = ["--config", "build.incremental=true", "run"]
+dev-build = ["--config", "build", "build.incremental=true"]
